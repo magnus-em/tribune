@@ -1,11 +1,11 @@
 # Tribune — Specification
 
-This document describes what the product does today and the rules it operates under. Where the current implementation diverges from the intended behavior, that is noted.
+This document describes what the product does and the rules it operates under. Where the current implementation diverges from the intended behavior, that is noted.
 
 ## User Roles
 
-- **Tenant** — the primary end user. Submits a case, reviews and sends demand letters, reports landlord responses, confirms resolution.
-- **Admin** — Tribune staff. Triages incoming cases, composes and posts demand letters, updates case status, adds notes (internal or tenant-visible), records actions.
+- **Tenant** — the primary end user. Submits a case, uploads supporting documents, reviews case updates, confirms actions (letter sent, response received, resolution).
+- **Admin** — Tribune staff (you). Reviews uploaded documents, drafts and posts demand letters, updates case status, posts tenant-visible updates, adds internal notes, confirms recovery, invoices the tenant for the contingency fee off-platform.
 
 Admin access is granted via `profiles.is_admin = true`, set manually in the database. There is no self-serve admin signup.
 
@@ -14,98 +14,134 @@ Admin access is granted via `profiles.is_admin = true`, set manually in the data
 ### Tenant
 - As a tenant, I can submit my case details through a guided intake form.
 - As a tenant, I can sign in by email magic link.
+- As a tenant, I can upload supporting documents to my case — lease, landlord correspondence, itemized deduction letter, photos, or other.
 - As a tenant, I can see all my cases and their current status.
-- As a tenant, I can open a case to see its full timeline.
+- As a tenant, I can open a case to see its full timeline and all uploaded documents.
 - As a tenant, I can read demand letters that Tribune has drafted for my case.
-- As a tenant, I can copy a letter's text to my clipboard.
-- As a tenant, I can confirm that I have sent a letter to my landlord.
-- As a tenant, I can record a response received from my landlord.
-- *[out of scope for MVP]* As a tenant, I receive notifications when new updates or letters are posted.
+- As a tenant, I receive transactional emails on case events (new update, letter ready, landlord response recorded, deposit recovered, payment due).
+- As a tenant, I can record a response received from my landlord and upload any physical document the landlord sent.
+- As a tenant, I can see pricing, fee terms, and disclaimers ("information, not legal advice") prominently on intake, dashboard, and case detail.
+- *[deferred post-MVP]* As a tenant, I can copy a letter's text to my clipboard and mail it myself (not needed — Tribune mails all letters).
+- *[deferred post-MVP]* As a tenant, I see deadline-approaching warnings on my dashboard.
 
 ### Admin
 - As an admin, I can see all cases filtered by status with key metrics (deposit amount, deadline, days overdue).
 - As an admin, I can open a case and see full tenant, property, landlord, lease, and deposit details.
+- As an admin, I can view, download, and preview every document the tenant has uploaded, grouped by kind.
 - As an admin, I can change a case's status.
-- As an admin, I can post a demand letter (title + body + letter number 1–3) to a case.
-- As an admin, I can post a visible update to the tenant.
+- As an admin, I can post a demand letter (title + body + letter number 1–3) to a case. Posting a letter produces a timeline entry visible to the tenant and triggers a notification email.
+- As an admin, I can post a visible update to the tenant (freeform message, no letter number).
 - As an admin, I can add an internal note (hidden from tenant) or a tenant-visible note.
-- As an admin, I can review the tenant's confirmed actions (letter sent, resolution, payment).
-- *[out of scope for MVP]* As an admin, I can generate a letter from a CT § 47a-21 template pre-filled with case data.
+- As an admin, I can record that a letter has been mailed (Tribune-side) so the case shows "letter sent" to the tenant.
+- As an admin, I can record recovery: amount recovered, fee calculated, any tenant-reimbursed costs, and mark the case resolved.
+- *[deferred post-MVP]* As an admin, I can generate a letter from a CT § 47a-21 template pre-filled with case data.
+- *[deferred post-MVP]* As an admin, I can run AI extraction against uploaded documents.
 
 ## Main Flows
 
-### Intake → Auth → Case Creation
-1. Visitor lands on `/intake`, completes a 4-step form (tenant info → property → landlord → deposit + contingency agreement).
-2. On submit, Tribune:
-   - Calls `supabase.auth.signInWithOtp({ email })`, which creates the user if new and emails a magic link.
-   - Stores the collected form data in `sessionStorage` under the key `tribune_pending_case`.
-   - Redirects the user to `/auth/confirm`, instructing them to check email.
-3. The user clicks the magic link, which routes to `/auth/callback`.
-4. The callback exchanges the code for a session, reads `tribune_pending_case` from `sessionStorage`, inserts the `cases` row, and redirects to the dashboard.
+### Intake → Auth → Case Creation (target — not current)
 
-**Known fragility:** the intake bridge depends on the user opening the magic link in the same browser session that started the intake. If they open the link on another device or after clearing session storage, the pending case data is lost. A server-side intake pipeline is on the task list.
+1. Visitor lands on `/intake`, completes a multi-step form (tenant info → property → landlord → deposit + contingency agreement).
+2. On submit, a server action:
+   - Validates the payload with Zod.
+   - Calls `supabase.auth.signInWithOtp({ email })`.
+   - Writes the intake payload to a `pending_cases` table keyed by email.
+   - Redirects the user to `/auth/confirm`.
+3. The user clicks the magic link → `/auth/callback`.
+4. The callback exchanges the code for a session. A server action then:
+   - Finds the `pending_cases` row by the authenticated user's email.
+   - Inserts a `cases` row.
+   - Deletes the `pending_cases` row.
+   - Redirects to the dashboard.
+
+This eliminates the current `sessionStorage` bridge and the cross-device failure mode.
+
+**Current state:** the `sessionStorage` bridge is still in place. The server-side pipeline is the first planned migration before any new feature work.
+
+### Document Upload (new)
+
+1. Tenant opens their case detail.
+2. Tenant picks a document kind (lease / landlord_correspondence / deduction_itemization / photo / other) and selects files.
+3. A server action validates and obtains a signed Supabase Storage upload URL scoped to `case_documents/<case_id>/<uuid>`.
+4. On upload success, the server action inserts a `case_documents` row and appends a `system` timeline entry ("Tenant uploaded {kind}: {filename}").
+5. The admin case page shows the uploaded document in its kind section with preview/download links.
 
 ### Tenant Dashboard
+
 1. User visits `/dashboard`; middleware checks session.
-2. User sees their list of cases.
+2. User sees their list of cases with status, deposit amount, and deadline.
 3. User opens a case → `/dashboard/case/[id]`.
-4. User reads the timeline, can copy letter text, can confirm a letter has been sent, can submit a landlord response.
+4. User sees: status summary, timeline (non-admin-only messages), documents grouped by kind, upload controls, "record landlord response" and "mark resolved" actions, pricing disclosure, disclaimer banner.
 
 ### Admin Case Management
+
 1. Admin visits `/admin`; middleware checks session AND `is_admin = true`.
 2. Admin filters cases by status, opens a case → `/admin/case/[id]`.
-3. Admin can: change status, post letter, post update, add note (internal or tenant-visible), view actions timeline.
-4. Status changes and letter posts automatically append a `case_messages` entry of appropriate type.
+3. Admin sees: tenant/property/landlord/lease/deposit details, documents viewer, full timeline (including admin-only notes), status dropdown, letter post form, update post form, note form (internal or visible), actions timeline, resolution controls.
+4. Status changes and letter posts append `case_messages` entries of appropriate type. Letter posts increment `current_letter_number` (the only code path allowed to touch it).
+5. Letter posts and tenant-visible updates send a transactional email to the tenant via Resend.
+
+### Resolution
+
+1. Admin confirms recovery with the landlord off-platform.
+2. Admin opens the case, fills resolution fields (amount recovered in cents, tenant-reimbursed hard costs in cents, resolution notes), sets status to `resolved`.
+3. System records `amount_recovered_cents`, `fee_collected_cents` (15% of recovered by default, editable), `tenant_costs_cents`, `resolved_at`.
+4. Tenant receives "Deposit recovered, invoice attached" email. Invoice is sent off-platform by admin for MVP.
+5. If tenant does not pay within the agreed window, admin moves status to `in_collections`.
 
 ## Functional Requirements
 
-- Authentication is email magic link only. No password flow. OTP emails are delivered by Supabase Auth.
-- Data access from the application is always through the anon Supabase client. RLS enforces who can read or write what.
+- Authentication is email magic link only.
+- Data access from the application:
+  - **Reads** go through the anon Supabase client from client components. RLS enforces who can read what.
+  - **Writes** that require server-side integrity (intake, uploads, letter post, resolution, case_documents creation) go through server actions operating under the user's session.
 - All money is stored and computed in integer cents.
 - All dates are stored in Postgres `date` columns and exchanged as ISO date strings.
-- The statutory deadline is calculated as `move_out_date + 30 days` and stored on the case record at creation time.
-- The contingency fee rate is fixed at 25% and recorded on the case at creation time.
-- Letter numbers are 1, 2, or 3.
-- Admin actions that change state also produce a visible timeline entry, so the tenant (or admin) can reconstruct what happened.
-- Internal notes (`is_admin_only = true`) are invisible to tenants via the RLS policy on `case_messages`.
+- The statutory deadline is `move_out_date + 30 days`, stored on the case at creation time.
+- The contingency rate default is 15% and is recorded on the case at creation time. Historical cases retain the rate they were created with.
+- Letter numbers are 1, 2, or 3. `current_letter_number` is updated only when a letter is posted.
+- Admin actions that change state also produce a visible timeline entry.
+- Internal notes (`is_admin_only = true`) are invisible to tenants via RLS.
+- Transactional email is sent via Resend on: new tenant-visible message posted, letter posted, status transition to `letter_sent`, status transition to `resolved`, status transition to `in_collections`.
 
 ## Non-Functional Requirements
 
 - **Legal accuracy.** The product drafts legal correspondence. Citations, deadlines, and damages calculations must be correct. Any change to legal content or legal math requires explicit human review.
-- **PII handling.** The database stores tenant and landlord PII (names, addresses, phone, email, forwarding address). No PII may be logged, sent to third-party analytics, or transmitted to external services without deliberate review.
-- **Authorization boundary.** RLS is the authoritative authorization layer. Middleware-based route protection is a convenience only. Any new data access must assume RLS is the source of truth.
-- **Jurisdiction scope.** Connecticut only. Case logic, statutes, and deadline math assume CT.
-- **Accessibility and responsiveness.** Expected but not currently measured.
-- **Audit trail.** The `case_messages` timeline serves as the de facto audit log. There is no separate audit log table.
+- **PII handling.** The database stores tenant and landlord PII. No PII may be logged, sent to Sentry, or sent to PostHog. The analytics wrapper is the chokepoint.
+- **Authorization boundary.** RLS is authoritative. Middleware is convenience only. Server actions run under the user's session.
+- **Jurisdiction scope.** Connecticut only, residential only.
+- **Audit trail.** The `case_messages` timeline is the de facto audit log. Every state change produces an entry.
+- **UPL disclaimers.** Every tenant-facing page and outbound email carries an "information, not legal advice" disclaimer.
 
-## Edge Cases (known / to handle)
+## Edge Cases
 
-- Tenant's statutory deadline has already passed at intake time (case is still worth pursuing; code must not silently drop).
+- Tenant's statutory deadline has already passed at intake time — accept; note in the timeline; case is still worth pursuing (statute-of-limitations distinct from the 30-day return deadline).
 - Partial deposit return (non-zero `deposit_returned_cents` and non-zero `amount_withheld_cents`).
-- No landlord email on file — letter delivery path must still work when it exists.
-- Tenant opens magic link on different device → intake bridge loses pending case. Currently unhandled.
-- Tenant submits a case for a property/landlord they've already submitted. No dedup today.
-- Landlord provides itemized deductions vs. not — affects legal standard but not yet branched in letter drafting.
-- Admin changes status backward (e.g. `resolved` → `under_review`). Allowed today; timeline will show the transition.
-- `current_letter_number` is updated in two different handlers (`postLetter` and `changeStatus`) with inconsistent logic — a known bug, see ARCHITECTURE.md.
+- No landlord email on file — letter delivery is by mail; email is nice-to-have.
+- Tenant opens magic link on a different device — handled by server-side `pending_cases` keyed to email, not session.
+- Tenant submits a case for a property/landlord they've already submitted — accepted; no dedup yet.
+- Landlord provides itemized deductions vs. not — different legal standard (strict vs. double damages). Reflected in letter content; not yet branched in admin flow.
+- Admin changes status backward (e.g. `resolved` → `under_review`). Allowed; timeline shows the transition.
+- Multiple tenants on one lease — MVP captures co-tenant names but one user account represents the case.
+- Recovery is partial — recorded as `amount_recovered_cents` less than `amount_withheld_cents`. Case may still be marked `resolved`, or left `awaiting_landlord` if Tribune is pursuing the balance.
+- Tenant fails to pay the contingency after recovery — status moves to `in_collections`.
+- Tenant abandons the case / stops responding — status moves to `dead`.
 
 ## Assumptions
 
-- Users complete intake and open their magic link on the same device within the OTP expiry window.
+- Users complete intake and open their magic link within the OTP expiry window (cross-device is tolerated via `pending_cases`).
 - One `cases` row per tenant per dispute. Tenants may have multiple cases over time.
-- A single admin handles most cases manually at MVP scale. No concurrent-edit protection.
+- A single admin (you) handles all cases manually at MVP scale. No concurrent-edit protection.
 - Letter sequence escalates: letter 1 (initial demand) → letter 2 (follow-up) → letter 3 (final notice before escalation). Exact content is drafted by admin.
 - Contingency is calculated on the amount *recovered*, not the amount *withheld*.
-- `statutory_deadline` of move_out + 30 days reflects the CT statutory framework. *[uncertain — exact statute subsection to cite in letter templates]*.
+- Statutory deadline of `move_out + 30 days` reflects the CT framework. *[uncertain — exact subsection and damages language for letter templates to be hand-authored with review]*.
 
 ## Open Questions
 
 - How does Tribune handle cases where the statute of limitations has passed?
-- Are there case-acceptance criteria (minimum amount, jurisdiction, lease type)? Today the intake accepts any submission.
-- What is the escalation path after letter 3? Small-claims court filing help? Referral out?
-- If the tenant stops responding, how is the case closed? Who triggers it, and what notice is given?
+- Are there case-acceptance criteria (minimum amount, lease type)? Today the intake accepts any submission.
+- What is the escalation path after letter 3? Small-claims filing package vs. referral out.
+- If the tenant stops responding, how long before the case moves to `dead`? What notice is given?
 - If the landlord pays partially, is the case considered resolved? Does Tribune pursue the remainder?
-- How are contingency payments collected in practice (invoiced from tenant after recovery, withheld from a settlement account)?
-- UPL stance — since no attorney is in the loop, exactly what language is safe in letters and tenant-facing copy?
-- Letter-delivery automation — print-and-mail API, certified mail tracking, signature confirmation?
-- Multi-tenant roommates on a single lease — one case, multiple tenants?
+- What collections agency will Tribune partner with to make the collections threat real?
+- UPL stance — exact language review for letters and tenant-facing copy, needed before real users.

@@ -1,7 +1,13 @@
 {
   "permissions": {
     "allow": [
-      "WebSearch"
+      "WebSearch",
+      "Bash(npm run lint:*)",
+      "Bash(npm run build:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(test:*)",
+      "Bash(git push:*)"
     ]
   }
 }

@@ -105,10 +105,6 @@ export default function AdminCaseDetailPage() {
       .from("cases")
       .update({
         status: newStatus as CaseStatus,
-        current_letter_number:
-          newStatus === "letter_ready"
-            ? (caseData?.current_letter_number || 0) + 1
-            : caseData?.current_letter_number,
       })
       .eq("id", caseId);
 

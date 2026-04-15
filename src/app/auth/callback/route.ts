@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { addDays } from "date-fns";
+import { CONTINGENCY_PCT, STATUTE_DAYS } from "@/lib/constants";
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
@@ -30,9 +31,9 @@ export async function GET(request: Request) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const payload = pendingCase.payload as any;
 
-          // Calculate statutory deadline (move_out_date + 30 days)
+          // Calculate statutory deadline (move_out_date + STATUTE_DAYS)
           const moveOutDate = new Date(payload.move_out_date);
-          const statutoryDeadline = addDays(moveOutDate, 30);
+          const statutoryDeadline = addDays(moveOutDate, STATUTE_DAYS);
 
           // Convert dollar amounts to cents
           const depositAmountCents = Math.round(parseFloat(payload.deposit_amount) * 100);
@@ -68,7 +69,7 @@ export async function GET(request: Request) {
             situation_description: payload.situation_description,
 
             // Agreement
-            contingency_pct: 10, // Default to 10% for new cases
+            contingency_pct: CONTINGENCY_PCT,
             contingency_agreed_at: new Date().toISOString(),
 
             // Tracking

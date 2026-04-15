@@ -23,9 +23,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LegalDisclaimer } from "@/components/legal-disclaimer";
+import { CONTINGENCY_PCT } from "@/lib/constants";
 
 const STEPS = ["Your Info", "Property", "Landlord", "Deposit & Agreement"];
-const CONTINGENCY_PCT = 10;
 
 function StepIndicator({ current, total }: { current: number; total: number }) {
   return (

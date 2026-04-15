@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { MAX_FILE_SIZE_BYTES, ALLOWED_FILE_TYPES } from "@/lib/constants";
 
 export async function uploadDocument(
   caseId: string,
@@ -33,23 +34,13 @@ export async function uploadDocument(
   }
 
   // Validate file type
-  const allowedTypes = [
-    "application/pdf",
-    "image/jpeg",
-    "image/jpg",
-    "image/png",
-    "application/msword",
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  ];
-
-  if (!allowedTypes.includes(file.type)) {
+  if (!ALLOWED_FILE_TYPES.includes(file.type as typeof ALLOWED_FILE_TYPES[number])) {
     return { error: "File type not allowed. Please upload PDF, JPG, PNG, or DOC/DOCX files." };
   }
 
-  // Validate file size (10MB limit)
-  const maxSize = 10 * 1024 * 1024;
-  if (file.size > maxSize) {
-    return { error: "File size must be less than 10MB" };
+  // Validate file size
+  if (file.size > MAX_FILE_SIZE_BYTES) {
+    return { error: `File size must be less than ${MAX_FILE_SIZE_BYTES / 1024 / 1024}MB` };
   }
 
   try {

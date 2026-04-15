@@ -14,8 +14,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import { uploadDocument, getDocumentUrl } from "./actions";
+import { LegalDisclaimer } from "@/components/legal-disclaimer";
 
 function statusColor(status: string): string {
   switch (status) {
@@ -119,21 +123,31 @@ export default function CaseDetailPage() {
   const [responseText, setResponseText] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [confirmingSent, setConfirmingSent] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [documents, setDocuments] = useState<any[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [uploadKind, setUploadKind] = useState<string>("lease");
 
   const loadData = useCallback(async () => {
     const supabase = createClient();
 
-    const [{ data: caseResult }, { data: messagesResult }] = await Promise.all([
+    const [{ data: caseResult }, { data: messagesResult }, { data: documentsResult }] = await Promise.all([
       supabase.from("cases").select("*").eq("id", caseId).single(),
       supabase
         .from("case_messages")
         .select("*")
         .eq("case_id", caseId)
         .order("created_at", { ascending: true }),
+      supabase
+        .from("case_documents")
+        .select("*")
+        .eq("case_id", caseId)
+        .order("created_at", { ascending: false }),
     ]);
 
     setCaseData(caseResult);
     setMessages(messagesResult || []);
+    setDocuments(documentsResult || []);
     setLoading(false);
   }, [caseId]);
 
@@ -184,6 +198,38 @@ export default function CaseDetailPage() {
     loadData();
   }
 
+  async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("kind", uploadKind);
+
+    const result = await uploadDocument(caseId, formData);
+
+    if (result.error) {
+      toast.error(result.error);
+    } else {
+      toast.success(`${file.name} uploaded successfully`);
+      loadData();
+    }
+
+    setUploading(false);
+    // Reset file input
+    e.target.value = "";
+  }
+
+  async function downloadDocument(storagePath: string) {
+    const result = await getDocumentUrl(storagePath);
+    if (result.error) {
+      toast.error("Failed to download document");
+    } else if (result.url) {
+      window.open(result.url, "_blank");
+    }
+  }
+
   if (loading) {
     return <p className="text-muted-foreground">Loading case...</p>;
   }
@@ -198,6 +244,8 @@ export default function CaseDetailPage() {
 
   return (
     <div className="space-y-6">
+      <LegalDisclaimer />
+
       {/* Summary Card */}
       <Card>
         <CardHeader>
@@ -239,6 +287,80 @@ export default function CaseDetailPage() {
 
           <Separator className="my-4" />
           <p className="text-sm font-medium">{nextAction(caseData.status)}</p>
+        </CardContent>
+      </Card>
+
+      {/* Documents */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Documents</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Upload section */}
+          <div className="space-y-3">
+            <h3 className="font-medium">Upload Documents</h3>
+            <p className="text-sm text-muted-foreground">
+              Upload your lease, landlord correspondence, itemized deduction letters, or photos.
+            </p>
+            <div className="flex gap-3">
+              <div className="flex-1">
+                <Label htmlFor="document-kind">Document Type</Label>
+                <Select value={uploadKind} onValueChange={setUploadKind}>
+                  <SelectTrigger id="document-kind">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="lease">Lease</SelectItem>
+                    <SelectItem value="landlord_correspondence">Landlord Correspondence</SelectItem>
+                    <SelectItem value="deduction_itemization">Deduction Itemization</SelectItem>
+                    <SelectItem value="photo">Photo</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex-1">
+                <Label htmlFor="file-upload">Choose File</Label>
+                <input
+                  id="file-upload"
+                  type="file"
+                  onChange={handleUpload}
+                  disabled={uploading}
+                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90 disabled:opacity-50"
+                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                />
+              </div>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Uploaded documents list */}
+          <div>
+            <h3 className="font-medium mb-3">Uploaded Documents ({documents.length})</h3>
+            {documents.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No documents uploaded yet.</p>
+            ) : (
+              <div className="space-y-2">
+                {documents.map((doc) => (
+                  <div key={doc.id} className="flex items-center justify-between border rounded p-3">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">{doc.original_filename}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {doc.kind.replace(/_/g, " ")} • {format(new Date(doc.created_at), "MMM d, yyyy")}
+                      </p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => downloadDocument(doc.storage_path)}
+                    >
+                      Download
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
 

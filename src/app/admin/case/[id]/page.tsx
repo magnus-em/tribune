@@ -28,6 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { getDocumentUrl } from "@/app/dashboard/case/[id]/actions";
 
 function statusColor(status: string): string {
   switch (status) {
@@ -51,6 +52,8 @@ export default function AdminCaseDetailPage() {
   const [caseData, setCaseData] = useState<Case | null>(null);
   const [messages, setMessages] = useState<CaseMessage[]>([]);
   const [actions, setActions] = useState<CaseAction[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [documents, setDocuments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Form states
@@ -67,7 +70,7 @@ export default function AdminCaseDetailPage() {
   const loadData = useCallback(async () => {
     const supabase = createClient();
 
-    const [{ data: caseResult }, { data: messagesResult }, { data: actionsResult }] =
+    const [{ data: caseResult }, { data: messagesResult }, { data: actionsResult }, { data: documentsResult }] =
       await Promise.all([
         supabase.from("cases").select("*").eq("id", caseId).single(),
         supabase
@@ -80,11 +83,17 @@ export default function AdminCaseDetailPage() {
           .select("*")
           .eq("case_id", caseId)
           .order("created_at", { ascending: true }),
+        supabase
+          .from("case_documents")
+          .select("*")
+          .eq("case_id", caseId)
+          .order("created_at", { ascending: false }),
       ]);
 
     setCaseData(caseResult);
     setMessages(messagesResult || []);
     setActions(actionsResult || []);
+    setDocuments(documentsResult || []);
     if (caseResult) setNewStatus(caseResult.status);
     setLoading(false);
   }, [caseId]);
@@ -198,6 +207,15 @@ export default function AdminCaseDetailPage() {
     loadData();
   }
 
+  async function downloadDocument(storagePath: string) {
+    const result = await getDocumentUrl(storagePath);
+    if (result.error) {
+      toast.error("Failed to download document");
+    } else if (result.url) {
+      window.open(result.url, "_blank");
+    }
+  }
+
   if (loading) return <p className="text-muted-foreground">Loading case...</p>;
   if (!caseData) return <p className="text-destructive">Case not found.</p>;
 
@@ -305,14 +323,61 @@ export default function AdminCaseDetailPage() {
       </Card>
 
       {/* Actions tabs */}
-      <Tabs defaultValue="thread">
+      <Tabs defaultValue="documents">
         <TabsList>
+          <TabsTrigger value="documents">Documents ({documents.length})</TabsTrigger>
           <TabsTrigger value="thread">Thread ({messages.length})</TabsTrigger>
           <TabsTrigger value="letter">Post Letter</TabsTrigger>
           <TabsTrigger value="update">Post Update</TabsTrigger>
           <TabsTrigger value="note">Add Note</TabsTrigger>
           <TabsTrigger value="actions">Actions ({actions.length})</TabsTrigger>
         </TabsList>
+
+        {/* Documents tab */}
+        <TabsContent value="documents" className="space-y-3 mt-4">
+          <p className="text-sm text-muted-foreground mb-3">
+            All documents uploaded by the tenant. Click to preview or download.
+          </p>
+          {documents.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No documents uploaded yet.</p>
+          ) : (
+            <div className="space-y-2">
+              {/* Group documents by kind */}
+              {["lease", "landlord_correspondence", "deduction_itemization", "photo", "other"].map((kind) => {
+                const kindDocs = documents.filter((doc) => doc.kind === kind);
+                if (kindDocs.length === 0) return null;
+
+                return (
+                  <div key={kind} className="border rounded-lg p-4">
+                    <h4 className="font-semibold mb-2 capitalize">{kind.replace(/_/g, " ")}</h4>
+                    <div className="space-y-2">
+                      {kindDocs.map((doc) => (
+                        <div key={doc.id} className="flex items-center justify-between border-l-4 border-primary pl-3 py-2">
+                          <div className="flex-1">
+                            <p className="text-sm font-medium">{doc.original_filename}</p>
+                            <p className="text-xs text-muted-foreground">
+                              Uploaded {format(new Date(doc.created_at), "MMM d, yyyy 'at' h:mm a")}
+                              {doc.size_bytes && ` • ${(doc.size_bytes / 1024).toFixed(0)} KB`}
+                            </p>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => downloadDocument(doc.storage_path)}
+                            >
+                              Preview/Download
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </TabsContent>
 
         {/* Thread tab */}
         <TabsContent value="thread" className="space-y-3 mt-4">

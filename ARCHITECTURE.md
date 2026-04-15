@@ -10,9 +10,10 @@ This document describes the system as it is built today, the decisions implicit 
 - **Dates:** date-fns.
 - **Toasts:** sonner.
 - **Auth + DB:** Supabase (Postgres + Auth + RLS).
-- **File storage:** Supabase Storage (to be adopted in the first vertical slice).
-- **Transactional email:** Resend (to be adopted in the first vertical slice).
-- **Error monitoring:** Sentry (to be adopted).
+- **File storage:** Supabase Storage [current] — document uploads with RLS-scoped bucket.
+- **Transactional email:** Resend [current] — case update notifications.
+- **Error monitoring:** Sentry [current] — configured with PII filtering, error boundaries at component/page/global levels.
+- **Testing:** Jest [current] — unit tests for schemas, templates, constants. Playwright for E2E (planned).
 - **Product analytics:** PostHog (to be adopted) — with strict PII scrubbing.
 - **Hosting:** Vercel (default assumption; not yet provisioned). AWS credits are available as a fallback pool and are the chosen backend for any Claude inference the product makes (via Amazon Bedrock) once AI drafting lands.
 
@@ -45,7 +46,13 @@ src/
       server.ts                   RSC / route handler client
       middleware.ts               middleware client
     schemas/intake.ts             zod schemas for intake
-    types/database.ts             TS types for DB rows + status labels (to be replaced by codegen)
+    types/supabase.ts             Generated DB types via `supabase gen types`
+    types/database.ts             Legacy hand-written types (deprecated, will be removed)
+    constants.ts                  Centralized business constants (contingency %, statute days, file limits)
+    letters/templates.ts          CT § 47a-21 demand letter templates (1, 2, 3)
+    email/
+      client.ts                   Resend wrapper
+      templates/case-update.ts    Email template for case updates
   middleware.ts                   route protection
 supabase/
   schema.sql                      full schema + RLS
@@ -94,19 +101,19 @@ These land as part of the first vertical slice.
 **New fields on `cases`:**
 - `amount_recovered_cents` (nullable), `fee_collected_cents` (nullable), `tenant_costs_cents` (nullable, reimbursable mailing + filing), `resolved_at` (nullable), `resolution_notes` (nullable text).
 
-**New `case_status` values:** `awaiting_tenant` (Tribune needs something from the tenant), `in_collections` (post-recovery non-payment), `dead` (tenant abandoned).
+**New `case_status` values:** [current]
+- `awaiting_tenant` (Tribune needs something from the tenant), `in_collections` (post-recovery non-payment), `dead` (tenant abandoned).
 
-**New `message_type` value:** `tenant_document_uploaded` — emitted by the upload server action. (Alternative: reuse `system`. Decide when implementing.)
+**New `action_type` values:** [planned]
+- `letter_mailed` (admin marks a physical letter as mailed), `recovery_confirmed` (admin marks recovery), `invoice_sent`, `invoice_paid`.
 
-**New `action_type` values:** `letter_mailed` (admin marks a physical letter as mailed), `recovery_confirmed` (admin marks recovery), `invoice_sent`, `invoice_paid`.
-
-**Default contingency rate:** 15 (was 25). Historical rows keep their stored rate.
+**Current contingency rate:** 10%. Historical rows keep their stored rate if it ever changes.
 
 ## External Services [current / planned]
 
-- **Supabase** — auth + Postgres + RLS + Storage [current + planned]. Only external production dependency today.
-- **Resend** — transactional email [planned]. Sender address on Tribune's custom domain.
-- **Sentry** — error monitoring [planned]. Release tracking, source maps. PII scrubbed before send.
+- **Supabase** — auth + Postgres + RLS + Storage [current]. All tables from first slice (pending_cases, case_documents) are deployed.
+- **Resend** — transactional email [current]. Sends "case update" notifications when admin posts tenant-visible messages. Sender address on Tribune's custom domain. Inbound email via Cloudflare Email Routing (planned for future AI analysis of landlord responses).
+- **Sentry** — error monitoring [current]. Release tracking, source maps. PII scrubbed before send (emails, phone numbers filtered via beforeSend hooks).
 - **PostHog** — product analytics [planned]. Anonymized user ids, event names only; scrubbing in the analytics wrapper.
 - **AWS (Bedrock)** — [planned, future] the inference backend for Claude calls when AI drafting and document parsing land. Paid from the AWS credit pool.
 - **No payments processor** [current and MVP]. Settlements never flow through Tribune.
@@ -118,48 +125,52 @@ These land as part of the first vertical slice.
 2. **RLS is the authorization boundary.** Middleware checks session (and `is_admin` for `/admin/*`). Real enforcement is RLS. Server actions run under the user's session — service role is reserved for narrowly scoped, reviewed admin jobs.
 3. **Money as integer cents** throughout.
 4. **Dates as ISO strings in the UI, `date` columns in Postgres.** date-fns for manipulation.
-5. **Business constants hardcoded:** `CONTINGENCY_PCT = 15`, `STATUTE_DAYS = 30`, letter numbers 1–3. Deliberate while these are business rules, not config.
-6. **Manual letter composition by admin** in MVP. No template system, no generation, no AI.
+5. **Business constants centralized:** `src/lib/constants.ts` — `CONTINGENCY_PCT = 10`, `STATUTE_DAYS = 30`, file size/type limits, letter numbers 1–3. Single source of truth.
+6. **Letter templates exist** (`src/lib/letters/templates.ts`) with CT § 47a-21 content, placeholder interpolation, and double-damages calculation. Admin still uses paste-in-textarea flow; "Generate from template" UI is the next high-leverage feature.
 7. **Manual status transitions.** No workflow engine.
-8. **Timeline is the audit log.** Every meaningful state change writes to `case_messages`.
+8. **Timeline is the audit log.** Every meaningful state change writes to `case_messages`. Timeline visualization component shows move-out, deadline, letters, responses with icons and color-coding.
 9. **snake_case throughout the data layer.** DB columns, Zod schemas, form field names.
 10. **Typed Zod schemas at every write boundary.**
 
 ## Technical Debt and Risks [risk]
 
-- **`current_letter_number` inconsistency.** Updated in two handlers today. Canonical rule going forward: incremented only on letter post.
-- **Intake `sessionStorage` bridge is brittle.** Replaced by the `pending_cases` server-side pipeline in the first slice.
-- **No test suite.**
-- **No type-safe DB layer.** Hand-written `src/lib/types/database.ts` will drift. Replace with `supabase gen types typescript`.
+- **Letter templates not integrated in admin UI.** Templates exist with proper CT § 47a-21 content, but admin still uses blank textarea. Need "Generate from template" button and preview UI.
+- **Limited test coverage.** Jest unit tests exist for schemas, templates, email, and constants (17+ tests passing). No E2E tests yet. Playwright planned for intake → auth → upload flow.
+- **Email triggers incomplete.** Email sends on case updates, but not yet on: letter posted, letter mailed, landlord response, resolution, collections.
 - **Legal text has no review pipeline** beyond admin self-review. Acceptable while admin is one person and every letter is personally approved.
 - **Deadline awareness is read-only.** No alerts, no cron. Acceptable for MVP.
 - **No audit of admin access.** One admin today.
-- **No dead-letter for failed auth-callback inserts.** The `pending_cases` model makes this recoverable — the row persists until consumed and can be retried.
-- **Hardcoded business constants** become a liability the moment they change. Historical rows storing their own rate/deadline mitigates part of this.
-- **RLS tightness relative to product intent is untested.** No test confirms a tenant cannot read another tenant's case or documents.
+- **RLS tightness relative to product intent is untested.** No E2E test confirms a tenant cannot read another tenant's case or documents.
 
-## First Vertical Slice [planned]
+## First Vertical Slice [complete]
 
-"Tenant uploads a document and sees Tribune respond." End-to-end:
+"Tenant uploads a document and sees Tribune respond." Completed end-to-end:
 
-1. Server-action intake replaces the `sessionStorage` bridge. `pending_cases` table + server action + consumption in `/auth/callback`.
-2. `case_documents` table, Supabase Storage bucket, RLS-scoped signed URLs.
-3. Tenant case detail gains an Uploads section (upload, list, per-kind grouping).
-4. Admin case detail gains a Documents panel (view, download, per-kind grouping).
-5. Resend integration for one transactional email: "New update on your case" when the admin posts a tenant-visible message.
-6. "Information, not legal advice" disclaimer on intake, dashboard, case detail.
-7. Pre-slice refactors (single commit each): fix `current_letter_number` rule; run Supabase type codegen and replace hand-written types.
+1. ✅ Server-action intake replaces the `sessionStorage` bridge. `pending_cases` table + server action + consumption in `/auth/callback`.
+2. ✅ `case_documents` table, Supabase Storage bucket, RLS-scoped signed URLs.
+3. ✅ Tenant case detail gains an Uploads section (upload, list, per-kind grouping).
+4. ✅ Admin case detail gains a Documents panel (view, download, per-kind grouping).
+5. ✅ Resend integration for transactional email: "New update on your case" when the admin posts a tenant-visible message.
+6. ✅ "Information, not legal advice" disclaimer on intake, dashboard, case detail, email footer.
+7. ✅ Pre-slice refactors: fixed `current_letter_number` rule; Supabase type codegen; centralized business constants.
 
-This slice establishes the new product shape. Letter templates, AI drafting, PDF, print-and-mail, collections pipeline all layer on top without rework.
+**Additional work completed:**
+- ✅ Letter template system (`src/lib/letters/templates.ts`) with CT § 47a-21 templates (Letters 1, 2, 3).
+- ✅ Jest testing infrastructure with tests for schemas, templates, email, constants.
+- ✅ Sentry error tracking with PII filtering and error boundaries.
+- ✅ Timeline visualization component for case detail pages.
+- ✅ Landing page redesigns (game theory focus, strategic negotiation).
+
+This slice establishes the new product shape. AI drafting, PDF export, print-and-mail, collections pipeline layer on top without rework.
 
 ## Recommended Architecture From Here [recommended]
 
-### High leverage, near-term (after the first slice)
-1. **Letter template module.** `src/lib/letters/` with CT § 47a-21-grounded templates, placeholder interpolation (`{{tenant_name}}`, `{{deposit_cents}}`, computed double-damages), pure-function API. Letter bodies as data.
-2. **Document-content extraction via Claude (Bedrock).** Upload landlord itemization letter → structured deduction fields → admin reviews the extraction rather than re-reading the PDF.
-3. **Transactional email expansion.** Beyond the first event, send on letter post, letter mailed, landlord response recorded, resolution, collections.
-4. **Deadline cron.** Daily sweep via Supabase Scheduled Functions or Vercel Cron flagging cases at risk of passing their statutory deadline.
-5. **Minimal test harness.** Playwright for intake → auth callback → dashboard → upload. Vitest for deadline, damages, fee math.
+### High leverage, near-term (first slice complete — these are next)
+1. **Admin "Generate from template" UI.** Letter templates exist; need button in admin UI to select template, preview with case data, edit, and post. Replaces blank-textarea flow.
+2. **Transactional email expansion.** Beyond case updates, send on letter posted, letter mailed, landlord response recorded, resolution, collections.
+3. **Deadline cron.** Daily sweep via Supabase Scheduled Functions or Vercel Cron flagging cases at risk of passing their statutory deadline.
+4. **E2E test harness.** Playwright for intake → auth callback → dashboard → upload. Expand Jest coverage for deadline, damages, fee math.
+5. **Document-content extraction via Claude (Bedrock).** Upload landlord itemization letter → structured deduction fields → admin reviews the extraction rather than re-reading the PDF. Uses $10k AWS credits.
 
 ### Medium leverage
 6. **PDF generation** of letters for tenant download and the automated-mail pipeline.

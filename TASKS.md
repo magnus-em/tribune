@@ -50,6 +50,54 @@ This document tracks implementation status and the next-up queue. It is intentio
 - [x] `.env.example` with required vars
 - [x] `CLAUDE.md`, `PRODUCT_BRIEF.md`, `SPEC.md`, `ARCHITECTURE.md` with full project context
 - [x] Repo pushed to GitHub (`magnus-em/tribune`, private)
+- [x] Supabase generated types (`src/lib/types/supabase.ts`) replacing hand-written types
+- [x] Centralized business constants (`src/lib/constants.ts`) — single source of truth for contingency %, statute days, file limits
+- [x] Jest testing infrastructure with test, test:watch, and test:coverage scripts
+- [x] Sentry error tracking (client, server, edge) with PII filtering and error boundaries
+- [x] `current_letter_number` fixed — now only increments on letter post, never on status change
+
+**Server-Side Intake & Document Workflow** (First Vertical Slice — Complete)
+- [x] `pending_cases` table for cross-device intake resilience
+- [x] Server action: `submitIntake` — validates, sends OTP, stores payload in `pending_cases`
+- [x] Auth callback consumes `pending_cases` → creates case → deletes pending row
+- [x] `case_documents` table with `document_kind` enum (lease, landlord_correspondence, deduction_itemization, photo, other)
+- [x] Supabase Storage bucket `case-documents` with RLS policies
+- [x] Server action: `uploadDocument` — handles file upload with kind tagging
+- [x] Tenant UI: upload documents section with file picker and kind dropdown
+- [x] Admin UI: documents panel showing all uploads grouped by kind with download links
+- [x] Intake now works cross-device (magic link opened on different browser/phone)
+
+**Transactional Email** (Resend)
+- [x] Resend client wrapper (`src/lib/email/client.ts`)
+- [x] Email template: `case-update.ts` with legal disclaimer footer
+- [x] Email trigger: admin posts tenant-visible update → tenant receives notification
+- [x] Resend API key configured in Vercel env (optional for MVP testing)
+
+**Letter Templates**
+- [x] Letter template system (`src/lib/letters/templates.ts`)
+- [x] CT § 47a-21 demand letter templates (Letter 1, 2, 3)
+- [x] Escalating tone and urgency across letters
+- [x] Proper statute citations and double-damages calculation
+- [x] Placeholder interpolation for case data
+
+**Legal Compliance**
+- [x] Legal disclaimer component (`src/components/legal-disclaimer.tsx`)
+- [x] Disclaimer visible on intake, dashboard, case detail
+- [x] Disclaimer in email footer
+
+**UI Components & UX**
+- [x] Case timeline visualization component (`src/components/case-timeline.tsx`)
+- [x] Timeline shows move-out date, statutory deadline, letters, responses with icons and color-coding
+- [x] Error boundaries at component, page, and global levels
+- [x] Empty state, error message, and loading spinner components
+- [x] Multiple landing page iterations (game theory focus, strategic negotiation, tenant rights)
+
+**Testing**
+- [x] Test suite for business constants (contingency, statute days, file limits)
+- [x] Test suite for intake schema validation (tenant info, property, deposit, dates, amounts)
+- [x] Test suite for letter templates
+- [x] Test suite for email templates
+- [x] 17+ passing tests with coverage tracking
 
 **YC Credits Claimed**
 - [x] AWS $10k (Bedrock for Claude inference)
@@ -60,163 +108,184 @@ This document tracks implementation status and the next-up queue. It is intentio
 
 ## Partial or Unclear
 
-- **`current_letter_number` update logic** — updated in two places (`changeStatus` and `postLetter`) with inconsistent rules. Pre-slice refactor fixes this.
-- **Letter posting** — admin can post letters, but there is no generation, no template, no placeholder interpolation. Everything is paste-in-textarea. Functionally works; strategically incomplete. Templates come post-MVP.
+- **Letter template integration with admin UI** — letter templates exist (`src/lib/letters/templates.ts`) with CT § 47a-21 content and placeholder interpolation, but admin still uses paste-in-textarea flow. Need "Generate from template" UI that picks template, previews with case data, allows editing, then posts.
 - **Status flow** — all status transitions are manual and unconstrained. No workflow, no auto-transition on actions, no invalid-transition guard. Acceptable for MVP.
-- **Intake resilience** — `sessionStorage` bridge loses data if the magic link is opened on a different device or session. First vertical slice replaces this with server-side `pending_cases`.
-- **Deadlines** — calculated and displayed, but no alerting, no reminder, no automatic escalation when a case passes its deadline. Post-slice work.
-- **Types from DB** — hand-maintained `src/lib/types/database.ts`. Pre-slice refactor replaces with codegen.
-- **Tests** — none. Post-slice.
+- **Deadlines** — calculated and displayed, but no alerting, no reminder, no automatic escalation when a case passes its deadline. Needs cron job.
+- **Email triggers** — email sends on case updates, but not yet on: letter posted, letter mailed, landlord response, resolution, collections.
 - **README** — still the Next.js default. Low priority.
 - **Legal review pipeline** — no second pair of eyes on letter content before it's posted to a tenant. Acceptable while one admin reviews everything manually.
 
-## Next Up — Pre-Slice Refactors (Do These First)
+## Next Up — High-Leverage Features
 
-These are small, self-contained fixes that must land before the first vertical slice. Each is one commit.
+Pre-slice refactors and first vertical slice are complete. These are the next high-impact features, roughly ordered by priority.
 
-### 1. Fix `current_letter_number` Inconsistency
-**File:** `src/app/admin/case/[id]/page.tsx`
-**Problem:** `current_letter_number` is updated in two places with inconsistent rules.
-**Fix:** Single source of truth — increment `current_letter_number` ONLY when a letter is posted, NEVER on status change.
-**Acceptance:** Letter posts increment the number; status changes leave it untouched.
+### 1. Admin "Generate Letter from Template" UI
+**Status:** Letter templates exist with CT § 47a-21 content; need UI integration.
 
-### 2. Supabase Type Codegen
-**Command:** `npx supabase gen types typescript --project-id <project-id> > src/lib/types/supabase.ts`
-**Fix:** Replace hand-written `src/lib/types/database.ts` with generated types.
-**Update imports:** Change all `@/lib/types/database` imports to `@/lib/types/supabase`.
-**Acceptance:** `npm run build` passes; no type errors; hand-written types file deleted.
+**What to build:**
+- Admin case detail page: "Generate Letter" button
+- Modal: select letter template (1, 2, or 3)
+- Preview pane: show template with case data interpolated
+- Edit pane: admin can modify generated letter before posting
+- Post button: saves to case_messages and sends email to tenant
 
-## First Vertical Slice — "Tenant uploads documents, admin reviews, tenant sees update"
+**Files:**
+- Existing: `src/lib/letters/templates.ts` (has `generateLetter()` function)
+- Add to: `src/app/admin/case/[id]/page.tsx`
 
-This is the smallest end-to-end implementation of the new product shape: document-centric workflow with admin review and transactional email. Everything after this builds on top without rework.
+**Acceptance:** Admin clicks "Generate Letter 1" → sees preview with tenant/landlord names filled in → edits if needed → posts to case.
 
-### Slice Goal
-Tenant completes intake → uploads lease + documents → admin reviews uploads → admin posts update → tenant receives email notification.
+---
 
-### Components of the Slice
+### 2. Expand Transactional Email Triggers
+**Status:** Email sends on case updates; needs more triggers.
 
-#### 1. Server-Side Intake (replaces `sessionStorage` bridge)
-**New table:** `pending_cases` (id, email, payload jsonb, created_at, expires_at)
-**New server action:** `src/app/intake/actions.ts` — `submitIntake(data)`:
-  - Validates with Zod
-  - Calls `supabase.auth.signInWithOtp({ email })`
-  - Inserts to `pending_cases` with intake payload
-  - Redirects to `/auth/confirm`
+**What to build:**
+Add email triggers for:
+- Letter posted (admin posts demand letter → tenant gets notification)
+- Letter mailed (admin marks letter as physically mailed → tenant confirmation)
+- Landlord response submitted (tenant logs landlord response → confirmation email)
+- Case resolved (admin marks resolved → tenant summary email)
+- Collections initiated (admin moves to collections status → tenant warning email)
 
-**Update:** `/auth/callback` after session exchange:
-  - Server action finds `pending_cases` row by authenticated user's email
-  - Inserts `cases` row from payload
-  - Deletes `pending_cases` row
-  - Redirects to `/dashboard`
+**Files:**
+- `src/lib/email/templates/` — add new templates
+- `src/app/admin/case/[id]/actions.ts` — add email triggers to existing actions
 
-**Migration:** Add `pending_cases` table + RLS (no direct client access; server action only).
+**Acceptance:** Each event sends appropriate email to tenant.
 
-**Acceptance:** Intake works cross-device (magic link opened on phone, different browser, etc.).
+---
 
-#### 2. Document Uploads
-**New table:** `case_documents` (id, case_id, kind enum, storage_path, original_filename, content_type, size_bytes, uploaded_by, created_at)
-**New enum:** `document_kind` — `lease`, `landlord_correspondence`, `deduction_itemization`, `photo`, `other`
+### 3. Deadline Alert Cron
+**Status:** Deadlines calculated and displayed; no automated alerts.
 
-**Supabase Storage:**
-  - New bucket: `case-documents` with RLS
-  - Tenant can upload to `case_documents/<case_id>/*` for own cases
-  - Admin can read/write all
+**What to build:**
+- Vercel Cron endpoint (`/api/cron/check-deadlines`)
+- Runs daily at 9 AM ET
+- Finds cases where `statutory_deadline` is within 7 days and status is `active` or `demand_sent`
+- Sends email to admin with list of approaching deadlines
+- Optional: send tenant reminder at 3 days before deadline
 
-**New server action:** `src/app/dashboard/case/[id]/actions.ts` — `uploadDocument(caseId, file, kind)`:
-  - Validates case ownership (RLS will enforce, but check in action too)
-  - Generates signed upload URL scoped to case
-  - Uploads to Storage
-  - Inserts `case_documents` row
-  - Appends `system` message to timeline ("Tenant uploaded {kind}: {filename}")
+**Files:**
+- `src/app/api/cron/check-deadlines/route.ts`
+- `src/lib/email/templates/deadline-alert.ts`
+- `vercel.json` — add cron schedule
 
-**Tenant UI:** `/dashboard/case/[id]` gains:
-  - "Upload Documents" section with file picker + kind dropdown
-  - List of uploaded documents grouped by kind
-  - Download links
+**Acceptance:** Cron runs daily; admin receives email when cases have deadlines approaching.
 
-**Admin UI:** `/admin/case/[id]` gains:
-  - "Documents" panel showing all uploads grouped by kind
-  - Preview/download for each document
+---
 
-**Migration:** Add `case_documents` table + enum + RLS. Create Storage bucket + RLS policies.
+### 4. PDF Export of Letters
+**Status:** Letters displayed in browser; need downloadable PDF.
 
-**Acceptance:** Tenant uploads lease PDF → appears in admin documents panel → admin can download.
+**What to build:**
+- PDF generation library (consider `@react-pdf/renderer` or `puppeteer` for server-side)
+- "Download Letter as PDF" button on tenant and admin case detail
+- PDF format: Tribune letterhead, case details, letter body, tenant signature line
+- Groundwork for print-and-mail API integration
 
-#### 3. Transactional Email (Resend)
-**New dependency:** `npm install resend`
-**New utility:** `src/lib/email.ts` — wrapper for Resend client
-**New template:** `src/lib/email/templates/case-update.tsx` — simple React email for "New update on your case"
+**Files:**
+- `src/lib/pdf/` — PDF generation utilities
+- `src/app/api/case/[id]/download-letter/route.ts` — API route to generate and return PDF
 
-**Trigger:** When admin posts a tenant-visible message (`is_admin_only = false`), send email to `cases.tenant_email`.
+**Acceptance:** Tenant clicks "Download Letter 1" → receives PDF with proper formatting ready to print/mail.
 
-**Email content:**
-  - Subject: "New update on your case"
-  - Body: message title + preview + link to case detail
-  - Footer: "Information, not legal advice" disclaimer
+---
 
-**Env vars:** `RESEND_API_KEY`, `RESEND_FROM_EMAIL` (e.g., `hello@tribune.xyz`)
+### 5. E2E Test Harness (Playwright)
+**Status:** Unit tests exist; need integration tests for critical flows.
 
-**Acceptance:** Admin posts update → tenant receives email within 1 minute.
+**What to build:**
+- Playwright setup with test scripts
+- Test: intake → auth → dashboard (happy path)
+- Test: upload document → admin sees document
+- Test: admin posts update → tenant sees update
+- Run in CI on PRs
 
-#### 4. "Information, Not Legal Advice" Disclaimers
-**Add disclaimer banner to:**
-  - `/intake` — top of first step
-  - `/dashboard` — top of page
-  - `/dashboard/case/[id]` — top of case detail
-  - Email footer (all transactional emails)
+**Files:**
+- `playwright.config.ts`
+- `tests/e2e/intake-flow.spec.ts`
+- `tests/e2e/upload-flow.spec.ts`
 
-**Copy (standardize across all surfaces):**
-> **Legal Information, Not Legal Advice**
-> Tribune provides information about Connecticut tenant rights and helps you prepare documents. We are not a law firm and do not provide legal advice. You are responsible for reviewing and signing all correspondence.
+**Acceptance:** `npm run test:e2e` runs full intake-to-resolution flow against local Supabase.
 
-**Component:** `src/components/legal-disclaimer.tsx` — reusable banner
+---
 
-**Acceptance:** Disclaimer visible on intake, dashboard, case detail, and in email footer.
+### 6. Document Content Extraction via Claude (Bedrock)
+**Status:** Documents uploaded manually; admin reads PDFs by hand.
 
-#### 5. Schema Migrations Summary
-Run these in order:
-1. Add `pending_cases` table + RLS
-2. Add `document_kind` enum
-3. Add `case_documents` table + RLS
-4. Create `case-documents` Storage bucket + RLS policies
-5. Add new `case_status` values: `awaiting_tenant`, `in_collections`, `dead`
-6. Add new fields to `cases`: `amount_recovered_cents`, `fee_collected_cents`, `tenant_costs_cents`, `resolved_at`, `resolution_notes`
+**What to build:**
+- Server action: `extractDocumentContent(documentId)`
+- Calls AWS Bedrock Claude to extract structured data from uploaded PDFs
+- For landlord itemization letters: extract deductions (category, amount, description)
+- For lease PDFs: extract deposit amount, lease dates, landlord name/address
+- Admin reviews extracted data in UI before confirming
+- Uses $10k AWS Bedrock credits
 
-**Migration file:** `supabase/migrations/YYYYMMDDHHMMSS_first_slice.sql`
+**Files:**
+- `src/lib/bedrock/` — AWS Bedrock client wrapper
+- `src/app/admin/case/[id]/actions.ts` — add extraction action
+- `src/app/admin/case/[id]/page.tsx` — add "Extract Data" button on documents
 
-#### 6. Updated Dependencies
-Add to `package.json`:
-- `resend`
+**Acceptance:** Admin uploads landlord itemization → clicks "Extract" → sees structured deduction list → confirms or edits.
 
-Update `.env.example`:
-```
-RESEND_API_KEY=
-RESEND_FROM_EMAIL=hello@tribune.xyz
-```
+---
 
-### Slice Acceptance Criteria (End-to-End)
-1. Tenant completes intake on desktop → opens magic link on phone → case created successfully (no sessionStorage failure).
-2. Tenant uploads lease PDF + landlord email screenshot.
-3. Admin opens case → sees both uploads in Documents panel → can download.
-4. Admin posts tenant-visible update.
-5. Tenant receives email notification within 1 minute.
-6. Disclaimer banner visible on intake, dashboard, case detail.
-7. All migrations applied cleanly; `npm run build` passes; no type errors.
+### 7. Print-and-Mail API Integration (Lob)
+**Status:** Letters generated digitally; tenant prints and mails manually.
 
-## After the Slice — High-Leverage Next Steps
+**What to build:**
+- Lob API integration for certified mail
+- Admin action: "Mail this letter" → generates PDF, sends to Lob, marks as mailed
+- Track mailing status (sent, delivered, failed)
+- Record tracking number on case
+- Tenant costs billed to tenant (Tribune covers upfront, bills tenant later)
 
-Ordered by impact. Revisit after the slice lands.
+**Dependencies:** Requires #4 (PDF export)
 
-1. **Letter template system** — `src/lib/letters/` with CT § 47a-21 templates, placeholder interpolation, double-damages calculator. Pure functions, no UI yet.
-2. **Admin "Generate letter from template" UI** — picks template, previews with case data, edits, posts. Replaces blank-textarea flow.
-3. **Expand transactional email** — send on letter posted, letter mailed, landlord response, resolution, collections.
-4. **Deadline cron** — daily Supabase Scheduled Function or Vercel Cron flagging cases approaching statutory deadline.
-5. **Minimal test harness** — Playwright for intake → auth → upload happy path. Vitest for deadline/damages/fee math.
-6. **PDF export of letters** — tenant-downloadable, printable, groundwork for print-and-mail API.
-7. **Document content extraction via Claude (Bedrock)** — upload landlord itemization letter → structured deduction fields → admin reviews extraction instead of re-reading PDF. Uses $10k AWS credits.
-8. **Print-and-mail API (Lob or similar)** — automated certified mail delivery. Depends on #6.
-9. **AI-drafted letters via Claude (Bedrock)** — pre-fills from templates + case data; admin still reviews every letter. Uses $10k AWS credits.
-10. **Per-case inbound email (AgentMail)** — landlord replies land on case timeline automatically.
+**Files:**
+- `src/lib/lob/` — Lob client wrapper
+- `src/app/admin/case/[id]/actions.ts` — add mail letter action
+- New table: `case_mailings` (id, case_id, letter_id, tracking_number, status, sent_at, delivered_at, cost_cents)
+
+**Acceptance:** Admin posts letter → clicks "Mail via Lob" → letter sent certified mail → tracking number recorded.
+
+---
+
+### 8. AI-Drafted Letters via Claude (Bedrock)
+**Status:** Letter templates are static; could be dynamically generated.
+
+**What to build:**
+- Server action: `draftLetter(caseId, letterNumber)` using Claude via Bedrock
+- Takes case data (tenant, landlord, deposit, lease dates, deductions)
+- Generates custom letter based on case specifics
+- Admin reviews and edits before posting (never auto-send)
+- Uses $10k AWS Bedrock credits
+
+**Files:**
+- `src/lib/bedrock/draft-letter.ts`
+- `src/app/admin/case/[id]/actions.ts` — add draft action
+- `src/app/admin/case/[id]/page.tsx` — "Draft Letter with AI" button
+
+**Acceptance:** Admin clicks "Draft Letter 2 with AI" → Claude generates custom letter → admin reviews → edits → posts.
+
+---
+
+### 9. Per-Case Inbound Email (AgentMail or SendGrid)
+**Status:** Landlord responses manually submitted by tenant.
+
+**What to build:**
+- Per-case email address (e.g., `case-{uuid}@tribune.xyz`)
+- Email forwarding service (AgentMail or SendGrid Inbound Parse)
+- Incoming emails from landlord → parsed → added to case timeline automatically
+- Tenant gets notification: "Landlord responded to your case"
+
+**Files:**
+- `src/app/api/webhooks/inbound-email/route.ts` — webhook handler
+- `src/lib/email/parse-inbound.ts` — email parsing logic
+- New table: `case_inbound_emails` (id, case_id, from, subject, body, received_at)
+
+**Acceptance:** Landlord replies to `case-xyz@tribune.xyz` → email appears on case timeline → tenant notified.
 
 ## Explicitly Deferred
 

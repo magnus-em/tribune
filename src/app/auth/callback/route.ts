@@ -68,7 +68,7 @@ export async function GET(request: Request) {
             situation_description: payload.situation_description,
 
             // Agreement
-            contingency_pct: 15, // Default to 15% for new cases
+            contingency_pct: 10, // Default to 10% for new cases
             contingency_agreed_at: new Date().toISOString(),
 
             // Tracking

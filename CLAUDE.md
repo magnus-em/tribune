@@ -1,6 +1,6 @@
 # Tribune
 
-Connecticut security deposit recovery service. Helps residential tenants recover wrongfully withheld deposits using CT § 47a-21 on a 15% contingency. No attorney is in the loop — the product is a legal-information and document-preparation service, not a law firm. Tenants sign all correspondence (pro se); Tribune prepares and mails on their behalf.
+Connecticut security deposit recovery service. Helps residential tenants recover wrongfully withheld deposits using CT § 47a-21 on a 10% contingency. No attorney is in the loop — the product is a legal-information and document-preparation service, not a law firm. Tenants sign all correspondence (pro se); Tribune prepares and mails on their behalf.
 
 **See PRODUCT_BRIEF.md, SPEC.md, ARCHITECTURE.md, TASKS.md for detail. Do not duplicate that content here.**
 
@@ -28,9 +28,9 @@ Connecticut security deposit recovery service. Helps residential tenants recover
 
 ## Product Constraints (currently hardcoded, treat as business rules)
 
-- Contingency fee: 15% of amount recovered.
+- Contingency fee: 10% of amount recovered.
 - Tenant covers hard costs at cost: certified mailing, court filing fees if the case escalates. Tribune does not mark these up.
-- Settlement money never flows through Tribune. Landlord pays the tenant directly; the tenant owes Tribune the 15% afterward. If the tenant does not pay, the debt enters collections.
+- Settlement money never flows through Tribune. Landlord pays the tenant directly; the tenant owes Tribune the 10% afterward. If the tenant does not pay, the debt enters collections.
 - Statutory deadline: `move_out_date + 30 days`.
 - Letter sequence: 1, 2, 3.
 - Jurisdiction: Connecticut only (New Haven focus initially). Residential tenants only.

@@ -25,7 +25,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { LegalDisclaimer } from "@/components/legal-disclaimer";
 
 const STEPS = ["Your Info", "Property", "Landlord", "Deposit & Agreement"];
-const CONTINGENCY_PCT = 15;
+const CONTINGENCY_PCT = 10;
 
 function StepIndicator({ current, total }: { current: number; total: number }) {
   return (

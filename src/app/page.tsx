@@ -9,7 +9,17 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { CheckCircle2, ArrowRight, TrendingUp, Shield, Zap } from "lucide-react";
+import {
+  CheckCircle2,
+  ArrowRight,
+  FileText,
+  Zap,
+  DollarSign,
+  Scale,
+  ShieldAlert,
+  Timer,
+  Gavel,
+} from "lucide-react";
 
 export default function LandingPage() {
   return (
@@ -17,7 +27,8 @@ export default function LandingPage() {
       {/* Nav */}
       <header className="border-b bg-white sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/" className="text-xl font-bold text-slate-900">
+          <Link href="/" className="flex items-center gap-2 text-xl font-bold text-slate-900">
+            <Scale className="size-5" />
             Tribune
           </Link>
           <div className="flex items-center gap-4">
@@ -27,72 +38,191 @@ export default function LandingPage() {
             >
               Sign in
             </Link>
-            <Button asChild size="sm">
-              <Link href="/intake">
-                Start Your Case <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
+            <Button size="sm" render={<Link href="/login" />}>
+              Start Your Case <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </div>
         </div>
       </header>
 
       {/* Hero */}
-      <section className="py-20 px-4">
+      <section className="py-20 md:py-28 px-4">
         <div className="max-w-4xl mx-auto text-center">
           <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6 text-slate-900">
-            Your landlord had 30 days to return your deposit.
+            Your landlord had 21 days.<br />
+            <span className="text-slate-400">Time's up.</span>
           </h1>
 
-          <p className="text-xl text-slate-600 mb-4 max-w-2xl mx-auto">
-            Strategic negotiation backed by Connecticut law. We handle the pressure, you get results.
-          </p>
-
-          <p className="text-base text-slate-500 mb-10 max-w-2xl mx-auto">
-            Our system analyzes your case, calculates exactly what you're owed, then deploys a proven
-            escalation strategy designed to maximize recovery. No lawyers. No guesswork.
+          <p className="text-xl text-slate-600 mb-10 max-w-2xl mx-auto">
+            Connecticut law says your landlord must return your deposit or
+            provide itemized deductions within 21 days. If they didn't, they
+            owe you up to double. Tribune makes them pay.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-            <Button asChild size="lg" className="text-base px-8">
-              <Link href="/intake">
-                Get Started Free <ArrowRight className="ml-2 h-5 w-5" />
-              </Link>
+            <Button size="lg" className="text-base px-8" render={<Link href="/login" />}>
+              Start Your Case <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-slate-600">
             <div className="flex items-center gap-2">
               <CheckCircle2 className="h-5 w-5 text-green-600" />
-              <span>10% contingency fee</span>
+              <span>Free to start</span>
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle2 className="h-5 w-5 text-green-600" />
-              <span>No recovery, no fee</span>
+              <span>10% of what we recover</span>
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle2 className="h-5 w-5 text-green-600" />
-              <span>Connecticut only</span>
+              <span>Most cases resolve in 1–4 weeks</span>
             </div>
           </div>
         </div>
       </section>
 
-      {/* How It Works */}
+      {/* What your landlord is doing */}
+      <section className="py-16 px-4 bg-white border-y border-slate-200">
+        <div className="max-w-4xl mx-auto">
+          <h2 className="text-3xl font-bold text-center mb-4 text-slate-900">
+            Your landlord is running a playbook
+          </h2>
+          <p className="text-center text-slate-500 mb-12 max-w-xl mx-auto">
+            Most landlords who withhold deposits aren't confused about the law.
+            They're counting on you not knowing it.
+          </p>
+
+          <div className="grid md:grid-cols-3 gap-6">
+            <div className="border border-slate-200 rounded-lg p-6">
+              <ShieldAlert className="h-6 w-6 text-red-500 mb-3" />
+              <h3 className="font-semibold mb-2 text-slate-900">Fabricated deductions</h3>
+              <p className="text-slate-600 text-sm">
+                "Cleaning fees," "repainting," "carpet replacement" — charges for
+                normal wear and tear that Connecticut law explicitly prohibits landlords
+                from deducting.
+              </p>
+            </div>
+
+            <div className="border border-slate-200 rounded-lg p-6">
+              <Timer className="h-6 w-6 text-red-500 mb-3" />
+              <h3 className="font-semibold mb-2 text-slate-900">Delay and silence</h3>
+              <p className="text-slate-600 text-sm">
+                Ignoring your calls. "The check is in the mail." Hoping you'll
+                move on with your life. Every day past the 21-day deadline
+                strengthens your claim — most tenants just don't realize it.
+              </p>
+            </div>
+
+            <div className="border border-slate-200 rounded-lg p-6">
+              <Gavel className="h-6 w-6 text-red-500 mb-3" />
+              <h3 className="font-semibold mb-2 text-slate-900">Intimidation</h3>
+              <p className="text-slate-600 text-sm">
+                Vague threats about "damages" or legal action. Landlords sound
+                authoritative because tenants assume they know the system better.
+                Usually, they don't. They just bet you won't check.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* The law */}
+      <section className="py-16 px-4 bg-slate-900 text-white">
+        <div className="max-w-4xl mx-auto">
+          <h2 className="text-3xl font-bold text-center mb-4">
+            CT § 47a-21: The law they hope you don't read
+          </h2>
+          <p className="text-center text-slate-400 mb-12 max-w-xl mx-auto">
+            Connecticut has one of the strongest tenant protection statutes in the
+            country. Here's what it actually says.
+          </p>
+
+          <div className="space-y-4 mb-8">
+            <div className="bg-slate-800 border border-slate-700 rounded-lg p-6 flex gap-4">
+              <span className="text-2xl font-bold text-slate-500 shrink-0">01</span>
+              <div>
+                <h3 className="font-semibold text-lg mb-1">21 days to return or itemize</h3>
+                <p className="text-slate-300 text-sm">
+                  After your tenancy ends, your landlord has exactly 21 days to either
+                  return your full deposit with interest, or send you a written, itemized
+                  list of damages with the remaining balance. No itemized list? The full
+                  amount is owed back.
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-slate-800 border border-slate-700 rounded-lg p-6 flex gap-4">
+              <span className="text-2xl font-bold text-slate-500 shrink-0">02</span>
+              <div>
+                <h3 className="font-semibold text-lg mb-1">Double damages for non-compliance</h3>
+                <p className="text-slate-300 text-sm">
+                  Miss the deadline or withhold without a proper itemized statement?
+                  The statute allows tenants to recover <strong className="text-white">twice the deposit
+                  amount</strong>. A $1,500 deposit becomes a $3,000 claim. Courts enforce this routinely.
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-slate-800 border border-slate-700 rounded-lg p-6 flex gap-4">
+              <span className="text-2xl font-bold text-slate-500 shrink-0">03</span>
+              <div>
+                <h3 className="font-semibold text-lg mb-1">Normal wear and tear is not deductible</h3>
+                <p className="text-slate-300 text-sm">
+                  Faded paint, minor scuffs, carpet matting from normal use — none of these
+                  are lawful deductions. Landlords who charge for routine turnover are violating
+                  the statute, and that violation has a price.
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-slate-800 border border-slate-700 rounded-lg p-6 flex gap-4">
+              <span className="text-2xl font-bold text-slate-500 shrink-0">04</span>
+              <div>
+                <h3 className="font-semibold text-lg mb-1">Interest accrues from day one</h3>
+                <p className="text-slate-300 text-sm">
+                  Your landlord is required to hold your deposit in a Connecticut escrow
+                  account and pay annual interest. No interest statement by January 31?
+                  Another violation.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white/10 rounded-lg p-5 text-center">
+            <p className="text-sm text-slate-300">
+              Most landlords don't know these details. When your demand letter cites
+              every provision they've violated and calculates the exact penalties,
+              the math speaks for itself.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* How Tribune works */}
       <section className="py-16 px-4 bg-white">
         <div className="max-w-5xl mx-auto">
-          <h2 className="text-3xl font-bold text-center mb-12 text-slate-900">
-            How Tribune Works
+          <h2 className="text-3xl font-bold text-center mb-4 text-slate-900">
+            A system built to beat their playbook
           </h2>
+          <p className="text-center text-slate-500 mb-12 max-w-2xl mx-auto">
+            Tribune isn't a template generator. It's a negotiation system trained on
+            the patterns of dishonest landlords — the delays, the bogus deductions, the
+            silence. It adapts to what your landlord does and responds with precisely
+            calibrated pressure.
+          </p>
 
           <div className="grid md:grid-cols-3 gap-8">
             <div className="border border-slate-200 rounded-lg p-6 hover:border-slate-300 transition-colors">
               <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center mb-4">
-                <TrendingUp className="h-6 w-6 text-blue-600" />
+                <FileText className="h-6 w-6 text-blue-600" />
               </div>
-              <h3 className="font-semibold text-lg mb-2 text-slate-900">1. We Analyze Your Case</h3>
+              <h3 className="font-semibold text-lg mb-2 text-slate-900">We analyze your specific case</h3>
               <p className="text-slate-600 text-sm">
-                Our system reviews your situation against Connecticut § 47a-21, calculates statutory damages,
-                and builds a recovery strategy tailored to your case.
+                Every case is different. We map your situation against the statute, identify
+                which provisions your landlord violated, and calculate your exact exposure —
+                including double damages. Your first demand is built from this analysis, not
+                a form letter.
               </p>
             </div>
 
@@ -100,196 +230,68 @@ export default function LandingPage() {
               <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center mb-4">
                 <Zap className="h-6 w-6 text-blue-600" />
               </div>
-              <h3 className="font-semibold text-lg mb-2 text-slate-900">2. We Apply Pressure</h3>
+              <h3 className="font-semibold text-lg mb-2 text-slate-900">We adapt to their response</h3>
               <p className="text-slate-600 text-sm">
-                We prepare a series of demand letters with escalating urgency and shorter deadlines. Each letter
-                increases the legal and financial pressure on your landlord to settle.
+                Landlord ignores you? Sends a lowball? Claims damages they can't prove?
+                We've seen each move before. The system recognizes the tactic and escalates
+                accordingly — tightening deadlines, sharpening the legal language, and
+                making the cost of continued non-compliance undeniable.
               </p>
             </div>
 
             <div className="border border-slate-200 rounded-lg p-6 hover:border-slate-300 transition-colors">
               <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center mb-4">
-                <Shield className="h-6 w-6 text-blue-600" />
+                <DollarSign className="h-6 w-6 text-blue-600" />
               </div>
-              <h3 className="font-semibold text-lg mb-2 text-slate-900">3. You Get Paid</h3>
+              <h3 className="font-semibold text-lg mb-2 text-slate-900">They settle — or you file</h3>
               <p className="text-slate-600 text-sm">
-                Most landlords settle when faced with precise legal citations and calculated damages. You receive
-                payment directly. You pay us 10% of what we recover.
+                Most landlords fold. Keeping deposits is a volume play — they take from
+                everyone and give back to anyone who actually pushes. Tribune makes pushing
+                effortless. For the rare holdout, we walk you through small claims
+                (up to $5,000 in CT) where double damages apply in full.
               </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Strategic Negotiation */}
-      <section className="py-16 px-4 bg-slate-900 text-white">
-        <div className="max-w-4xl mx-auto">
-          <h2 className="text-3xl font-bold text-center mb-4">
-            Strategic Negotiation, Not Just Letters
-          </h2>
-          <p className="text-center text-slate-300 mb-12 max-w-2xl mx-auto">
-            We've analyzed the tactics of dozens of dishonest landlords to build a system that anticipates
-            and counters their moves at every stage.
-          </p>
-
-          <div className="grid md:grid-cols-2 gap-6">
-            <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
-              <h3 className="font-semibold text-lg mb-3 text-white">Pattern Recognition</h3>
-              <p className="text-slate-300 text-sm">
-                Dishonest landlords use predictable tactics: delay, ignore, lowball offers, or claim "damages"
-                they can't prove. We've cataloged these responses and built counter-strategies for each. When
-                your landlord tries a known tactic, our system identifies it and recommends the optimal response.
-              </p>
-            </div>
-
-            <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
-              <h3 className="font-semibold text-lg mb-3 text-white">Adaptive Strategy</h3>
-              <p className="text-slate-300 text-sm">
-                This isn't static letter generation. After each landlord response (or non-response), our system
-                analyzes their position, calculates their likely next move, and determines the optimal escalation
-                path. We adjust timing, language intensity, and legal emphasis based on what they reveal.
-              </p>
-            </div>
-
-            <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
-              <h3 className="font-semibold text-lg mb-3 text-white">Escalation Calibration</h3>
-              <p className="text-slate-300 text-sm">
-                Each letter is calibrated to the stage of negotiation. Letter 1 offers a clean exit—return the
-                deposit, avoid legal costs. If they ignore it, Letter 2 demonstrates you're serious and increases
-                their risk. Letter 3 signals imminent legal action. The psychology is deliberate: make settlement
-                the rational choice at each decision point.
-              </p>
-            </div>
-
-            <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
-              <h3 className="font-semibold text-lg mb-3 text-white">Information Asymmetry</h3>
-              <p className="text-slate-300 text-sm">
-                Your landlord doesn't know if you'll actually follow through. Our letters establish credibility
-                through legal precision and escalating commitment. Each response deadline that passes without
-                compliance strengthens your position—you've demonstrated patience and resolve. When we recommend
-                filing in court, it's because the data shows that's when landlords settle.
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-8 text-center">
-            <p className="text-slate-300 text-sm max-w-3xl mx-auto">
-              <strong className="text-white">Bottom line:</strong> This is strategic negotiation powered by
-              data from real cases. We don't just prepare letters—we guide you through a decision tree designed
-              to maximize recovery while minimizing your time and effort.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Your Rights Under CT Law */}
+      {/* Why they settle */}
       <section className="py-16 px-4 bg-blue-50 border-y border-blue-100">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-3xl font-bold text-center mb-4 text-slate-900">
-            Your Rights Under Connecticut Law
+            Their model depends on you giving up
           </h2>
-          <p className="text-center text-slate-600 mb-8 max-w-2xl mx-auto">
-            Connecticut General Statutes § 47a-21 is one of the strongest tenant protection laws in the country.
+          <p className="text-center text-slate-600 mb-10 max-w-2xl mx-auto">
+            Here's what most tenants don't realize: landlords who withhold deposits
+            aren't prepared for a fight. They're running a numbers game — keep
+            every deposit, return the ones where someone pushes back. The moment
+            you signal real legal knowledge, you're in the minority they pay.
           </p>
-
-          <div className="bg-white border border-blue-200 rounded-lg p-8 mb-6">
-            <h3 className="font-bold text-xl mb-4 text-slate-900">The 30-Day Rule</h3>
-            <p className="text-slate-700 mb-4">
-              When you move out, your landlord has <strong>30 days</strong> to either:
-            </p>
-            <ul className="list-disc list-inside space-y-2 text-slate-700 mb-4 ml-4">
-              <li>Return your full security deposit, OR</li>
-              <li>Return the remaining balance with an itemized list of lawful deductions</li>
-            </ul>
-            <p className="text-slate-700">
-              If they do neither within 30 days, they've violated Connecticut law—and that violation has
-              consequences.
-            </p>
-          </div>
 
           <div className="grid md:grid-cols-2 gap-6">
             <div className="bg-white border border-slate-200 rounded-lg p-6">
-              <h3 className="font-semibold text-lg mb-3 text-slate-900 flex items-center gap-2">
-                <span className="text-2xl">💰</span>
-                Double Damages
+              <h3 className="font-semibold text-lg mb-3 text-slate-900">
+                Tribune makes you credible instantly
               </h3>
-              <p className="text-slate-600 text-sm mb-3">
-                If your landlord fails to comply with the 30-day rule, you may be entitled to recover
-                <strong> twice the amount</strong> of your security deposit.
-              </p>
               <p className="text-slate-600 text-sm">
-                <strong>Example:</strong> $1,500 deposit improperly withheld = $3,000 recovery
+                Your correspondence doesn't read like a frustrated tenant email. It
+                reads like it was prepared by someone who knows § 47a-21 inside and out
+                — because it was. Precise citations, calculated penalties, documented
+                deadlines. That's the signal that changes a landlord's calculation from
+                "they'll give up" to "this one knows what they're doing."
               </p>
             </div>
 
             <div className="bg-white border border-slate-200 rounded-lg p-6">
-              <h3 className="font-semibold text-lg mb-3 text-slate-900 flex items-center gap-2">
-                <span className="text-2xl">⚖️</span>
-                Additional Costs
+              <h3 className="font-semibold text-lg mb-3 text-slate-900">
+                Fighting you costs more than paying you
               </h3>
-              <p className="text-slate-600 text-sm mb-3">
-                Beyond double damages, you can also recover:
-              </p>
-              <ul className="text-slate-600 text-sm space-y-1 list-disc list-inside">
-                <li>Reasonable attorney's fees (if you hire one)</li>
-                <li>Court filing fees</li>
-                <li>Interest on the withheld amount</li>
-              </ul>
-            </div>
-          </div>
-
-          <div className="mt-6 bg-slate-900 text-white rounded-lg p-6">
-            <p className="text-sm leading-relaxed">
-              <strong className="text-yellow-400">Important:</strong> These aren't theoretical penalties.
-              Connecticut courts regularly award double damages when landlords violate the statute. Our system
-              calculates your exact entitlement and cites the controlling law. Most landlords settle when they
-              see the numbers—fighting in court would cost them more than just returning your deposit.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Why Tribune */}
-      <section className="py-16 px-4">
-        <div className="max-w-4xl mx-auto">
-          <h2 className="text-3xl font-bold text-center mb-4 text-slate-900">
-            Why Tribune Works
-          </h2>
-          <p className="text-center text-slate-600 mb-12 max-w-2xl mx-auto">
-            We combine legal precision with strategic pressure to get you the best possible outcome.
-          </p>
-
-          <div className="space-y-4">
-            <div className="border border-slate-200 bg-white rounded-lg p-6">
-              <h3 className="font-semibold text-lg mb-2 text-slate-900">
-                Strategic Escalation
-              </h3>
-              <p className="text-slate-600">
-                Each letter we prepare builds on the last—starting polite and professional, then increasing
-                urgency with each round. We shorten deadlines and strengthen language strategically, making
-                it increasingly costly for your landlord to ignore you.
-              </p>
-            </div>
-
-            <div className="border border-slate-200 bg-white rounded-lg p-6">
-              <h3 className="font-semibold text-lg mb-2 text-slate-900">
-                Legal Precision
-              </h3>
-              <p className="text-slate-600">
-                Connecticut law allows tenants to recover double damages plus costs when landlords violate deposit
-                laws. Our system calculates your exact entitlement and cites the specific statutes that apply.
-                Most landlords settle rather than face those numbers in court.
-              </p>
-            </div>
-
-            <div className="border border-slate-200 bg-white rounded-lg p-6">
-              <h3 className="font-semibold text-lg mb-2 text-slate-900">
-                Affordable & Effective
-              </h3>
-              <p className="text-slate-600">
-                Hiring a lawyer for a $1,500 deposit doesn't make financial sense. Our intelligent system handles
-                the strategic work while you stay in control—you review and sign every letter. 10% of recovery,
-                only if we win.
+              <p className="text-slate-600 text-sm">
+                Once your landlord is facing a documented double-damages claim with a
+                clear paper trail heading toward small claims court, the math flips.
+                Settling costs them the deposit. Fighting costs them the deposit plus
+                double damages plus their time. That's why the vast majority settle
+                before it ever gets to court.
               </p>
             </div>
           </div>
@@ -300,39 +302,17 @@ export default function LandingPage() {
       <section className="py-16 px-4 bg-white">
         <div className="max-w-3xl mx-auto">
           <h2 className="text-3xl font-bold text-center mb-10 text-slate-900">
-            Common Questions
+            Questions
           </h2>
 
           <Accordion type="single" collapsible className="space-y-4">
-            <AccordionItem value="what-is" className="border border-slate-200 rounded-lg px-6">
-              <AccordionTrigger className="hover:no-underline">
-                What is Tribune?
-              </AccordionTrigger>
-              <AccordionContent className="text-slate-600">
-                Tribune is a strategic document preparation service for Connecticut tenants. We help you prepare
-                legally sound demand letters based on CT § 47a-21 and execute a proven escalation strategy.
-                We are not a law firm and do not provide legal advice.
-              </AccordionContent>
-            </AccordionItem>
-
-            <AccordionItem value="how-it-works" className="border border-slate-200 rounded-lg px-6">
-              <AccordionTrigger className="hover:no-underline">
-                How does it work?
-              </AccordionTrigger>
-              <AccordionContent className="text-slate-600">
-                Submit your case details. Our system analyzes the facts, calculates damages, and generates a
-                series of demand letters with escalating pressure. You review, sign, and send each letter. We
-                track deadlines and prepare the next steps based on your landlord's response.
-              </AccordionContent>
-            </AccordionItem>
-
             <AccordionItem value="cost" className="border border-slate-200 rounded-lg px-6">
               <AccordionTrigger className="hover:no-underline">
-                How much does it cost?
+                What does it cost?
               </AccordionTrigger>
               <AccordionContent className="text-slate-600">
-                10% of what we recover. If your landlord returns $1,500, you pay $150. If we don't recover anything,
-                you owe nothing. No upfront fees, no hidden costs.
+                10% of what we recover. If your landlord returns $1,500, you pay $150. If we
+                don't recover anything, you owe nothing. No upfront fees.
               </AccordionContent>
             </AccordionItem>
 
@@ -341,20 +321,8 @@ export default function LandingPage() {
                 How long does this take?
               </AccordionTrigger>
               <AccordionContent className="text-slate-600">
-                Most cases resolve in 2-4 weeks. We prepare your first demand letter within 2-3 business days.
-                Each letter has a deadline that creates urgency—typically 10 days, then 7 days, then 5 days.
-                You'll know exactly where your case stands at all times.
-              </AccordionContent>
-            </AccordionItem>
-
-            <AccordionItem value="lawyer" className="border border-slate-200 rounded-lg px-6">
-              <AccordionTrigger className="hover:no-underline">
-                Is Tribune a law firm?
-              </AccordionTrigger>
-              <AccordionContent className="text-slate-600">
-                No. Tribune provides legal information and document preparation services. We are not a law firm
-                and do not provide legal advice. You review and sign all correspondence yourself. If your case
-                needs an attorney, we can help you find one.
+                Most cases resolve in 1–4 weeks. Your first demand letter is ready within
+                a few business days. Each subsequent letter has a shorter deadline.
               </AccordionContent>
             </AccordionItem>
 
@@ -363,19 +331,43 @@ export default function LandingPage() {
                 Am I eligible?
               </AccordionTrigger>
               <AccordionContent className="text-slate-600">
-                If you're a residential tenant in Connecticut who moved out and your landlord withheld part or
-                all of your security deposit without proper justification, you likely qualify. Submit your intake
-                to find out.
+                If you're a residential tenant in Connecticut whose landlord withheld
+                your security deposit or failed to provide an itemized deduction list
+                within 21 days, you likely have a claim.
               </AccordionContent>
             </AccordionItem>
 
-            <AccordionItem value="success" className="border border-slate-200 rounded-lg px-6">
+            <AccordionItem value="lawyer" className="border border-slate-200 rounded-lg px-6">
               <AccordionTrigger className="hover:no-underline">
-                What's your success rate?
+                Is Tribune a law firm?
               </AccordionTrigger>
               <AccordionContent className="text-slate-600">
-                Most landlords settle when presented with precise legal citations and calculated damages. We're
-                transparent about case strength during intake. If your case isn't strong, we'll tell you upfront.
+                No. Tribune is a legal-information and document-preparation service. You
+                review and sign all correspondence. We prepare the strategy and the documents
+                — you stay in control.
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="ignore" className="border border-slate-200 rounded-lg px-6">
+              <AccordionTrigger className="hover:no-underline">
+                What if my landlord ignores the letters?
+              </AccordionTrigger>
+              <AccordionContent className="text-slate-600">
+                Every ignored deadline is documented evidence of non-compliance that strengthens
+                your position. If letters don't resolve it, we guide you through filing in
+                small claims court — where the statute's double-damages penalty applies in full.
+                Most landlords settle before that point.
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="deductions" className="border border-slate-200 rounded-lg px-6">
+              <AccordionTrigger className="hover:no-underline">
+                My landlord sent a deduction list. Can I still file?
+              </AccordionTrigger>
+              <AccordionContent className="text-slate-600">
+                Possibly. If the deductions include normal wear and tear (repainting,
+                carpet cleaning, minor scuffs), those are unlawful under CT § 47a-21.
+                Submit your case and we'll evaluate whether the deductions hold up.
               </AccordionContent>
             </AccordionItem>
           </Accordion>
@@ -386,15 +378,13 @@ export default function LandingPage() {
       <section className="py-20 px-4">
         <div className="max-w-3xl mx-auto text-center border border-slate-200 bg-white rounded-lg p-12">
           <h2 className="text-3xl font-bold mb-4 text-slate-900">
-            Ready to recover your deposit?
+            Your landlord is counting on you doing nothing.
           </h2>
           <p className="text-lg text-slate-600 mb-8">
-            Submit your case in 5 minutes. We'll analyze it and prepare your first demand letter.
+            5 minutes to submit. We take it from there.
           </p>
-          <Button asChild size="lg" className="text-base px-8">
-            <Link href="/intake">
-              Start Your Case Now <ArrowRight className="ml-2 h-5 w-5" />
-            </Link>
+          <Button size="lg" className="text-base px-8" render={<Link href="/login" />}>
+            Start Your Case <ArrowRight className="ml-2 h-5 w-5" />
           </Button>
         </div>
       </section>
@@ -403,7 +393,7 @@ export default function LandingPage() {
       <footer className="border-t bg-white py-8 px-4">
         <div className="max-w-6xl mx-auto text-center text-sm text-slate-500">
           <p className="mb-2">
-            Connecticut residential tenants only • 10% contingency • No recovery, no fee
+            Connecticut residential tenants only · 10% contingency · No recovery, no fee
           </p>
           <p className="text-xs">
             Tribune provides legal information and document preparation services. We are not a law firm

@@ -10,29 +10,33 @@ import {
   STATUS_LABELS,
   STATUS_DESCRIPTIONS,
 } from "@/lib/types/database";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 import { uploadDocument, getDocumentUrl } from "./actions";
 import { LegalDisclaimer } from "@/components/legal-disclaimer";
-
-function statusColor(status: string): string {
-  switch (status) {
-    case "letter_ready":
-      return "bg-yellow-100 text-yellow-800 border-yellow-200";
-    case "resolved":
-      return "bg-green-100 text-green-800 border-green-200";
-    case "closed":
-      return "bg-gray-100 text-gray-800 border-gray-200";
-    default:
-      return "bg-blue-100 text-blue-800 border-blue-200";
-  }
-}
+import { statusColor, formatCents } from "@/lib/utils/case";
+import {
+  FileText,
+  Download,
+  Upload,
+  Send,
+  Clock,
+  AlertTriangle,
+  ArrowLeft,
+  Copy,
+} from "lucide-react";
+import Link from "next/link";
 
 function nextAction(status: string): string {
   switch (status) {
@@ -40,14 +44,14 @@ function nextAction(status: string): string {
     case "under_review":
       return "We're reviewing your case. You'll be notified when your demand letter is ready.";
     case "letter_ready":
-      return "Your demand letter is ready! Review it below, then send it to your landlord.";
+      return "Your demand letter is ready. Review it below, then send it to your landlord.";
     case "letter_sent":
     case "awaiting_landlord":
       return "Waiting for your landlord to respond. Submit their response below when you receive it.";
     case "landlord_responded":
       return "We're reviewing your landlord's response and preparing next steps.";
     case "resolved":
-      return "Your case has been resolved. Thank you for using Tribune.";
+      return "Your case has been resolved.";
     case "closed":
       return "This case is closed.";
     default:
@@ -61,51 +65,55 @@ function MessageBubble({ message }: { message: CaseMessage }) {
     message.message_type === "tribune_update" ||
     message.message_type === "system";
 
-  const [expanded, setExpanded] = useState(message.message_type !== "tribune_letter");
+  const [expanded, setExpanded] = useState(
+    message.message_type !== "tribune_letter"
+  );
 
   return (
     <div className={`flex ${isTribune ? "justify-start" : "justify-end"}`}>
       <div
-        className={`max-w-[85%] rounded-lg p-4 ${
+        className={`max-w-[85%] rounded-xl p-4 ${
           isTribune
-            ? "bg-muted border"
-            : "bg-primary text-primary-foreground"
+            ? "bg-muted/60 border"
+            : "bg-foreground text-background"
         }`}
       >
-        <div className="flex items-center gap-2 mb-1">
-          <span className="text-xs font-medium opacity-70">
+        <div className="flex items-center gap-2 mb-1.5">
+          <span className="text-[11px] font-semibold uppercase tracking-wider opacity-60">
             {isTribune ? "Tribune" : "You"}
           </span>
-          <span className="text-xs opacity-50">
-            {format(new Date(message.created_at), "MMM d, yyyy 'at' h:mm a")}
+          <span className="text-[11px] opacity-40">
+            {format(new Date(message.created_at), "MMM d 'at' h:mm a")}
           </span>
         </div>
-        <p className="font-semibold text-sm mb-1">{message.title}</p>
+        <p className="font-medium text-sm">{message.title}</p>
 
         {message.message_type === "tribune_letter" && !expanded ? (
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setExpanded(true)}
-            className={isTribune ? "" : "text-primary-foreground hover:text-primary-foreground/80"}
+            className="mt-1 text-xs h-7"
           >
-            View letter
+            View full letter
           </Button>
         ) : (
-          <div className="text-sm whitespace-pre-wrap">{message.body}</div>
+          <p className="text-sm whitespace-pre-wrap mt-1 opacity-90 leading-relaxed">
+            {message.body}
+          </p>
         )}
 
         {message.message_type === "tribune_letter" && expanded && (
           <Button
             variant="ghost"
             size="sm"
-            className="mt-2"
+            className="mt-2 text-xs h-7"
             onClick={() => {
               navigator.clipboard.writeText(message.body);
-              toast.success("Letter copied to clipboard");
+              toast.success("Copied to clipboard");
             }}
           >
-            Copy letter text
+            <Copy className="size-3 mr-1" /> Copy text
           </Button>
         )}
       </div>
@@ -130,24 +138,24 @@ export default function CaseDetailPage() {
 
   const loadData = useCallback(async () => {
     const supabase = createClient();
-
-    const [{ data: caseResult }, { data: messagesResult }, { data: documentsResult }] = await Promise.all([
-      supabase.from("cases").select("*").eq("id", caseId).single(),
-      supabase
-        .from("case_messages")
-        .select("*")
-        .eq("case_id", caseId)
-        .order("created_at", { ascending: true }),
-      supabase
-        .from("case_documents")
-        .select("*")
-        .eq("case_id", caseId)
-        .order("created_at", { ascending: false }),
-    ]);
-
+    const [{ data: caseResult }, { data: messagesResult }, { data: docs }] =
+      await Promise.all([
+        supabase.from("cases").select("*").eq("id", caseId).single(),
+        supabase
+          .from("case_messages")
+          .select("*")
+          .eq("case_id", caseId)
+          .eq("is_admin_only", false)
+          .order("created_at", { ascending: true }),
+        supabase
+          .from("case_documents")
+          .select("*")
+          .eq("case_id", caseId)
+          .order("created_at", { ascending: false }),
+      ]);
     setCaseData(caseResult);
     setMessages(messagesResult || []);
-    setDocuments(documentsResult || []);
+    setDocuments(docs || []);
     setLoading(false);
   }, [caseId]);
 
@@ -158,12 +166,10 @@ export default function CaseDetailPage() {
   async function submitLandlordResponse() {
     if (!responseText.trim()) return;
     setSubmitting(true);
-
     const supabase = createClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
-
     if (!user) return;
 
     await supabase.from("case_messages").insert({
@@ -176,14 +182,13 @@ export default function CaseDetailPage() {
 
     setResponseText("");
     setSubmitting(false);
-    toast.success("Landlord response submitted. We'll review it and prepare next steps.");
+    toast.success("Response submitted. We'll prepare next steps.");
     loadData();
   }
 
   async function confirmLetterSent() {
     setConfirmingSent(true);
     const supabase = createClient();
-
     await supabase.from("case_actions").insert({
       case_id: caseId,
       action_type: "letter_sent",
@@ -192,8 +197,7 @@ export default function CaseDetailPage() {
         sent_date: new Date().toISOString(),
       },
     });
-
-    toast.success("Great! We'll track the landlord's response deadline.");
+    toast.success("Noted. We'll track the landlord's response deadline.");
     setConfirmingSent(false);
     loadData();
   }
@@ -201,174 +205,202 @@ export default function CaseDetailPage() {
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-
     setUploading(true);
     const formData = new FormData();
     formData.append("file", file);
     formData.append("kind", uploadKind);
-
     const result = await uploadDocument(caseId, formData);
-
     if (result.error) {
       toast.error(result.error);
     } else {
-      toast.success(`${file.name} uploaded successfully`);
+      toast.success(`${file.name} uploaded`);
       loadData();
     }
-
     setUploading(false);
-    // Reset file input
     e.target.value = "";
   }
 
   async function downloadDocument(storagePath: string) {
     const result = await getDocumentUrl(storagePath);
     if (result.error) {
-      toast.error("Failed to download document");
+      toast.error("Failed to download");
     } else if (result.url) {
       window.open(result.url, "_blank");
     }
   }
 
   if (loading) {
-    return <p className="text-muted-foreground">Loading case...</p>;
+    return (
+      <div className="max-w-3xl space-y-6">
+        <Skeleton className="h-5 w-32" />
+        <Skeleton className="h-48 rounded-xl" />
+        <Skeleton className="h-32 rounded-xl" />
+      </div>
+    );
   }
 
   if (!caseData) {
-    return <p className="text-destructive">Case not found.</p>;
+    return (
+      <div className="flex flex-col items-center justify-center py-20">
+        <AlertTriangle className="size-10 text-muted-foreground mb-4" />
+        <p className="text-lg font-medium">Case not found</p>
+      </div>
+    );
   }
 
   const deadline = new Date(caseData.statutory_deadline);
-  const today = new Date();
-  const daysOverdue = differenceInDays(today, deadline);
+  const daysOverdue = differenceInDays(new Date(), deadline);
 
   return (
-    <div className="space-y-6">
-      <LegalDisclaimer />
+    <div className="max-w-3xl space-y-6">
+      {/* Back link */}
+      <Button
+        variant="ghost"
+        size="sm"
+        render={<Link href="/dashboard" />}
+        className="text-muted-foreground -ml-2"
+      >
+        <ArrowLeft className="size-4 mr-1" /> Back to cases
+      </Button>
 
-      {/* Summary Card */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>{caseData.property_address}</CardTitle>
-            <Badge variant="outline" className={statusColor(caseData.status)}>
-              {STATUS_LABELS[caseData.status]}
-            </Badge>
-          </div>
-          <p className="text-sm text-muted-foreground">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-xl font-bold tracking-tight">
+            {caseData.property_address}
+          </h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
             {STATUS_DESCRIPTIONS[caseData.status]}
           </p>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-            <div>
-              <p className="text-muted-foreground">Deposit</p>
-              <p className="font-semibold">${(caseData.deposit_amount_cents / 100).toFixed(2)}</p>
-            </div>
-            <div>
-              <p className="text-muted-foreground">Withheld</p>
-              <p className="font-semibold">${(caseData.amount_withheld_cents / 100).toFixed(2)}</p>
-            </div>
-            <div>
-              <p className="text-muted-foreground">Landlord Deadline</p>
-              <p className="font-semibold">{format(deadline, "MMM d, yyyy")}</p>
-            </div>
-            <div>
-              <p className="text-muted-foreground">Status</p>
-              <p className="font-semibold">
-                {daysOverdue > 0 ? (
-                  <span className="text-destructive">{daysOverdue} days overdue</span>
-                ) : (
-                  <span>{Math.abs(daysOverdue)} days remaining</span>
-                )}
-              </p>
-            </div>
-          </div>
+        </div>
+        <Badge
+          variant="outline"
+          className={`shrink-0 ${statusColor(caseData.status)}`}
+        >
+          {STATUS_LABELS[caseData.status]}
+        </Badge>
+      </div>
 
-          <Separator className="my-4" />
-          <p className="text-sm font-medium">{nextAction(caseData.status)}</p>
-        </CardContent>
-      </Card>
+      {/* Metrics */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        {[
+          { label: "Deposit", value: formatCents(caseData.deposit_amount_cents) },
+          { label: "Withheld", value: formatCents(caseData.amount_withheld_cents) },
+          { label: "Deadline", value: format(deadline, "MMM d, yyyy") },
+          {
+            label: "Status",
+            value: daysOverdue > 0 ? `${daysOverdue}d overdue` : `${Math.abs(daysOverdue)}d left`,
+            danger: daysOverdue > 0,
+          },
+        ].map((m) => (
+          <div key={m.label} className="rounded-xl border bg-card p-3.5">
+            <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+              {m.label}
+            </p>
+            <p className={`text-base font-bold mt-0.5 ${"danger" in m && m.danger ? "text-destructive" : ""}`}>
+              {m.value}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      {/* Next action */}
+      <div className="flex items-start gap-2.5 rounded-xl border bg-muted/40 px-4 py-3">
+        {daysOverdue > 0 ? (
+          <AlertTriangle className="size-4 text-destructive mt-0.5 shrink-0" />
+        ) : (
+          <Clock className="size-4 text-muted-foreground mt-0.5 shrink-0" />
+        )}
+        <p className="text-sm">{nextAction(caseData.status)}</p>
+      </div>
+
+      {/* Letter sent CTA */}
+      {caseData.status === "letter_ready" && (
+        <Button
+          onClick={confirmLetterSent}
+          disabled={confirmingSent}
+          className="w-full rounded-xl h-11"
+        >
+          <Send className="mr-2 size-4" />
+          {confirmingSent ? "Confirming..." : "I sent the letter to my landlord"}
+        </Button>
+      )}
+
+      <Separator />
 
       {/* Documents */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Documents</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Upload section */}
-          <div className="space-y-3">
-            <h3 className="font-medium">Upload Documents</h3>
-            <p className="text-sm text-muted-foreground">
-              Upload your lease, landlord correspondence, itemized deduction letters, or photos.
-            </p>
-            <div className="flex gap-3">
-              <div className="flex-1">
-                <Label htmlFor="document-kind">Document Type</Label>
-                <Select value={uploadKind} onValueChange={setUploadKind}>
-                  <SelectTrigger id="document-kind">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="lease">Lease</SelectItem>
-                    <SelectItem value="landlord_correspondence">Landlord Correspondence</SelectItem>
-                    <SelectItem value="deduction_itemization">Deduction Itemization</SelectItem>
-                    <SelectItem value="photo">Photo</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
+      <section className="space-y-4">
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+          Documents
+        </h2>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <Select value={uploadKind} onValueChange={setUploadKind}>
+            <SelectTrigger className="sm:w-[200px] rounded-lg">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="lease">Lease</SelectItem>
+              <SelectItem value="landlord_correspondence">Landlord Correspondence</SelectItem>
+              <SelectItem value="deduction_itemization">Deduction Itemization</SelectItem>
+              <SelectItem value="photo">Photo</SelectItem>
+              <SelectItem value="other">Other</SelectItem>
+            </SelectContent>
+          </Select>
+          <label className="flex items-center justify-center gap-2 h-9 px-4 rounded-lg border border-dashed cursor-pointer text-sm text-muted-foreground hover:border-foreground/30 hover:text-foreground transition-colors flex-1">
+            <Upload className="size-4" />
+            {uploading ? "Uploading..." : "Choose file"}
+            <input
+              type="file"
+              onChange={handleUpload}
+              disabled={uploading}
+              className="sr-only"
+              accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+            />
+          </label>
+        </div>
+
+        {documents.length > 0 && (
+          <div className="space-y-2">
+            {documents.map((doc) => (
+              <div
+                key={doc.id}
+                className="flex items-center justify-between rounded-lg border p-3 hover:bg-muted/50 transition-colors"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium truncate">
+                    {doc.original_filename}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {doc.kind.replace(/_/g, " ")} &middot;{" "}
+                    {format(new Date(doc.created_at), "MMM d, yyyy")}
+                  </p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => downloadDocument(doc.storage_path)}
+                  className="shrink-0"
+                >
+                  <Download className="size-4" />
+                </Button>
               </div>
-              <div className="flex-1">
-                <Label htmlFor="file-upload">Choose File</Label>
-                <input
-                  id="file-upload"
-                  type="file"
-                  onChange={handleUpload}
-                  disabled={uploading}
-                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90 disabled:opacity-50"
-                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                />
-              </div>
-            </div>
+            ))}
           </div>
+        )}
+      </section>
 
-          <Separator />
+      <Separator />
 
-          {/* Uploaded documents list */}
-          <div>
-            <h3 className="font-medium mb-3">Uploaded Documents ({documents.length})</h3>
-            {documents.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No documents uploaded yet.</p>
-            ) : (
-              <div className="space-y-2">
-                {documents.map((doc) => (
-                  <div key={doc.id} className="flex items-center justify-between border rounded p-3">
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">{doc.original_filename}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {doc.kind.replace(/_/g, " ")} • {format(new Date(doc.created_at), "MMM d, yyyy")}
-                      </p>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => downloadDocument(doc.storage_path)}
-                    >
-                      Download
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Correspondence Thread */}
-      <div className="space-y-4">
-        <h2 className="text-lg font-semibold">Case Thread</h2>
+      {/* Thread */}
+      <section className="space-y-4">
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+          Case Thread
+        </h2>
         {messages.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No messages yet.</p>
+          <div className="text-center py-8 text-muted-foreground text-sm">
+            <FileText className="size-8 mx-auto mb-2 opacity-30" />
+            No messages yet. Updates will appear here.
+          </div>
         ) : (
           <div className="space-y-3">
             {messages.map((msg) => (
@@ -376,47 +408,39 @@ export default function CaseDetailPage() {
             ))}
           </div>
         )}
-      </div>
+      </section>
 
-      {/* Action area */}
+      {/* Submit landlord response */}
       {caseData.status !== "resolved" && caseData.status !== "closed" && (
-        <Card>
-          <CardContent className="pt-6 space-y-4">
-            {/* Confirm letter sent */}
-            {caseData.status === "letter_ready" && (
-              <Button
-                onClick={confirmLetterSent}
-                disabled={confirmingSent}
-                className="w-full"
-              >
-                {confirmingSent ? "Confirming..." : "I sent the letter to my landlord"}
-              </Button>
-            )}
-
-            {/* Submit landlord response */}
-            <div>
-              <h3 className="font-medium mb-2">Submit landlord&apos;s response</h3>
-              <p className="text-sm text-muted-foreground mb-3">
-                Paste or type your landlord&apos;s response below. Include the full text of any
-                email, letter, or text message.
-              </p>
-              <Textarea
-                value={responseText}
-                onChange={(e) => setResponseText(e.target.value)}
-                rows={5}
-                placeholder="Paste your landlord's response here..."
-              />
-              <Button
-                onClick={submitLandlordResponse}
-                disabled={submitting || !responseText.trim()}
-                className="mt-2"
-              >
-                {submitting ? "Submitting..." : "Submit Response"}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        <>
+          <Separator />
+          <section className="space-y-3">
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+              Submit Landlord&apos;s Response
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Paste the full text of any email, letter, or text message from
+              your landlord.
+            </p>
+            <Textarea
+              value={responseText}
+              onChange={(e) => setResponseText(e.target.value)}
+              rows={4}
+              placeholder="Paste your landlord's response here..."
+              className="rounded-lg"
+            />
+            <Button
+              onClick={submitLandlordResponse}
+              disabled={submitting || !responseText.trim()}
+              size="sm"
+            >
+              {submitting ? "Submitting..." : "Submit Response"}
+            </Button>
+          </section>
+        </>
       )}
+
+      <LegalDisclaimer />
     </div>
   );
 }

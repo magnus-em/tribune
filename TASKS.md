@@ -18,6 +18,9 @@ Tracks what's built, what's in progress, and what's next. Updated 2026-04-15.
 - [x] Writes directly to `cases` table via server action (no more `pending_cases` pipeline)
 - [x] Statutory deadline calculation using `STATUTE_DAYS = 21` (CT § 47a-21)
 - [x] Profile upsert on case creation
+- [x] Formal service agreement scroll-box (step 4) — contingency consent + independent contact authorization
+- [x] Landlord email OR phone required (cross-field validation)
+- [x] Redirects to case detail page on submit (not dashboard list)
 
 **App Shell**
 - [x] Collapsible sidebar (shadcn sidebar component, Tailwind v3 compatible)
@@ -29,18 +32,27 @@ Tracks what's built, what's in progress, and what's next. Updated 2026-04-15.
 **Tenant Dashboard**
 - [x] Case list with status badges, metrics, action prompts (`/dashboard`)
 - [x] Stat cards (active, resolved, total at stake)
-- [x] Case detail (`/dashboard/case/[id]`) — metric boxes, documents, thread, actions
-- [x] Upload documents with kind selection
-- [x] Submit landlord response
-- [x] Confirm letter sent
 - [x] Empty state with conversion CTA
+- [x] Case detail rebuilt as guided dispute workflow (`/dashboard/case/[id]`):
+  - Stage rail → per-status action banner → rounds (grouped by letter) → evidence center → recovery module
+  - Event stream synthesis + round grouping in `_components.tsx` — rounds derived from letter timestamps
+  - StageRail, ClaimSummary, CaseReadiness, CurrentRoundBox, ActionBanner, EvidenceCenter, LandlordResponseForm, RecoveryForm
+- [x] Upload documents with kind selection (categorized: lease, photos, landlord correspondence, deduction itemization)
+- [x] Submit landlord response
+- [x] Confirm letter sent → updates `cases.status` to `awaiting_landlord`
+- [x] Report recovery → updates `deposit_returned_cents`, resolves case, shows Tribune fee
 
 **Admin Dashboard**
 - [x] DataTable with sorting, filtering, search, pagination (`@tanstack/react-table`)
 - [x] Stat cards (total, active, needs attention, overdue, total withheld)
-- [x] Admin case detail (`/admin/case/[id]`) — extracted sub-components
-- [x] Tabbed interface: Thread, Docs, Letter, Note, Actions
-- [x] Status change, post letter, post update, add note (internal or visible)
+- [x] Admin case detail rebuilt with lifecycle philosophy (`/admin/case/[id]`):
+  - Per-status `AdminActionBanner` — tells admin exactly what to do next
+  - `ContactsPanel` — tenant + landlord contact info
+  - `CaseAssessmentPanel` — statutory exposure (2× deposit), deadline urgency, readiness checklist
+  - `AdminWritePanel` — 3 tabs (Letter / Update / Note) with "Generate from template" wired to `generateDemandLetter()`
+  - `AdminRoundGroup` — all messages including admin-only notes (yellow dashed)
+  - Landlord reply spotlight — orange-bordered box when `status === landlord_responded`
+  - Inline status change with audit log
 - [x] Email notification on letter post and update post (via Resend)
 
 **Landing Page**
@@ -81,8 +93,8 @@ Vercel Cron at `/api/cron/check-deadlines`. Daily check for cases approaching st
 ### 4. PDF Export of Letters
 "Download as PDF" button on letters. Needed for print-and-mail and tenant records. Consider `@react-pdf/renderer`.
 
-### 5. Admin "Generate Letter from Template" UI
-Templates exist in `src/lib/letters/templates.ts`. Build a "Generate" button that picks template, previews with case data interpolated, allows editing before posting.
+### 5. ~~Admin "Generate Letter from Template" UI~~ — Done
+Built inside `AdminWritePanel` in the admin case detail page.
 
 ## Deferred
 

@@ -37,6 +37,7 @@ import {
   Copy,
 } from "lucide-react";
 import Link from "next/link";
+import { trackEvent } from "@/lib/analytics/posthog";
 
 function nextAction(status: string): string {
   switch (status) {
@@ -180,6 +181,7 @@ export default function CaseDetailPage() {
       created_by: user.id,
     });
 
+    trackEvent("landlord_response_submitted");
     setResponseText("");
     setSubmitting(false);
     toast.success("Response submitted. We'll prepare next steps.");
@@ -197,6 +199,9 @@ export default function CaseDetailPage() {
         sent_date: new Date().toISOString(),
       },
     });
+    trackEvent("letter_sent_confirmed", {
+      letter_number: caseData?.current_letter_number || 1,
+    });
     toast.success("Noted. We'll track the landlord's response deadline.");
     setConfirmingSent(false);
     loadData();
@@ -213,6 +218,7 @@ export default function CaseDetailPage() {
     if (result.error) {
       toast.error(result.error);
     } else {
+      trackEvent("document_uploaded", { kind: uploadKind });
       toast.success(`${file.name} uploaded`);
       loadData();
     }

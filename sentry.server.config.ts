@@ -1,7 +1,7 @@
 import * as Sentry from "@sentry/nextjs";
 
 Sentry.init({
-  dsn: process.env.SENTRY_DSN,
+  dsn: "https://f27bdc279e69de3585db33338468dc4c@o4511226089701376.ingest.us.sentry.io/4511226092453888",
 
   sendDefaultPii: false,
 
@@ -9,8 +9,6 @@ Sentry.init({
 
   includeLocalVariables: true,
   enableLogs: true,
-
-  enabled: process.env.NODE_ENV === "production",
 
   beforeSend(event) {
     if (event.message) {
@@ -24,17 +22,11 @@ Sentry.init({
     if (event.request?.data) {
       const data = event.request.data as Record<string, unknown>;
       const piiFields = [
-        "email",
-        "phone",
-        "tenant_email",
-        "tenant_phone",
-        "landlord_email",
-        "landlord_phone",
+        "email", "phone", "tenant_email", "tenant_phone",
+        "landlord_email", "landlord_phone",
       ];
       piiFields.forEach((field) => {
-        if (data[field]) {
-          data[field] = "[REDACTED]";
-        }
+        if (data[field]) data[field] = "[REDACTED]";
       });
     }
 

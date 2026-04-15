@@ -1,18 +1,17 @@
 import * as Sentry from "@sentry/nextjs";
 
 Sentry.init({
-  dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
+  dsn: "https://f27bdc279e69de3585db33338468dc4c@o4511226089701376.ingest.us.sentry.io/4511226092453888",
 
-  // PII: CLAUDE.md prohibits PII in analytics — do NOT set sendDefaultPii: true
+  // PII protection — no names, emails, phones, addresses in error reports
   sendDefaultPii: false,
 
   tracesSampleRate: process.env.NODE_ENV === "development" ? 1.0 : 0.2,
+  enableLogs: true,
 
   // Session Replay
-  replaysOnErrorSampleRate: 1.0,
   replaysSessionSampleRate: 0.1,
-
-  enableLogs: true,
+  replaysOnErrorSampleRate: 1.0,
 
   integrations: [
     Sentry.replayIntegration({
@@ -20,8 +19,6 @@ Sentry.init({
       blockAllMedia: true,
     }),
   ],
-
-  enabled: process.env.NODE_ENV === "production",
 
   // Scrub PII from error messages
   beforeSend(event) {

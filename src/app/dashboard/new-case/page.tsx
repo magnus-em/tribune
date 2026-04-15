@@ -22,6 +22,7 @@ import { CONTINGENCY_PCT } from "@/lib/constants";
 import { CheckCircle2, ArrowRight, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
+import { trackEvent } from "@/lib/analytics/posthog";
 
 const STEPS = [
   { label: "Your Info", description: "Contact and forwarding details" },
@@ -232,6 +233,7 @@ export default function NewCasePage() {
 
   function handleNext() {
     if (validateStep()) {
+      trackEvent("intake_step_completed", { step, step_name: STEPS[step].label });
       setStep((s) => s + 1);
     }
   }
@@ -262,6 +264,7 @@ export default function NewCasePage() {
       return;
     }
 
+    trackEvent("case_submitted");
     toast.success("Case submitted successfully!");
     router.push("/dashboard");
   }

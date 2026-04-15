@@ -16,6 +16,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import Link from "next/link";
 import { Scale } from "lucide-react";
+import { trackEvent, identifyUser } from "@/lib/analytics/posthog";
 
 export default function AuthPage() {
   const router = useRouter();
@@ -50,7 +51,7 @@ export default function AuthPage() {
     const supabase = createClient();
 
     if (mode === "signup") {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -62,9 +63,13 @@ export default function AuthPage() {
         setLoading(false);
         return;
       }
+      if (data.user) {
+        identifyUser(data.user.id);
+        trackEvent("user_signed_up", { method: "email" });
+      }
       router.push("/dashboard");
     } else {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -72,6 +77,10 @@ export default function AuthPage() {
         setError(error.message);
         setLoading(false);
         return;
+      }
+      if (data.user) {
+        identifyUser(data.user.id);
+        trackEvent("user_logged_in", { method: "email" });
       }
       router.push("/dashboard");
     }

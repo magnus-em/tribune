@@ -32,6 +32,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { trackEvent, resetUser } from "@/lib/analytics/posthog";
 
 const tenantNav = [
   {
@@ -187,6 +188,8 @@ export function AppSidebar({
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={() => {
+                    trackEvent("user_signed_out");
+                    resetUser();
                     const form = document.createElement("form");
                     form.method = "post";
                     form.action = "/auth/signout";

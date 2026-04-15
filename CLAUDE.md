@@ -5,10 +5,12 @@ Connecticut security deposit recovery service. Helps residential tenants recover
 **See PRODUCT_BRIEF.md, SPEC.md, ARCHITECTURE.md, TASKS.md for detail. Do not duplicate that content here.**
 
 ## Stack
-- Next.js 14 (App Router), TypeScript
-- Supabase (Postgres + Auth + RLS)
-- Tailwind v3 + shadcn/ui (Radix primitives, **not** `@base-ui/react`)
+- Next.js 15 (App Router), React 19, TypeScript
+- Supabase (Postgres + Auth + RLS + Storage)
+- Tailwind v3 + shadcn/ui (base-ui/react primitives)
 - react-hook-form + zod, date-fns, sonner
+- @tanstack/react-table for admin DataTable
+- Sentry (error tracking), PostHog (analytics), Resend (email)
 
 ## Commands
 - `npm run dev` — dev server on port 3000
@@ -66,6 +68,8 @@ The product drafts legal correspondence. **Citations, deadlines, and damages cal
 
 ## Known Footguns
 
-- The intake flow currently carries form data across the magic-link redirect via `sessionStorage["tribune_pending_case"]`. This is being replaced by a server-side intake pipeline (`pending_cases` table + server action); see TASKS.md. Until the replacement lands, do not move case creation back to intake submit.
-- `current_letter_number` is written inconsistently in `admin/case/[id]/page.tsx`. Canonical rule going forward: incremented only when a letter is posted; status changes never touch it.
+- Intake is at `/dashboard/new-case` (authenticated). The old `/intake` route and `pending_cases` pipeline are removed. Do not recreate them.
+- `current_letter_number` incremented only when a letter is posted; status changes never touch it.
 - Hand-written types in `src/lib/types/database.ts` will be replaced by `supabase gen types typescript` output. Treat the schema as authoritative.
+- shadcn components were installed from v4 (uses `@base-ui/react`). Some Tailwind v4 syntax (`w-(--var)`, `rounded-[min(...)]`) had to be converted to v3 equivalents (`w-[var(--var)]`, `rounded-lg`). Check for this if installing new shadcn components.
+- Sentry DSN is hardcoded in config files (not env var) — this is intentional per the Sentry wizard setup. Auth token is in Vercel env vars for source map uploads.

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { PostHogProvider } from "@/lib/analytics/posthog";
 import "./globals.css";
 
 const geist = localFont({
@@ -24,7 +25,9 @@ export default function RootLayout({
   return (
     <html lang="en" className={geist.variable}>
       <body className="font-sans antialiased bg-background text-foreground">
-        <TooltipProvider>{children}</TooltipProvider>
+        <PostHogProvider>
+          <TooltipProvider>{children}</TooltipProvider>
+        </PostHogProvider>
         <Toaster />
       </body>
     </html>

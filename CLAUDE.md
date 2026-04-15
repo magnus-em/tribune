@@ -31,7 +31,7 @@ Connecticut security deposit recovery service. Helps residential tenants recover
 - Contingency fee: 10% of amount recovered.
 - Tenant covers hard costs at cost: certified mailing, court filing fees if the case escalates. Tribune does not mark these up.
 - Settlement money never flows through Tribune. Landlord pays the tenant directly; the tenant owes Tribune the 10% afterward. If the tenant does not pay, the debt enters collections.
-- Statutory deadline: `move_out_date + 30 days`.
+- Statutory deadline: `move_out_date + 21 days` (CT § 47a-21; 15 days after forwarding address received if later).
 - Letter sequence: 1, 2, 3.
 - Jurisdiction: Connecticut only (New Haven focus initially). Residential tenants only.
 

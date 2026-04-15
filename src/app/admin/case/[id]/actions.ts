@@ -18,6 +18,24 @@ export interface PostUpdateParams {
   body: string;
 }
 
+async function getCaseWithTenant(supabase: Awaited<ReturnType<typeof createClient>>, caseId: string) {
+  const { data } = await supabase
+    .from("cases")
+    .select("property_address, tenant_id, profiles(full_name, email)")
+    .eq("id", caseId)
+    .single();
+
+  if (!data) return null;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const profile = data.profiles as any;
+  return {
+    property_address: data.property_address,
+    tenant_name: profile?.full_name || "Tenant",
+    tenant_email: profile?.email as string | null,
+  };
+}
+
 export async function postLetterWithNotification({
   caseId,
   title,
@@ -26,7 +44,6 @@ export async function postLetterWithNotification({
 }: PostLetterParams) {
   const supabase = await createClient();
 
-  // Get authenticated user
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -35,13 +52,7 @@ export async function postLetterWithNotification({
     return { error: "Not authenticated" };
   }
 
-  // Get case and tenant info for email
-  const { data: caseData } = await supabase
-    .from("cases")
-    .select("tenant_name, tenant_email, property_address")
-    .eq("id", caseId)
-    .single();
-
+  const caseData = await getCaseWithTenant(supabase, caseId);
   if (!caseData) {
     return { error: "Case not found" };
   }
@@ -74,20 +85,23 @@ export async function postLetterWithNotification({
   }
 
   // Send email notification
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://usetribune.org";
-  const emailHtml = renderCaseUpdateEmail({
-    tenantName: caseData.tenant_name.split(" ")[0], // First name
-    caseId,
-    messageTitle: title,
-    messagePreview: "Your demand letter is ready for review. Sign in to view and send it to your landlord.",
-    siteUrl,
-  });
+  if (caseData.tenant_email) {
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://usetribune.org";
+    const emailHtml = renderCaseUpdateEmail({
+      tenantName: caseData.tenant_name.split(" ")[0],
+      caseId,
+      messageTitle: title,
+      messagePreview:
+        "Your demand letter is ready for review. Sign in to view and send it to your landlord.",
+      siteUrl,
+    });
 
-  await sendEmail({
-    to: caseData.tenant_email,
-    subject: `Demand Letter ${letterNumber} Ready — ${caseData.property_address}`,
-    html: emailHtml,
-  });
+    await sendEmail({
+      to: caseData.tenant_email,
+      subject: `Demand Letter ${letterNumber} Ready — ${caseData.property_address}`,
+      html: emailHtml,
+    });
+  }
 
   revalidatePath(`/admin/case/${caseId}`);
   revalidatePath(`/dashboard/case/${caseId}`);
@@ -102,7 +116,6 @@ export async function postUpdateWithNotification({
 }: PostUpdateParams) {
   const supabase = await createClient();
 
-  // Get authenticated user
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -111,13 +124,7 @@ export async function postUpdateWithNotification({
     return { error: "Not authenticated" };
   }
 
-  // Get case and tenant info for email
-  const { data: caseData } = await supabase
-    .from("cases")
-    .select("tenant_name, tenant_email, property_address")
-    .eq("id", caseId)
-    .single();
-
+  const caseData = await getCaseWithTenant(supabase, caseId);
   if (!caseData) {
     return { error: "Case not found" };
   }
@@ -136,20 +143,23 @@ export async function postUpdateWithNotification({
   }
 
   // Send email notification
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://usetribune.org";
-  const emailHtml = renderCaseUpdateEmail({
-    tenantName: caseData.tenant_name.split(" ")[0], // First name
-    caseId,
-    messageTitle: title,
-    messagePreview: body.substring(0, 200) + (body.length > 200 ? "..." : ""),
-    siteUrl,
-  });
+  if (caseData.tenant_email) {
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://usetribune.org";
+    const emailHtml = renderCaseUpdateEmail({
+      tenantName: caseData.tenant_name.split(" ")[0],
+      caseId,
+      messageTitle: title,
+      messagePreview:
+        body.substring(0, 200) + (body.length > 200 ? "..." : ""),
+      siteUrl,
+    });
 
-  await sendEmail({
-    to: caseData.tenant_email,
-    subject: `Case Update — ${caseData.property_address}`,
-    html: emailHtml,
-  });
+    await sendEmail({
+      to: caseData.tenant_email,
+      subject: `Case Update — ${caseData.property_address}`,
+      html: emailHtml,
+    });
+  }
 
   revalidatePath(`/admin/case/${caseId}`);
   revalidatePath(`/dashboard/case/${caseId}`);

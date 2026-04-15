@@ -11,8 +11,10 @@
 // Contingency fee percentage (10%)
 export const CONTINGENCY_PCT = 10;
 
-// Statutory deadline in days after move-out (CT § 47a-21)
-export const STATUTE_DAYS = 30;
+// Statutory deadline in days after tenancy ends (CT § 47a-21)
+// 21 days to return deposit or provide itemized deductions.
+// If tenant hasn't provided forwarding address, landlord gets 15 days after receiving it.
+export const STATUTE_DAYS = 21;
 
 // Letter sequence limits
 export const MIN_LETTER_NUMBER = 1;

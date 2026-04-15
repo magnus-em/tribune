@@ -121,6 +121,134 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Strategic Negotiation */}
+      <section className="py-16 px-4 bg-slate-900 text-white">
+        <div className="max-w-4xl mx-auto">
+          <h2 className="text-3xl font-bold text-center mb-4">
+            Strategic Negotiation, Not Just Letters
+          </h2>
+          <p className="text-center text-slate-300 mb-12 max-w-2xl mx-auto">
+            We've analyzed the tactics of dozens of dishonest landlords to build a system that anticipates
+            and counters their moves at every stage.
+          </p>
+
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
+              <h3 className="font-semibold text-lg mb-3 text-white">Pattern Recognition</h3>
+              <p className="text-slate-300 text-sm">
+                Dishonest landlords use predictable tactics: delay, ignore, lowball offers, or claim "damages"
+                they can't prove. We've cataloged these responses and built counter-strategies for each. When
+                your landlord tries a known tactic, our system identifies it and recommends the optimal response.
+              </p>
+            </div>
+
+            <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
+              <h3 className="font-semibold text-lg mb-3 text-white">Adaptive Strategy</h3>
+              <p className="text-slate-300 text-sm">
+                This isn't static letter generation. After each landlord response (or non-response), our system
+                analyzes their position, calculates their likely next move, and determines the optimal escalation
+                path. We adjust timing, language intensity, and legal emphasis based on what they reveal.
+              </p>
+            </div>
+
+            <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
+              <h3 className="font-semibold text-lg mb-3 text-white">Escalation Calibration</h3>
+              <p className="text-slate-300 text-sm">
+                Each letter is calibrated to the stage of negotiation. Letter 1 offers a clean exit—return the
+                deposit, avoid legal costs. If they ignore it, Letter 2 demonstrates you're serious and increases
+                their risk. Letter 3 signals imminent legal action. The psychology is deliberate: make settlement
+                the rational choice at each decision point.
+              </p>
+            </div>
+
+            <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
+              <h3 className="font-semibold text-lg mb-3 text-white">Information Asymmetry</h3>
+              <p className="text-slate-300 text-sm">
+                Your landlord doesn't know if you'll actually follow through. Our letters establish credibility
+                through legal precision and escalating commitment. Each response deadline that passes without
+                compliance strengthens your position—you've demonstrated patience and resolve. When we recommend
+                filing in court, it's because the data shows that's when landlords settle.
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-8 text-center">
+            <p className="text-slate-300 text-sm max-w-3xl mx-auto">
+              <strong className="text-white">Bottom line:</strong> This is strategic negotiation powered by
+              data from real cases. We don't just prepare letters—we guide you through a decision tree designed
+              to maximize recovery while minimizing your time and effort.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Your Rights Under CT Law */}
+      <section className="py-16 px-4 bg-blue-50 border-y border-blue-100">
+        <div className="max-w-4xl mx-auto">
+          <h2 className="text-3xl font-bold text-center mb-4 text-slate-900">
+            Your Rights Under Connecticut Law
+          </h2>
+          <p className="text-center text-slate-600 mb-8 max-w-2xl mx-auto">
+            Connecticut General Statutes § 47a-21 is one of the strongest tenant protection laws in the country.
+          </p>
+
+          <div className="bg-white border border-blue-200 rounded-lg p-8 mb-6">
+            <h3 className="font-bold text-xl mb-4 text-slate-900">The 30-Day Rule</h3>
+            <p className="text-slate-700 mb-4">
+              When you move out, your landlord has <strong>30 days</strong> to either:
+            </p>
+            <ul className="list-disc list-inside space-y-2 text-slate-700 mb-4 ml-4">
+              <li>Return your full security deposit, OR</li>
+              <li>Return the remaining balance with an itemized list of lawful deductions</li>
+            </ul>
+            <p className="text-slate-700">
+              If they do neither within 30 days, they've violated Connecticut law—and that violation has
+              consequences.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="bg-white border border-slate-200 rounded-lg p-6">
+              <h3 className="font-semibold text-lg mb-3 text-slate-900 flex items-center gap-2">
+                <span className="text-2xl">💰</span>
+                Double Damages
+              </h3>
+              <p className="text-slate-600 text-sm mb-3">
+                If your landlord fails to comply with the 30-day rule, you may be entitled to recover
+                <strong> twice the amount</strong> of your security deposit.
+              </p>
+              <p className="text-slate-600 text-sm">
+                <strong>Example:</strong> $1,500 deposit improperly withheld = $3,000 recovery
+              </p>
+            </div>
+
+            <div className="bg-white border border-slate-200 rounded-lg p-6">
+              <h3 className="font-semibold text-lg mb-3 text-slate-900 flex items-center gap-2">
+                <span className="text-2xl">⚖️</span>
+                Additional Costs
+              </h3>
+              <p className="text-slate-600 text-sm mb-3">
+                Beyond double damages, you can also recover:
+              </p>
+              <ul className="text-slate-600 text-sm space-y-1 list-disc list-inside">
+                <li>Reasonable attorney's fees (if you hire one)</li>
+                <li>Court filing fees</li>
+                <li>Interest on the withheld amount</li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="mt-6 bg-slate-900 text-white rounded-lg p-6">
+            <p className="text-sm leading-relaxed">
+              <strong className="text-yellow-400">Important:</strong> These aren't theoretical penalties.
+              Connecticut courts regularly award double damages when landlords violate the statute. Our system
+              calculates your exact entitlement and cites the controlling law. Most landlords settle when they
+              see the numbers—fighting in court would cost them more than just returning your deposit.
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* Why Tribune */}
       <section className="py-16 px-4">
         <div className="max-w-4xl mx-auto">

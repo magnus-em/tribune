@@ -116,19 +116,66 @@ ALTER TABLE cases ADD COLUMN IF NOT EXISTS tenant_costs_cents integer;
 ALTER TABLE cases ADD COLUMN IF NOT EXISTS resolved_at timestamptz;
 ALTER TABLE cases ADD COLUMN IF NOT EXISTS resolution_notes text;
 
--- Update default contingency to 15% (new cases only; existing keep their value)
-ALTER TABLE cases ALTER COLUMN contingency_pct SET DEFAULT 15;
+-- Update default contingency to 10% (new cases only; existing keep their value)
+ALTER TABLE cases ALTER COLUMN contingency_pct SET DEFAULT 10;
 
 -- ============================================
--- STORAGE BUCKET (create via Supabase dashboard or SQL)
+-- STORAGE BUCKET - For case documents
 -- ============================================
 
--- Note: Storage buckets and policies are typically created via Supabase dashboard.
--- If using SQL, you'd use the storage schema:
--- INSERT INTO storage.buckets (id, name, public) VALUES ('case-documents', 'case-documents', false);
+-- Create the storage bucket (private)
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('case-documents', 'case-documents', false)
+ON CONFLICT (id) DO NOTHING;
 
--- Storage RLS policies would be:
+-- Storage RLS Policies
+
 -- Tenants can upload to their own case folders
--- Admins can read/write all
+CREATE POLICY "Tenants can upload to own case folders"
+  ON storage.objects FOR INSERT
+  WITH CHECK (
+    bucket_id = 'case-documents'
+    AND (storage.foldername(name))[1] IN (
+      SELECT id::text FROM cases WHERE tenant_id = auth.uid()
+    )
+  );
 
--- This is handled in the dashboard setup step for now.
+-- Tenants can read their own case documents
+CREATE POLICY "Tenants can read own case documents"
+  ON storage.objects FOR SELECT
+  USING (
+    bucket_id = 'case-documents'
+    AND (storage.foldername(name))[1] IN (
+      SELECT id::text FROM cases WHERE tenant_id = auth.uid()
+    )
+  );
+
+-- Admins can read all case documents
+CREATE POLICY "Admins can read all case documents"
+  ON storage.objects FOR SELECT
+  USING (
+    bucket_id = 'case-documents'
+    AND EXISTS (
+      SELECT 1 FROM profiles WHERE id = auth.uid() AND is_admin = true
+    )
+  );
+
+-- Admins can upload to any case folder
+CREATE POLICY "Admins can upload all case documents"
+  ON storage.objects FOR INSERT
+  WITH CHECK (
+    bucket_id = 'case-documents'
+    AND EXISTS (
+      SELECT 1 FROM profiles WHERE id = auth.uid() AND is_admin = true
+    )
+  );
+
+-- Admins can delete case documents
+CREATE POLICY "Admins can delete case documents"
+  ON storage.objects FOR DELETE
+  USING (
+    bucket_id = 'case-documents'
+    AND EXISTS (
+      SELECT 1 FROM profiles WHERE id = auth.uid() AND is_admin = true
+    )
+  );

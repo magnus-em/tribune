@@ -32,6 +32,20 @@ export async function uploadDocument(
     return { error: "File and document kind are required" };
   }
 
+  // Validate file type
+  const allowedTypes = [
+    "application/pdf",
+    "image/jpeg",
+    "image/jpg",
+    "image/png",
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  ];
+
+  if (!allowedTypes.includes(file.type)) {
+    return { error: "File type not allowed. Please upload PDF, JPG, PNG, or DOC/DOCX files." };
+  }
+
   // Validate file size (10MB limit)
   const maxSize = 10 * 1024 * 1024;
   if (file.size > maxSize) {

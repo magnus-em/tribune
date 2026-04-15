@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { getDocumentUrl } from "@/app/dashboard/case/[id]/actions";
+import { postLetterWithNotification, postUpdateWithNotification } from "./actions";
 
 function statusColor(status: string): string {
   switch (status) {
@@ -132,55 +133,42 @@ export default function AdminCaseDetailPage() {
 
   async function postLetter() {
     if (!letterTitle.trim() || !letterBody.trim()) return;
-    const supabase = createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return;
 
-    await supabase.from("case_messages").insert({
-      case_id: caseId,
-      message_type: "tribune_letter",
+    const result = await postLetterWithNotification({
+      caseId,
       title: letterTitle.trim(),
       body: letterBody.trim(),
-      letter_number: parseInt(letterNumber),
-      created_by: user.id,
+      letterNumber: parseInt(letterNumber),
     });
 
-    // Auto-update status to letter_ready
-    await supabase
-      .from("cases")
-      .update({
-        status: "letter_ready" as CaseStatus,
-        current_letter_number: parseInt(letterNumber),
-      })
-      .eq("id", caseId);
+    if (result.error) {
+      toast.error(result.error);
+      return;
+    }
 
     setLetterTitle("");
     setLetterBody("");
-    toast.success("Letter posted and tenant can now review it");
+    toast.success("Letter posted and tenant notified by email");
     loadData();
   }
 
   async function postUpdate() {
     if (!updateTitle.trim() || !updateBody.trim()) return;
-    const supabase = createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return;
 
-    await supabase.from("case_messages").insert({
-      case_id: caseId,
-      message_type: "tribune_update",
+    const result = await postUpdateWithNotification({
+      caseId,
       title: updateTitle.trim(),
       body: updateBody.trim(),
-      created_by: user.id,
     });
+
+    if (result.error) {
+      toast.error(result.error);
+      return;
+    }
 
     setUpdateTitle("");
     setUpdateBody("");
-    toast.success("Update posted");
+    toast.success("Update posted and tenant notified by email");
     loadData();
   }
 

@@ -197,11 +197,11 @@ export function groupIntoRounds(events: CaseEvent[]): Round[] {
   };
 
   return Array.from(roundMap.entries())
-    .sort(([a], [b]) => a - b)
+    .sort(([a], [b]) => b - a) // newest round first
     .map(([num, evs]) => ({
       number: num,
       label: roundLabels[num] ?? `Round ${num}`,
-      events: evs,
+      events: [...evs].reverse(), // newest event first within each round
     }));
 }
 
@@ -675,7 +675,9 @@ export function RoundGroup({
 
 const KIND_LABELS: Record<string, string> = {
   lease: "Lease",
-  photo: "Photos",
+  photo_move_in: "Move-In Photos",
+  photo_move_out: "Move-Out Photos",
+  photo: "Photos", // legacy — cases before the split
   landlord_correspondence: "Landlord Correspondence",
   deduction_itemization: "Deduction Itemization",
   other: "Other Documents",
@@ -683,6 +685,8 @@ const KIND_LABELS: Record<string, string> = {
 
 const KIND_ORDER = [
   "lease",
+  "photo_move_in",
+  "photo_move_out",
   "photo",
   "landlord_correspondence",
   "deduction_itemization",
@@ -698,7 +702,7 @@ export function EvidenceCenter({
   onUpload: (kind: string, file: File) => Promise<void>;
   onDownload: (path: string) => void;
 }) {
-  const [uploadKind, setUploadKind] = useState("lease");
+  const [uploadKind, setUploadKind] = useState("photo_move_out");
   const [uploading, setUploading] = useState(false);
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -723,7 +727,7 @@ export function EvidenceCenter({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {KIND_ORDER.map((k) => (
+            {KIND_ORDER.filter((k) => k !== "photo").map((k) => (
               <SelectItem key={k} value={k}>
                 {KIND_LABELS[k]}
               </SelectItem>
@@ -838,6 +842,208 @@ export function ActionBanner({
           </Button>
         )}
       </div>
+    </div>
+  );
+}
+
+// ─── Landlord Next Step ────────────────────────────────────────────────────────
+// Shown when status is awaiting_landlord or letter_sent.
+// Two modes: submit landlord's reply text, or report a refund (full or partial).
+
+export function LandlordNextStep({
+  caseData,
+  onSubmitResponse,
+  onReportRecovery,
+}: {
+  caseData: Case;
+  onSubmitResponse: (text: string) => Promise<void>;
+  onReportRecovery: (amountCents: number, notes: string) => Promise<void>;
+}) {
+  const [mode, setMode] = useState<null | "reply" | "refund">(null);
+  const [refundMode, setRefundMode] = useState<null | "full" | "partial">(null);
+  const [text, setText] = useState("");
+  const [partialAmount, setPartialAmount] = useState("");
+  const [notes, setNotes] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  async function submitReply() {
+    if (!text.trim()) return;
+    setSubmitting(true);
+    await onSubmitResponse(text.trim());
+    setSubmitting(false);
+    setText("");
+    setMode(null);
+  }
+
+  async function submitFullRefund() {
+    setSubmitting(true);
+    await onReportRecovery(caseData.amount_withheld_cents, "Landlord returned full deposit");
+    setSubmitting(false);
+  }
+
+  async function submitPartialRefund() {
+    const cents = Math.round(parseFloat(partialAmount || "0") * 100);
+    if (isNaN(cents) || cents <= 0) return;
+    setSubmitting(true);
+    await onReportRecovery(cents, notes);
+    setSubmitting(false);
+  }
+
+  const partialCents = Math.round(parseFloat(partialAmount || "0") * 100);
+  const tribFee = Math.round((partialCents * caseData.contingency_pct) / 100);
+
+  return (
+    <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-4 space-y-4">
+      <div className="flex items-center gap-2">
+        <MessageSquare className="size-4 text-amber-800 shrink-0" />
+        <p className="text-sm font-semibold text-amber-900">
+          Has your landlord done anything?
+        </p>
+      </div>
+
+      {mode === null && (
+        <div className="grid sm:grid-cols-2 gap-3">
+          <button
+            onClick={() => setMode("reply")}
+            className="flex flex-col gap-1.5 p-3 rounded-lg border bg-white hover:bg-muted/30 text-left transition-colors"
+          >
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <MessageSquare className="size-3.5 text-muted-foreground" />
+              They sent a written reply
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Paste their email, letter, or text. Tribune will review and prepare your next step.
+            </p>
+          </button>
+          <button
+            onClick={() => setMode("refund")}
+            className="flex flex-col gap-1.5 p-3 rounded-lg border border-green-200 bg-white hover:bg-green-50 text-left transition-colors"
+          >
+            <div className="flex items-center gap-2 text-sm font-medium text-green-800">
+              <Handshake className="size-3.5" />
+              They returned my deposit
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Full or partial. Report the amount to close your case.
+            </p>
+          </button>
+        </div>
+      )}
+
+      {mode === "reply" && (
+        <div className="space-y-3">
+          <button
+            onClick={() => setMode(null)}
+            className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
+          >
+            <ChevronRight className="size-3 rotate-180" /> Back
+          </button>
+          <p className="text-sm text-muted-foreground">
+            Paste the full text of any email, letter, or text message from your landlord.
+            Tribune will review it and prepare a recommended response.
+          </p>
+          <Textarea
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            rows={4}
+            placeholder="Paste your landlord's response here…"
+            className="rounded-lg bg-white"
+          />
+          <Button onClick={submitReply} disabled={submitting || !text.trim()} size="sm">
+            {submitting ? "Submitting…" : "Submit Response"}
+          </Button>
+        </div>
+      )}
+
+      {mode === "refund" && refundMode === null && (
+        <div className="space-y-3">
+          <button
+            onClick={() => setMode(null)}
+            className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
+          >
+            <ChevronRight className="size-3 rotate-180" /> Back
+          </button>
+          <div className="grid sm:grid-cols-2 gap-3">
+            <button
+              onClick={submitFullRefund}
+              disabled={submitting}
+              className="flex flex-col gap-1.5 p-3 rounded-lg border border-green-300 bg-green-50 hover:bg-green-100 text-left transition-colors disabled:opacity-60"
+            >
+              <span className="text-sm font-semibold text-green-900">Full refund</span>
+              <span className="text-xs font-medium text-green-800">
+                {formatCents(caseData.amount_withheld_cents)} returned
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Landlord returned the full withheld amount. Closes the case immediately.
+              </span>
+            </button>
+            <button
+              onClick={() => setRefundMode("partial")}
+              className="flex flex-col gap-1.5 p-3 rounded-lg border bg-white hover:bg-muted/30 text-left transition-colors"
+            >
+              <span className="text-sm font-medium">Partial refund</span>
+              <span className="text-xs text-muted-foreground">
+                Landlord returned less than the full withheld amount. Enter the exact amount.
+              </span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {mode === "refund" && refundMode === "partial" && (
+        <div className="space-y-3">
+          <button
+            onClick={() => setRefundMode(null)}
+            className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
+          >
+            <ChevronRight className="size-3 rotate-180" /> Back
+          </button>
+          <div className="space-y-1.5">
+            <Label htmlFor="partial_amount">Amount recovered from withheld deposit ($)</Label>
+            <Input
+              id="partial_amount"
+              type="number"
+              step="0.01"
+              min="0"
+              max={(caseData.amount_withheld_cents / 100).toFixed(2)}
+              placeholder={`Max ${formatCents(caseData.amount_withheld_cents)}`}
+              value={partialAmount}
+              onChange={(e) => setPartialAmount(e.target.value)}
+              className="bg-white"
+            />
+          </div>
+          {partialCents > 0 && (
+            <div className="rounded-lg bg-muted/50 p-3 text-sm space-y-1">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Tribune fee ({CONTINGENCY_PCT}%)</span>
+                <span className="font-medium">{formatCents(tribFee)}</span>
+              </div>
+              <div className="flex justify-between font-semibold border-t pt-1 mt-1">
+                <span>Your net recovery</span>
+                <span>{formatCents(partialCents - tribFee)}</span>
+              </div>
+            </div>
+          )}
+          <div className="space-y-1.5">
+            <Label htmlFor="partial_notes">Notes (optional)</Label>
+            <Textarea
+              id="partial_notes"
+              rows={2}
+              placeholder="e.g., Received check Apr 15, partial return only"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              className="bg-white"
+            />
+          </div>
+          <Button
+            onClick={submitPartialRefund}
+            disabled={submitting || partialCents <= 0}
+            className="w-full"
+          >
+            {submitting ? "Saving…" : "Report Recovery & Close Case"}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

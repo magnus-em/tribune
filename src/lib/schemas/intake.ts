@@ -1,135 +1,133 @@
 import { z } from "zod";
 
-// Base object schema — plain z.object, no transforms or pipes.
-export const intakeBaseSchema = z.object({
-  // Tenant info
-  full_name: z
-    .string()
-    .min(2, "Full name is required")
-    .max(200, "Name too long"),
-  phone: z.string().optional(),
-  forwarding_address: z
-    .string()
-    .min(5, "Forwarding address is required")
-    .max(500, "Address too long"),
+// ─── Shared field validators ───────────────────────────────────────────────────
 
-  // Property
-  property_address: z
-    .string()
-    .min(5, "Property address is required")
-    .max(500, "Address too long"),
-  unit_number: z.string().optional(),
-  lease_start_date: z.string().min(1, "Lease start date is required"),
-  lease_end_date: z.string().min(1, "Lease end date is required"),
-  move_out_date: z.string().min(1, "Move-out date is required"),
+const yesNo = z.enum(["yes", "no"]);
 
-  // Landlord
-  landlord_name: z
-    .string()
-    .min(2, "Landlord name is required")
-    .max(200, "Name too long"),
-  landlord_email: z.string().optional(),
-  landlord_phone: z.string().optional(),
-  landlord_address: z.string().optional(),
+// ─── Per-step schemas (used for step-level validation) ────────────────────────
 
-  // Agreements
-  independent_contact_agreed: z.boolean(),
+export const detailsStepSchema = z
+  .object({
+    full_name: z.string().min(2, "Full name is required"),
+    phone: z.string().optional(),
+    fwd_street: z.string().min(3, "Street address is required"),
+    fwd_unit: z.string().optional(),
+    fwd_city: z.string().min(2, "City is required"),
+    fwd_state: z.string().min(2, "State is required"),
+    fwd_zip: z.string().regex(/^\d{5}(-\d{4})?$/, "Enter a valid ZIP code"),
+    property_address: z.string().min(5, "Property address is required"),
+    unit_number: z.string().optional(),
+    lease_start_date: z.string().min(1, "Lease start date is required"),
+    lease_end_date: z.string().min(1, "Lease end date is required"),
+    move_out_date: z.string().min(1, "Move-out date is required"),
+  })
+  .superRefine((data, ctx) => {
+    if (data.lease_start_date && data.lease_end_date) {
+      if (new Date(data.lease_start_date) >= new Date(data.lease_end_date)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Lease end must be after start",
+          path: ["lease_end_date"],
+        });
+      }
+    }
+    if (data.move_out_date) {
+      const moveOut = new Date(data.move_out_date);
+      const today = new Date();
+      const oneYearAgo = new Date();
+      oneYearAgo.setFullYear(today.getFullYear() - 1);
+      if (moveOut < oneYearAgo || moveOut > today) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Move-out date must be within the past year",
+          path: ["move_out_date"],
+        });
+      }
+    }
+  });
 
-  // Deposit
-  deposit_amount: z.string().min(1, "Deposit amount is required"),
-  amount_withheld: z.string().min(1, "Amount withheld is required"),
-  withholding_reason: z.string().optional(),
-  itemized_deductions_received: z.boolean(),
-  situation_description: z
-    .string()
-    .min(20, "Please describe your situation in more detail")
-    .max(5000, "Description too long"),
-  contingency_agreed: z.boolean(),
-});
-
-// Full schema with all validations — used on final submit only.
-export const intakeSchema = intakeBaseSchema.superRefine((data, ctx) => {
-  // Contingency agreement required
-  if (!data.contingency_agreed) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "You must agree to the contingency fee to proceed",
-      path: ["contingency_agreed"],
-    });
-  }
-
-  // Independent contact authorization required
-  if (!data.independent_contact_agreed) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "You must authorize Tribune to contact your landlord",
-      path: ["independent_contact_agreed"],
-    });
-  }
-
-  // Landlord contact: require at least email or phone
-  if (!data.landlord_email?.trim() && !data.landlord_phone?.trim()) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "At least one landlord contact method is required (email or phone)",
-      path: ["landlord_email"],
-    });
-  }
-
-  // Deposit amount must be valid
-  const deposit = parseFloat(data.deposit_amount);
-  if (isNaN(deposit) || deposit <= 0 || deposit > 1000000) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "Deposit must be between $0 and $1,000,000",
-      path: ["deposit_amount"],
-    });
-  }
-
-  // Withheld amount must be valid
-  const withheld = parseFloat(data.amount_withheld);
-  if (isNaN(withheld) || withheld < 0 || withheld > 1000000) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "Amount withheld must be between $0 and $1,000,000",
-      path: ["amount_withheld"],
-    });
-  }
-
-  // Withheld cannot exceed deposit
-  if (!isNaN(deposit) && !isNaN(withheld) && withheld > deposit) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "Amount withheld cannot exceed deposit amount",
-      path: ["amount_withheld"],
-    });
-  }
-
-  // Lease end after start
-  if (data.lease_start_date && data.lease_end_date) {
-    if (new Date(data.lease_start_date) >= new Date(data.lease_end_date)) {
+export const landlordStepSchema = z
+  .object({
+    landlord_name: z.string().min(2, "Landlord name is required"),
+    landlord_email: z.string().optional(),
+    landlord_phone: z.string().optional(),
+    landlord_address: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (!data.landlord_email?.trim() && !data.landlord_phone?.trim()) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "Lease end date must be after start date",
-        path: ["lease_end_date"],
+        message: "At least one contact method is required (email or phone)",
+        path: ["landlord_email"],
       });
     }
-  }
+  });
 
-  // Move-out within past year
-  if (data.move_out_date) {
-    const moveOut = new Date(data.move_out_date);
-    const today = new Date();
-    const oneYearAgo = new Date();
-    oneYearAgo.setFullYear(today.getFullYear() - 1);
-    if (moveOut < oneYearAgo || moveOut > today) {
+export const depositStepSchema = z
+  .object({
+    deposit_amount: z.string().min(1, "Deposit amount is required"),
+    amount_withheld: z.string().min(1, "Amount withheld is required"),
+    landlord_stated_reason: z.string().optional(),
+    itemized_deductions_received: z.boolean(),
+    notice_given: yesNo,
+    preexisting_damage: yesNo,
+    preexisting_damage_desc: z.string().optional(),
+    apartment_condition: z
+      .string()
+      .min(10, "Please briefly describe the apartment's condition"),
+    landlord_contact_since: yesNo,
+    landlord_contact_desc: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    const deposit = parseFloat(data.deposit_amount);
+    if (isNaN(deposit) || deposit <= 0) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "Move-out date must be within the past year",
-        path: ["move_out_date"],
+        message: "Enter a valid deposit amount",
+        path: ["deposit_amount"],
       });
     }
-  }
+    const withheld = parseFloat(data.amount_withheld);
+    if (isNaN(withheld) || withheld < 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Enter a valid amount",
+        path: ["amount_withheld"],
+      });
+    }
+    if (!isNaN(deposit) && !isNaN(withheld) && withheld > deposit) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Amount withheld cannot exceed deposit",
+        path: ["amount_withheld"],
+      });
+    }
+  });
+
+export const agreementStepSchema = z.object({
+  initials_key_clause: z.string().min(1, "Initials are required"),
+  signature_name: z.string().min(2, "Full legal name is required"),
 });
 
-export type IntakeFormData = z.infer<typeof intakeBaseSchema>;
+// ─── Full intake schema (used on final submit) ────────────────────────────────
+
+export const intakeSchema = detailsStepSchema
+  .merge(landlordStepSchema)
+  .merge(depositStepSchema)
+  .merge(agreementStepSchema);
+
+export type IntakeFormData = z.infer<typeof intakeSchema>;
+
+// ─── Extracted lease data (returned by AI extraction) ─────────────────────────
+
+export interface ExtractedLeaseData {
+  property_address?: string;
+  unit_number?: string;
+  landlord_name?: string;
+  landlord_email?: string;
+  landlord_phone?: string;
+  landlord_address?: string;
+  lease_start_date?: string; // YYYY-MM-DD
+  lease_end_date?: string;   // YYYY-MM-DD
+  deposit_amount_dollars?: number;
+}

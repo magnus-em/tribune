@@ -14,7 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { uploadDocument, getDocumentUrl, reportRecovery, confirmLetterSent } from "./actions";
+import { uploadDocument, getDocumentUrl, reportRecovery, confirmLetterSent, submitLandlordResponse } from "./actions";
 import { LegalDisclaimer } from "@/components/legal-disclaimer";
 import { statusColor } from "@/lib/utils/case";
 import { STATUS_LABELS } from "@/lib/types/database";
@@ -33,7 +33,7 @@ import {
   RoundGroup,
   EvidenceCenter,
   ActionBanner,
-  LandlordResponseForm,
+  LandlordNextStep,
   RecoveryForm,
 } from "./_components";
 
@@ -122,21 +122,14 @@ export default function CaseDetailPage() {
   }
 
   async function handleLandlordResponse(text: string) {
-    const supabase = createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return;
-    await supabase.from("case_messages").insert({
-      case_id: caseId,
-      message_type: "tenant_landlord_reply",
-      title: "Landlord's response",
-      body: text,
-      created_by: user.id,
-    });
-    trackEvent("landlord_response_submitted");
-    toast.success("Response submitted. Tribune will review and prepare next steps.");
-    loadData();
+    const result = await submitLandlordResponse(caseId, text);
+    if (result.error) {
+      toast.error(result.error);
+    } else {
+      trackEvent("landlord_response_submitted");
+      toast.success("Response submitted. Tribune will review and prepare next steps.");
+      loadData();
+    }
   }
 
   async function handleRecovery(amountCents: number, notes: string) {
@@ -179,7 +172,7 @@ export default function CaseDetailPage() {
   // Build event stream and rounds
   const events = buildEventStream(messages, actions);
   const rounds = groupIntoRounds(events);
-  const activeRoundIdx = rounds.length - 1;
+  const activeRoundIdx = 0; // rounds are newest-first, so active round is at index 0
 
   const headline = getStatusHeadline(caseData.status, hasLease);
 
@@ -317,6 +310,16 @@ export default function CaseDetailPage() {
       {/* Action banner */}
       <ActionBanner {...bannerProps} />
 
+      {/* Landlord next step — primary action when awaiting, placed right after banner */}
+      {(caseData.status === "awaiting_landlord" ||
+        caseData.status === "letter_sent") && (
+        <LandlordNextStep
+          caseData={caseData}
+          onSubmitResponse={handleLandlordResponse}
+          onReportRecovery={handleRecovery}
+        />
+      )}
+
       {/* Claim + Readiness */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <ClaimSummary caseData={caseData} />
@@ -339,9 +342,12 @@ export default function CaseDetailPage() {
         <>
           <Separator />
           <section className="space-y-3">
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-              Case Activity
-            </h2>
+            <div className="flex items-baseline justify-between">
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                Case Activity
+              </h2>
+              <span className="text-xs text-muted-foreground/60">newest first</span>
+            </div>
             {rounds.map((round, idx) => (
               <RoundGroup
                 key={round.number}
@@ -350,21 +356,6 @@ export default function CaseDetailPage() {
                 onDownload={handleDownload}
               />
             ))}
-          </section>
-        </>
-      )}
-
-      {/* Landlord response form — shown when awaiting response or landlord responded */}
-      {(caseData.status === "awaiting_landlord" ||
-        caseData.status === "letter_sent" ||
-        caseData.status === "landlord_responded") && (
-        <>
-          <Separator />
-          <section className="space-y-3">
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-              Submit Landlord&apos;s Response
-            </h2>
-            <LandlordResponseForm onSubmit={handleLandlordResponse} />
           </section>
         </>
       )}

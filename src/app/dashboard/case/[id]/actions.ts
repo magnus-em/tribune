@@ -166,6 +166,39 @@ export async function reportRecovery(
   return { success: true };
 }
 
+export async function submitLandlordResponse(caseId: string, text: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const { data: caseRow } = await supabase
+    .from("cases")
+    .select("tenant_id")
+    .eq("id", caseId)
+    .single();
+
+  if (!caseRow || caseRow.tenant_id !== user.id) return { error: "Not authorized" };
+
+  const { error: msgError } = await supabase.from("case_messages").insert({
+    case_id: caseId,
+    message_type: "tenant_landlord_reply",
+    title: "Landlord's response",
+    body: text,
+    created_by: user.id,
+  });
+
+  if (msgError) return { error: msgError.message };
+
+  await supabase
+    .from("cases")
+    .update({ status: "landlord_responded" })
+    .eq("id", caseId);
+
+  return { success: true };
+}
+
 export async function getDocumentUrl(storagePath: string) {
   const supabase = await createClient();
 

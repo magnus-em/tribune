@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { format, differenceInDays } from "date-fns";
 import { type Case, STATUS_LABELS } from "@/lib/types/database";
+import { LegalDisclaimer } from "@/components/legal-disclaimer";
 
 function statusColor(status: string): string {
   switch (status) {
@@ -30,63 +31,7 @@ export default function DashboardPage() {
     async function loadCases() {
       const supabase = createClient();
 
-      // Check for pending case from intake form
-      const pendingCase = sessionStorage.getItem("tribune_pending_case");
-      if (pendingCase) {
-        sessionStorage.removeItem("tribune_pending_case");
-        const data = JSON.parse(pendingCase);
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-
-        if (user) {
-          // Update profile with phone if provided
-          if (data.phone) {
-            await supabase.from("profiles").update({ phone: data.phone }).eq("id", user.id);
-          }
-
-          // Create the case
-          const { data: newCase } = await supabase
-            .from("cases")
-            .insert({
-              tenant_id: user.id,
-              property_address: data.property_address,
-              unit_number: data.unit_number || null,
-              landlord_name: data.landlord_name,
-              landlord_email: data.landlord_email || null,
-              landlord_phone: data.landlord_phone || null,
-              landlord_address: data.landlord_address || null,
-              lease_start_date: data.lease_start_date,
-              lease_end_date: data.lease_end_date,
-              move_out_date: data.move_out_date,
-              forwarding_address: data.forwarding_address || null,
-              deposit_amount_cents: data.deposit_amount_cents,
-              deposit_returned_cents: 0,
-              amount_withheld_cents: data.amount_withheld_cents,
-              withholding_reason: data.withholding_reason,
-              itemized_deductions_received: data.itemized_deductions_received,
-              situation_description: data.situation_description,
-              contingency_pct: data.contingency_pct,
-              contingency_agreed_at: new Date().toISOString(),
-              statutory_deadline: data.statutory_deadline,
-            })
-            .select()
-            .single();
-
-          // Create welcome message
-          if (newCase) {
-            await supabase.from("case_messages").insert({
-              case_id: newCase.id,
-              message_type: "system",
-              title: "Welcome to Tribune",
-              body: "We've received your case and will review it shortly. You'll be notified when your first demand letter is ready.",
-              created_by: user.id,
-            });
-          }
-        }
-      }
-
-      // Load all cases
+      // Load all cases (case creation now happens in auth callback via server-side pending_cases)
       const { data: casesData } = await supabase
         .from("cases")
         .select("*")
@@ -119,6 +64,7 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-4">
+      <LegalDisclaimer />
       <h1 className="text-2xl font-bold">Your Cases</h1>
       {cases.map((c) => {
         const deadline = new Date(c.statutory_deadline);

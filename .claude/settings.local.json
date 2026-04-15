@@ -10,7 +10,8 @@
       "Bash(git push:*)",
       "Bash(npx supabase:*)",
       "Bash(SUPABASE_ACCESS_TOKEN=sbp_349cf11cd0f6cc84b1703ea0f274cdf1e65e8555 npx supabase gen types typescript:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(wc:*)"
     ]
   }
 }

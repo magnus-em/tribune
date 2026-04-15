@@ -3,9 +3,8 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { addDays, format } from "date-fns";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { submitIntake } from "./actions";
 import {
   tenantInfoSchema,
   propertySchema,
@@ -23,9 +22,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { LegalDisclaimer } from "@/components/legal-disclaimer";
 
 const STEPS = ["Your Info", "Property", "Landlord", "Deposit & Agreement"];
-const CONTINGENCY_PCT = 25;
+const CONTINGENCY_PCT = 15;
 
 function StepIndicator({ current, total }: { current: number; total: number }) {
   return (
@@ -122,40 +122,24 @@ export default function IntakePage() {
     const landlord = landlordForm.getValues();
     const deposit = depositForm.getValues();
 
-    const supabase = createClient();
+    // Combine all form data
+    const fullData = {
+      ...tenant,
+      ...property,
+      ...landlord,
+      ...deposit,
+    };
 
-    // Sign up / sign in the user
-    const { error: authError } = await supabase.auth.signInWithOtp({
-      email: tenant.email,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-        data: {
-          full_name: tenant.full_name,
-        },
-      },
-    });
+    // Submit via server action
+    const result = await submitIntake(fullData);
 
-    if (authError) {
-      setSubmitError(authError.message);
+    if (result.error) {
+      setSubmitError(result.error);
       setSubmitting(false);
       return;
     }
 
-    // Store form data in sessionStorage so we can create the case after auth
-    const caseData = {
-      ...tenant,
-      ...property,
-      ...landlord,
-      deposit_amount_cents: Math.round(parseFloat(deposit.deposit_amount) * 100),
-      amount_withheld_cents: Math.round(parseFloat(deposit.amount_withheld) * 100),
-      withholding_reason: deposit.withholding_reason || null,
-      itemized_deductions_received: deposit.itemized_deductions_received,
-      situation_description: deposit.situation_description,
-      contingency_pct: CONTINGENCY_PCT,
-      statutory_deadline: format(addDays(new Date(property.move_out_date), 30), "yyyy-MM-dd"),
-    };
-
-    sessionStorage.setItem("tribune_pending_case", JSON.stringify(caseData));
+    // Success - redirect to confirmation
     router.push("/auth/confirm");
   }
 
@@ -167,6 +151,7 @@ export default function IntakePage() {
           <CardDescription>
             Tell us about your situation. This takes about 10 minutes.
           </CardDescription>
+          <LegalDisclaimer />
           <StepIndicator current={step} total={STEPS.length} />
         </CardHeader>
         <CardContent>

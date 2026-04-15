@@ -32,6 +32,9 @@ export const intakeBaseSchema = z.object({
   landlord_phone: z.string().optional(),
   landlord_address: z.string().optional(),
 
+  // Agreements
+  independent_contact_agreed: z.boolean(),
+
   // Deposit
   deposit_amount: z.string().min(1, "Deposit amount is required"),
   amount_withheld: z.string().min(1, "Amount withheld is required"),
@@ -52,6 +55,24 @@ export const intakeSchema = intakeBaseSchema.superRefine((data, ctx) => {
       code: z.ZodIssueCode.custom,
       message: "You must agree to the contingency fee to proceed",
       path: ["contingency_agreed"],
+    });
+  }
+
+  // Independent contact authorization required
+  if (!data.independent_contact_agreed) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "You must authorize Tribune to contact your landlord",
+      path: ["independent_contact_agreed"],
+    });
+  }
+
+  // Landlord contact: require at least email or phone
+  if (!data.landlord_email?.trim() && !data.landlord_phone?.trim()) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "At least one landlord contact method is required (email or phone)",
+      path: ["landlord_email"],
     });
   }
 

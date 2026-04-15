@@ -93,6 +93,79 @@ export async function uploadDocument(
   }
 }
 
+export async function confirmLetterSent(caseId: string, letterNumber: number) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const { data: caseRow } = await supabase
+    .from("cases")
+    .select("tenant_id, status")
+    .eq("id", caseId)
+    .single();
+
+  if (!caseRow || caseRow.tenant_id !== user.id) return { error: "Not authorized" };
+
+  await supabase.from("case_actions").insert({
+    case_id: caseId,
+    action_type: "letter_sent",
+    metadata: { letter_number: letterNumber, sent_date: new Date().toISOString() },
+  });
+
+  await supabase
+    .from("cases")
+    .update({ status: "awaiting_landlord" })
+    .eq("id", caseId);
+
+  return { success: true };
+}
+
+export async function reportRecovery(
+  caseId: string,
+  amountRecoveredCents: number,
+  notes?: string
+) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const { data: caseRow } = await supabase
+    .from("cases")
+    .select("tenant_id, deposit_amount_cents, amount_withheld_cents")
+    .eq("id", caseId)
+    .single();
+
+  if (!caseRow || caseRow.tenant_id !== user.id) return { error: "Not authorized" };
+
+  // deposit_returned_cents = original return + newly recovered
+  const originalReturnedCents =
+    caseRow.deposit_amount_cents - caseRow.amount_withheld_cents;
+  const newReturnedCents = originalReturnedCents + amountRecoveredCents;
+
+  const { error: updateError } = await supabase
+    .from("cases")
+    .update({ deposit_returned_cents: newReturnedCents, status: "resolved" })
+    .eq("id", caseId);
+
+  if (updateError) return { error: updateError.message };
+
+  await supabase.from("case_actions").insert({
+    case_id: caseId,
+    action_type: "resolution_reported",
+    metadata: {
+      amount_recovered_cents: amountRecoveredCents,
+      notes: notes || null,
+      reported_at: new Date().toISOString(),
+    },
+  });
+
+  return { success: true };
+}
+
 export async function getDocumentUrl(storagePath: string) {
   const supabase = await createClient();
 

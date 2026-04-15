@@ -4,6 +4,59 @@ import { createClient } from "@/lib/supabase/server";
 import { sendEmail } from "@/lib/email/client";
 import { renderCaseUpdateEmail } from "@/lib/email/templates/case-update";
 import { revalidatePath } from "next/cache";
+import type { CaseStatus } from "@/lib/types/database";
+import { STATUS_LABELS } from "@/lib/types/database";
+
+export async function changeStatus(caseId: string, newStatus: CaseStatus, previousStatus: CaseStatus) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const { error } = await supabase
+    .from("cases")
+    .update({ status: newStatus })
+    .eq("id", caseId);
+
+  if (error) return { error: error.message };
+
+  await supabase.from("case_messages").insert({
+    case_id: caseId,
+    message_type: "system",
+    title: `Status changed to ${STATUS_LABELS[newStatus]}`,
+    body: `Updated from "${STATUS_LABELS[previousStatus]}" to "${STATUS_LABELS[newStatus]}".`,
+    created_by: user.id,
+  });
+
+  revalidatePath(`/admin/case/${caseId}`);
+  revalidatePath(`/dashboard/case/${caseId}`);
+  return { success: true };
+}
+
+export async function postNote(
+  caseId: string,
+  title: string,
+  body: string,
+  adminOnly: boolean
+) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const { error } = await supabase.from("case_messages").insert({
+    case_id: caseId,
+    message_type: "tribune_update",
+    title: title.trim(),
+    body: body.trim(),
+    is_admin_only: adminOnly,
+    created_by: user.id,
+  });
+
+  if (error) return { error: error.message };
+
+  revalidatePath(`/admin/case/${caseId}`);
+  revalidatePath(`/dashboard/case/${caseId}`);
+  return { success: true };
+}
 
 export interface PostLetterParams {
   caseId: string;

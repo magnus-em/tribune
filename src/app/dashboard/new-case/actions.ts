@@ -41,34 +41,38 @@ export async function createCase(formData: IntakeFormData) {
     parseFloat(data.amount_withheld) * 100
   );
 
-  const { error: caseError } = await supabase.from("cases").insert({
-    tenant_id: user.id,
-    status: "intake_submitted",
-    property_address: data.property_address,
-    unit_number: data.unit_number || null,
-    landlord_name: data.landlord_name,
-    landlord_email: data.landlord_email || null,
-    landlord_phone: data.landlord_phone || null,
-    landlord_address: data.landlord_address || null,
-    lease_start_date: data.lease_start_date,
-    lease_end_date: data.lease_end_date,
-    move_out_date: data.move_out_date,
-    forwarding_address: data.forwarding_address,
-    deposit_amount_cents: depositAmountCents,
-    deposit_returned_cents: depositAmountCents - amountWithheldCents,
-    amount_withheld_cents: amountWithheldCents,
-    withholding_reason: data.withholding_reason || null,
-    itemized_deductions_received: data.itemized_deductions_received,
-    situation_description: data.situation_description,
-    contingency_pct: CONTINGENCY_PCT,
-    contingency_agreed_at: new Date().toISOString(),
-    statutory_deadline: statutoryDeadline.toISOString().split("T")[0],
-  });
+  const { data: caseRow, error: caseError } = await supabase
+    .from("cases")
+    .insert({
+      tenant_id: user.id,
+      status: "intake_submitted",
+      property_address: data.property_address,
+      unit_number: data.unit_number || null,
+      landlord_name: data.landlord_name,
+      landlord_email: data.landlord_email || null,
+      landlord_phone: data.landlord_phone || null,
+      landlord_address: data.landlord_address || null,
+      lease_start_date: data.lease_start_date,
+      lease_end_date: data.lease_end_date,
+      move_out_date: data.move_out_date,
+      forwarding_address: data.forwarding_address,
+      deposit_amount_cents: depositAmountCents,
+      deposit_returned_cents: depositAmountCents - amountWithheldCents,
+      amount_withheld_cents: amountWithheldCents,
+      withholding_reason: data.withholding_reason || null,
+      itemized_deductions_received: data.itemized_deductions_received,
+      situation_description: data.situation_description,
+      contingency_pct: CONTINGENCY_PCT,
+      contingency_agreed_at: new Date().toISOString(),
+      statutory_deadline: statutoryDeadline.toISOString().split("T")[0],
+    })
+    .select("id")
+    .single();
 
-  if (caseError) {
+  if (caseError || !caseRow) {
     console.error("[createCase] Failed to insert case:", caseError);
-    return { error: "Failed to create case: " + caseError.message };
+    return { error: "Failed to create case: " + (caseError?.message ?? "unknown") };
   }
 
-  return { success: true };
+  return { success: true, caseId: caseRow.id };
 }

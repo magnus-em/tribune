@@ -1,7 +1,5 @@
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 export interface SendEmailParams {
   to: string;
   subject: string;
@@ -9,6 +7,13 @@ export interface SendEmailParams {
 }
 
 export async function sendEmail({ to, subject, html }: SendEmailParams) {
+  // Skip email if Resend not configured
+  if (!process.env.RESEND_API_KEY) {
+    console.log("[Email skipped - Resend not configured]", { to, subject });
+    return { success: true, skipped: true };
+  }
+
+  const resend = new Resend(process.env.RESEND_API_KEY);
   const fromEmail = process.env.RESEND_FROM_EMAIL || "hello@usetribune.org";
 
   try {

@@ -2,7 +2,6 @@ import {
   tenantInfoSchema,
   propertySchema,
   depositSchema,
-  fullIntakeSchema,
 } from '../intake';
 
 describe('Intake Schemas', () => {

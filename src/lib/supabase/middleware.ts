@@ -51,17 +51,28 @@ export async function updateSession(request: NextRequest) {
     }
 
     // Check admin status
-    const { data: profile } = await supabase
+    const { data: profile, error } = await supabase
       .from("profiles")
       .select("is_admin")
       .eq("id", user.id)
       .single();
 
+    console.log("[Middleware Admin Check]", {
+      path,
+      userId: user.id,
+      profile,
+      error,
+      isAdmin: profile?.is_admin,
+    });
+
     if (!profile?.is_admin) {
+      console.log("[Middleware] Redirecting non-admin to /dashboard");
       const url = request.nextUrl.clone();
       url.pathname = "/dashboard";
       return NextResponse.redirect(url);
     }
+
+    console.log("[Middleware] Admin access granted");
   }
 
   return supabaseResponse;

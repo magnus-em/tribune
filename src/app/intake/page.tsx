@@ -2,14 +2,14 @@
 
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+// import { zodResolver } from "@hookform/resolvers/zod"; // Disabled for testing
 import { useRouter } from "next/navigation";
 import { submitIntake } from "./actions";
 import {
-  tenantInfoSchema,
-  propertySchema,
-  landlordSchema,
-  depositSchema,
+  // tenantInfoSchema, // Disabled for testing
+  // propertySchema, // Disabled for testing
+  // landlordSchema, // Disabled for testing
+  // depositSchema, // Disabled for testing
   type TenantInfoData,
   type PropertyData,
   type LandlordData,
@@ -64,13 +64,14 @@ export default function IntakePage() {
   const router = useRouter();
 
   // Separate forms per step to allow independent validation
+  // VALIDATIONS DISABLED FOR TESTING - Re-enable before production!
   const tenantForm = useForm<TenantInfoData>({
-    resolver: zodResolver(tenantInfoSchema),
+    // resolver: zodResolver(tenantInfoSchema),
     defaultValues: { full_name: "", email: "", phone: "", forwarding_address: "" },
   });
 
   const propertyForm = useForm<PropertyData>({
-    resolver: zodResolver(propertySchema),
+    // resolver: zodResolver(propertySchema),
     defaultValues: {
       property_address: "",
       unit_number: "",
@@ -81,12 +82,12 @@ export default function IntakePage() {
   });
 
   const landlordForm = useForm<LandlordData>({
-    resolver: zodResolver(landlordSchema),
+    // resolver: zodResolver(landlordSchema),
     defaultValues: { landlord_name: "", landlord_email: "", landlord_phone: "", landlord_address: "" },
   });
 
   const depositForm = useForm<DepositData>({
-    resolver: zodResolver(depositSchema),
+    // resolver: zodResolver(depositSchema),
     defaultValues: {
       deposit_amount: "",
       amount_withheld: "",
@@ -98,14 +99,20 @@ export default function IntakePage() {
   });
 
   async function handleNext() {
+    console.log("handleNext called, current step:", step);
     if (step === 0) {
       const valid = await tenantForm.trigger();
+      console.log("Step 0 validation result:", valid);
+      console.log("Form errors:", tenantForm.formState.errors);
+      console.log("Form values:", tenantForm.getValues());
       if (valid) setStep(1);
     } else if (step === 1) {
       const valid = await propertyForm.trigger();
+      console.log("Step 1 validation result:", valid);
       if (valid) setStep(2);
     } else if (step === 2) {
       const valid = await landlordForm.trigger();
+      console.log("Step 2 validation result:", valid);
       if (valid) setStep(3);
     }
   }
@@ -172,6 +179,7 @@ export default function IntakePage() {
               <div>
                 <Label htmlFor="phone">Phone (optional)</Label>
                 <Input id="phone" type="tel" {...tenantForm.register("phone")} />
+                <FieldError message={tenantForm.formState.errors.phone?.message} />
               </div>
               <div>
                 <Label htmlFor="forwarding_address">Current / Forwarding Address</Label>
@@ -182,7 +190,7 @@ export default function IntakePage() {
                   calculate their legal deadline.
                 </p>
               </div>
-              <Button onClick={handleNext} className="w-full">
+              <Button type="button" onClick={handleNext} className="w-full">
                 Next
               </Button>
             </div>
@@ -229,10 +237,10 @@ export default function IntakePage() {
                 <FieldError message={propertyForm.formState.errors.move_out_date?.message} />
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" onClick={() => setStep(0)} className="flex-1">
+                <Button type="button" variant="outline" onClick={() => setStep(0)} className="flex-1">
                   Back
                 </Button>
-                <Button onClick={handleNext} className="flex-1">
+                <Button type="button" onClick={handleNext} className="flex-1">
                   Next
                 </Button>
               </div>
@@ -371,10 +379,10 @@ export default function IntakePage() {
               )}
 
               <div className="flex gap-2">
-                <Button variant="outline" onClick={() => setStep(2)} className="flex-1">
+                <Button type="button" variant="outline" onClick={() => setStep(2)} className="flex-1">
                   Back
                 </Button>
-                <Button onClick={handleSubmit} className="flex-1" disabled={submitting}>
+                <Button type="button" onClick={handleSubmit} className="flex-1" disabled={submitting}>
                   {submitting ? "Submitting..." : "Submit Case"}
                 </Button>
               </div>

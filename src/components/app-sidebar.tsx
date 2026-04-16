@@ -35,6 +35,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Skeleton } from "@/components/ui/skeleton";
 import { trackEvent, resetUser } from "@/lib/analytics/posthog";
 import { STATUS_LABELS } from "@/lib/types/database";
 import { formatCents } from "@/lib/utils/case";
@@ -129,11 +130,13 @@ export function AppSidebar({
   isAdmin,
   tenantCase,
   adminPendingCount,
+  loading = false,
 }: {
   email: string;
   isAdmin: boolean;
   tenantCase?: SidebarTenantCase | null;
   adminPendingCount?: number;
+  loading?: boolean;
 }) {
   const pathname = usePathname();
   const initials = email.split("@")[0].slice(0, 2).toUpperCase();
@@ -188,12 +191,21 @@ export function AppSidebar({
         </SidebarGroup>
 
         {/* Tenant case card */}
-        {tenantCase && (
+        {loading ? (
+          <SidebarGroup>
+            <SidebarGroupLabel>Your Case</SidebarGroupLabel>
+            <div className="mx-2 mb-1 rounded-lg border bg-sidebar-accent/30 p-3 space-y-2">
+              <Skeleton className="h-3 w-24" />
+              <Skeleton className="h-3 w-16" />
+              <Skeleton className="h-3 w-20" />
+            </div>
+          </SidebarGroup>
+        ) : tenantCase ? (
           <SidebarGroup>
             <SidebarGroupLabel>Your Case</SidebarGroupLabel>
             <TenantCaseCard c={tenantCase} />
           </SidebarGroup>
-        )}
+        ) : null}
 
         {/* Admin nav */}
         {isAdmin && (

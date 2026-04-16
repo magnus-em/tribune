@@ -1,6 +1,7 @@
+import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import { AppSidebar } from "@/components/app-sidebar";
+import { AppSidebar, type SidebarTenantCase } from "@/components/app-sidebar";
 import {
   SidebarInset,
   SidebarProvider,
@@ -14,11 +15,48 @@ import {
   BreadcrumbPage,
 } from "@/components/ui/breadcrumb";
 
+
+// Fetches profile + case data and renders the fully-populated sidebar.
+// Wrapped in Suspense so the layout shell renders before this completes.
+async function SidebarData({ userId, email }: { userId: string; email: string }) {
+  const supabase = await createClient();
+  const [{ data: profile }, { data: tenantCase }] = await Promise.all([
+    supabase.from("profiles").select("is_admin").eq("id", userId).single(),
+    supabase
+      .from("cases")
+      .select("id, status, statutory_deadline, amount_withheld_cents, contingency_pct")
+      .eq("tenant_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
+
+  return (
+    <AppSidebar
+      email={email}
+      isAdmin={profile?.is_admin ?? false}
+      tenantCase={tenantCase as SidebarTenantCase | null}
+    />
+  );
+}
+
+function SidebarFallback({ email }: { email: string }) {
+  return (
+    <AppSidebar
+      email={email}
+      isAdmin={false}
+      tenantCase={null}
+      loading={true}
+    />
+  );
+}
+
 export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // Only block on auth — shell renders as soon as this resolves
   const supabase = await createClient();
   const {
     data: { user },
@@ -28,24 +66,11 @@ export default async function DashboardLayout({
     redirect("/login");
   }
 
-  const [{ data: profile }, { data: tenantCase }] = await Promise.all([
-    supabase.from("profiles").select("is_admin").eq("id", user.id).single(),
-    supabase
-      .from("cases")
-      .select("id, status, statutory_deadline, amount_withheld_cents, contingency_pct")
-      .eq("tenant_id", user.id)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
-  ]);
-
   return (
     <SidebarProvider>
-      <AppSidebar
-        email={user.email ?? ""}
-        isAdmin={profile?.is_admin ?? false}
-        tenantCase={tenantCase}
-      />
+      <Suspense fallback={<SidebarFallback email={user.email ?? ""} />}>
+        <SidebarData userId={user.id} email={user.email ?? ""} />
+      </Suspense>
       <SidebarInset>
         <header className="flex h-12 shrink-0 items-center gap-2 border-b px-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <SidebarTrigger className="-ml-1" />

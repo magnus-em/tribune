@@ -897,6 +897,7 @@ export function SendLetterBanner({
 }) {
   const [emailOpened, setEmailOpened] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [letterExpanded, setLetterExpanded] = useState(false);
 
   const subject = `RE: Security Deposit Return — ${propertyAddress}`;
 
@@ -923,20 +924,59 @@ export function SendLetterBanner({
 
   return (
     <div className="rounded-xl border-2 border-primary/25 bg-primary/5 p-5 space-y-4">
+      {/* Header */}
       <div className="flex items-start gap-3">
         <Mail className="size-4 text-primary shrink-0 mt-0.5" />
         <div>
           <p className="font-semibold text-sm">Your demand letter is ready to send</p>
           <p className="text-sm text-muted-foreground mt-0.5">
             {landlordEmail ? (
-              <>Send it to <span className="font-medium text-foreground">{landlordName}</span> from your own email — we&apos;ll open your email app with the address and subject pre-filled.</>
+              <>
+                Send it to{" "}
+                <span className="font-medium text-foreground">{landlordName}</span> at{" "}
+                <span className="font-medium text-foreground">{landlordEmail}</span> from
+                your own email — we&apos;ll open your email app with the subject pre-filled
+                and the letter copied to your clipboard.
+              </>
             ) : (
-              <>No email address on file for <span className="font-medium text-foreground">{landlordName}</span>. Copy the letter and send it however you can reach them.</>
+              <>
+                No email on file for{" "}
+                <span className="font-medium text-foreground">{landlordName}</span>. Copy
+                the letter and send it however you can reach them.
+              </>
             )}
           </p>
         </div>
       </div>
 
+      {/* Letter preview */}
+      {letterBody && (
+        <div className="border border-primary/15 rounded-lg overflow-hidden">
+          <button
+            className="w-full flex items-center justify-between px-3 py-2 text-xs font-medium text-primary/80 hover:bg-primary/5 transition-colors text-left"
+            onClick={() => setLetterExpanded((v) => !v)}
+          >
+            <span className="flex items-center gap-1.5">
+              <FileText className="size-3" />
+              {letterExpanded ? "Hide letter" : "Preview letter"}
+            </span>
+            {letterExpanded ? (
+              <ChevronDown className="size-3" />
+            ) : (
+              <ChevronRight className="size-3" />
+            )}
+          </button>
+          {letterExpanded && (
+            <div className="px-3 pb-3 border-t border-primary/10">
+              <pre className="text-xs leading-relaxed whitespace-pre-wrap text-foreground/80 font-sans mt-2 max-h-64 overflow-y-auto">
+                {letterBody}
+              </pre>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Send action */}
       {landlordEmail ? (
         <div className="space-y-2">
           <Button className="w-full gap-2" onClick={handleOpenEmail}>
@@ -945,7 +985,7 @@ export function SendLetterBanner({
           </Button>
           {copied && (
             <p className="text-xs text-center text-muted-foreground">
-              ✓ Letter copied to clipboard — paste into the email with Cmd+V (Mac) or Ctrl+V (Windows)
+              ✓ Letter copied to clipboard — paste into the email body with Cmd+V (Mac) or Ctrl+V (Windows)
             </p>
           )}
         </div>
@@ -956,6 +996,7 @@ export function SendLetterBanner({
         </Button>
       )}
 
+      {/* Confirm sent */}
       <div className="pt-1 border-t border-primary/10 space-y-1.5">
         <Button
           variant={emailOpened || !landlordEmail ? "default" : "outline"}
@@ -964,10 +1005,10 @@ export function SendLetterBanner({
           disabled={confirming}
         >
           <Send className="size-4 mr-2" />
-          {confirming ? "Confirming…" : "I've sent the email"}
+          {confirming ? "Confirming…" : "I've sent the email →"}
         </Button>
         <p className="text-xs text-center text-muted-foreground">
-          This starts the 21-day response clock for {landlordName}.
+          Confirming starts the 21-day response clock for {landlordName}.
         </p>
       </div>
     </div>
@@ -1361,12 +1402,12 @@ export function RecoveryForm({
     setSubmitting(false);
   }
 
-  // If already resolved, show the outcome instead
+  // If already resolved or closed, show the outcome instead of the form
   const resolvedRecovery = Math.max(
     0,
     caseData.deposit_returned_cents - originalReturnedCents
   );
-  if (caseData.status === "resolved" && resolvedRecovery > 0) {
+  if (caseData.status === "resolved" || caseData.status === "closed") {
     return (
       <div className="space-y-4">
         <div className="rounded-xl border border-green-200 bg-green-50 p-4 space-y-3">

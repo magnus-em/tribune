@@ -324,8 +324,10 @@ export default function CaseDetailPage() {
         <StageRail status={caseData.status} />
       </div>
 
-      {/* Action banner */}
-      {caseData.status === "letter_ready" ? (
+      {/* ── PRIMARY ACTION ZONE ──────────────────────────────────────────── */}
+
+      {/* letter_ready: full-attention send banner */}
+      {caseData.status === "letter_ready" && (
         <SendLetterBanner
           landlordEmail={caseData.landlord_email}
           landlordName={caseData.landlord_name}
@@ -334,13 +336,17 @@ export default function CaseDetailPage() {
           onConfirmSent={handleConfirmLetterSent}
           confirming={confirmingSent}
         />
-      ) : (
+      )}
+
+      {/* All other statuses: standard banner */}
+      {caseData.status !== "letter_ready" && (
         <ActionBanner {...bannerProps} />
       )}
 
-      {/* Landlord next step — primary action when awaiting, placed right after banner */}
+      {/* awaiting_landlord / letter_sent / landlord_responded: report what happened */}
       {(caseData.status === "awaiting_landlord" ||
-        caseData.status === "letter_sent") && (
+        caseData.status === "letter_sent" ||
+        caseData.status === "landlord_responded") && (
         <LandlordNextStep
           caseData={caseData}
           onSubmitResponse={handleLandlordResponse}
@@ -348,18 +354,43 @@ export default function CaseDetailPage() {
         />
       )}
 
-      {/* Claim + Readiness */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <ClaimSummary caseData={caseData} />
-        <CaseReadiness
-          caseData={caseData}
-          documents={documents}
-          onUploadLeaseFile={handleUploadLease}
+      {/* resolved / closed: invoice payment (if outstanding) shown prominently */}
+      {invoice && isTerminal && invoice.status !== "paid" && invoice.status !== "waived" && (
+        <InvoicePanel
+          invoice={invoice}
+          paymentPhone={process.env.NEXT_PUBLIC_TRIBUNE_PAYMENT_PHONE ?? ""}
         />
-      </div>
+      )}
+
+      {/* ── CASE DETAILS ─────────────────────────────────────────────────── */}
+
+      {/* Claim + Readiness — hide on terminal states to reduce noise */}
+      {!isTerminal && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <ClaimSummary caseData={caseData} />
+          <CaseReadiness
+            caseData={caseData}
+            documents={documents}
+            onUploadLeaseFile={handleUploadLease}
+          />
+        </div>
+      )}
+
+      {/* Resolved: show recovery outcome + paid invoice (if paid) */}
+      {isTerminal && (
+        <>
+          <RecoveryForm caseData={caseData} onSubmit={handleRecovery} />
+          {invoice && (invoice.status === "paid" || invoice.status === "waived") && (
+            <InvoicePanel
+              invoice={invoice}
+              paymentPhone={process.env.NEXT_PUBLIC_TRIBUNE_PAYMENT_PHONE ?? ""}
+            />
+          )}
+        </>
+      )}
 
       {/* Current round box */}
-      {rounds.length > 0 && (
+      {rounds.length > 0 && !isTerminal && (
         <CurrentRoundBox rounds={rounds} status={caseData.status} />
       )}
 
@@ -398,37 +429,6 @@ export default function CaseDetailPage() {
           onDownload={handleDownload}
         />
       </section>
-
-      {/* Recovery module — shown when status is resolved or actively near resolution */}
-      {(caseData.status === "resolved" ||
-        caseData.status === "closed" ||
-        (caseData.status === "landlord_responded" && !isTerminal)) && (
-        <>
-          <Separator />
-          <section className="space-y-4">
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-              Recovery
-            </h2>
-            <RecoveryForm caseData={caseData} onSubmit={handleRecovery} />
-          </section>
-        </>
-      )}
-
-      {/* Invoice — shown once case is resolved and invoice exists */}
-      {invoice && (caseData.status === "resolved" || caseData.status === "closed") && (
-        <>
-          <Separator />
-          <section className="space-y-4">
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-              Tribune Fee
-            </h2>
-            <InvoicePanel
-              invoice={invoice}
-              paymentPhone={process.env.NEXT_PUBLIC_TRIBUNE_PAYMENT_PHONE ?? ""}
-            />
-          </section>
-        </>
-      )}
 
       <LegalDisclaimer />
     </div>

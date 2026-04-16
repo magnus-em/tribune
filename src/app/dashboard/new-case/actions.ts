@@ -42,12 +42,17 @@ export async function extractLeaseData(formData: FormData): Promise<{
   let messages: unknown[];
 
   if (file.type === "application/pdf") {
-    // Extract text from PDF, then use text model
-    const pdfParse = (await import("pdf-parse")).default;
+    // Extract text from PDF using pdf-parse v2 class API, then use text model
     let text: string;
     try {
-      const parsed = await pdfParse(buffer);
-      text = parsed.text.slice(0, 12000); // stay within token budget
+      const { PDFParse } = await import("pdf-parse");
+      const parser = new PDFParse({ data: buffer });
+      const result = await parser.getText();
+      // v2 populates result.pages, not result.text — join pages manually
+      text = result.pages
+        .map((p: { text: string }) => p.text)
+        .join("\n")
+        .slice(0, 12000); // stay within token budget
     } catch {
       return { error: "Could not read PDF — try uploading a photo instead" };
     }
@@ -129,6 +134,7 @@ export async function createCase(formData: FormData): Promise<{
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { error: "Not authenticated" };
+  const userId = user.id; // capture for use in inner functions
 
   // Parse and validate all text fields
   const raw = {
@@ -200,13 +206,13 @@ export async function createCase(formData: FormData): Promise<{
   await supabase
     .from("profiles")
     .update({ full_name: data.full_name, phone: data.phone || null })
-    .eq("id", user.id);
+    .eq("id", userId);
 
   // Insert case
   const { data: caseRow, error: caseError } = await supabase
     .from("cases")
     .insert({
-      tenant_id: user.id,
+      tenant_id: userId,
       status: "intake_submitted",
       property_address: data.property_address,
       unit_number: data.unit_number || null,
@@ -272,7 +278,7 @@ export async function createCase(formData: FormData): Promise<{
       original_filename: file.name,
       content_type: file.type,
       size_bytes: file.size,
-      uploaded_by: user.id,
+      uploaded_by: userId,
     });
   }
 

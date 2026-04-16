@@ -2,7 +2,8 @@ import { z } from "zod";
 
 // ─── Shared field validators ───────────────────────────────────────────────────
 
-const yesNo = z.enum(["yes", "no"]);
+// "" = not yet selected (initial state); "yes"/"no" = chosen
+const yesNo = z.enum(["yes", "no", ""]);
 
 // ─── Per-step schemas (used for step-level validation) ────────────────────────
 
@@ -101,6 +102,15 @@ export const depositStepSchema = z
         message: "Amount withheld cannot exceed deposit",
         path: ["amount_withheld"],
       });
+    }
+    if (!data.notice_given) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Please select one", path: ["notice_given"] });
+    }
+    if (!data.preexisting_damage) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Please select one", path: ["preexisting_damage"] });
+    }
+    if (!data.landlord_contact_since) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Please select one", path: ["landlord_contact_since"] });
     }
   });
 

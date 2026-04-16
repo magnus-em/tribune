@@ -1,7 +1,10 @@
 "use server";
 
+import { addDays, format } from "date-fns";
 import { createClient } from "@/lib/supabase/server";
-import { MAX_FILE_SIZE_BYTES, ALLOWED_FILE_TYPES } from "@/lib/constants";
+import { MAX_FILE_SIZE_BYTES, ALLOWED_FILE_TYPES, PAYMENT_DUE_DAYS } from "@/lib/constants";
+import { sendEmail } from "@/lib/email/client";
+import { renderInvoiceEmail } from "@/lib/email/templates/invoice";
 
 export async function uploadDocument(
   caseId: string,
@@ -135,7 +138,7 @@ export async function reportRecovery(
 
   const { data: caseRow } = await supabase
     .from("cases")
-    .select("tenant_id, deposit_amount_cents, amount_withheld_cents")
+    .select("tenant_id, deposit_amount_cents, amount_withheld_cents, contingency_pct, property_address")
     .eq("id", caseId)
     .single();
 
@@ -162,6 +165,59 @@ export async function reportRecovery(
       reported_at: new Date().toISOString(),
     },
   });
+
+  // ── Invoice ────────────────────────────────────────────────────────────────
+  const contingencyPct: number = caseRow.contingency_pct ?? 15;
+  const feeCents = Math.round(amountRecoveredCents * contingencyPct / 100);
+  const dueDate = addDays(new Date(), PAYMENT_DUE_DAYS);
+  const dueDateIso = format(dueDate, "yyyy-MM-dd");
+
+  const { data: invoiceNumberRow } = await supabase.rpc("next_invoice_number");
+  const invoiceNumber: string = invoiceNumberRow ?? `TRB-${new Date().getFullYear()}-XXXX`;
+
+  const { error: invoiceError } = await supabase.from("invoices").insert({
+    case_id: caseId,
+    invoice_number: invoiceNumber,
+    amount_cents: feeCents,
+    status: "pending",
+    due_date: dueDateIso,
+  });
+
+  if (invoiceError) {
+    console.error("[reportRecovery] Failed to create invoice:", invoiceError);
+    // Don't block resolution — case is already marked resolved
+  }
+
+  // ── Invoice email ──────────────────────────────────────────────────────────
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("full_name, email")
+    .eq("id", user.id)
+    .single();
+
+  if (profile?.email) {
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://usetribune.org";
+    const paymentPhone = process.env.NEXT_PUBLIC_TRIBUNE_PAYMENT_PHONE ?? "";
+
+    const html = renderInvoiceEmail({
+      tenantName: profile.full_name ?? "there",
+      invoiceNumber,
+      amountDollars: `$${(feeCents / 100).toFixed(2)}`,
+      dueDate: format(dueDate, "MMMM d, yyyy"),
+      caseId,
+      propertyAddress: caseRow.property_address ?? "",
+      recoveredDollars: `$${(amountRecoveredCents / 100).toFixed(2)}`,
+      contingencyPct,
+      paymentPhone,
+      siteUrl,
+    });
+
+    await sendEmail({
+      to: profile.email,
+      subject: `Invoice ${invoiceNumber} — Tribune service fee`,
+      html,
+    });
+  }
 
   return { success: true };
 }

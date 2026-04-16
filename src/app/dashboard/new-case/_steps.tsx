@@ -827,7 +827,7 @@ export function PhotosStep({
 
 // ─── Step 5: Service Agreement ─────────────────────────────────────────────────
 
-const KEY_CLAUSE_TEXT = `Tribune reserves the right to contact your landlord directly to verify settlement and confirm receipt of funds on your behalf. If you receive funds covered by this Agreement, you must remit Tribune's fee within 1 week of receipt. If payment is not received within 2 weeks of receipt, Tribune may pursue collection through any legal means available, including civil litigation against you in Connecticut courts.`;
+const KEY_CLAUSE_TEXT = `You authorize Tribune to independently verify the amount recovered directly with your landlord or any other party to this dispute. This authorization is irrevocable after recovery occurs. If you receive any funds covered by this Agreement, you must remit Tribune's fee within seven (7) days of receipt. Fees unpaid after fourteen (14) days accrue interest at 1.5% per month. Fees remaining unpaid after thirty (30) days constitute a valid and enforceable debt and may be referred to a collection agency, reported to consumer credit reporting agencies, and pursued through civil legal proceedings in Connecticut courts, including recovery of accrued interest, collection costs, and attorneys' fees.`;
 
 export function AgreementStep({
   onBack,
@@ -893,15 +893,26 @@ export function AgreementStep({
             through at cost with no markup. These are your responsibility.
           </p>
           <p>
-            <strong className="text-foreground">5. Payment.</strong> Recovered funds go
-            directly from your landlord to you. You are responsible for remitting Tribune&apos;s{" "}
-            {CONTINGENCY_PCT}% fee within 1 week of receipt.
+            <strong className="text-foreground">5. Fee, Payment, and Enforcement.</strong>{" "}
+            Tribune&apos;s fee is {CONTINGENCY_PCT}% of all amounts recovered on your behalf.
+            &ldquo;Recovered&rdquo; includes any amount paid, credited, or forgiven by the landlord
+            in connection with this dispute. Recovered funds go directly from your landlord to you.
+            Tribune will issue a formal invoice at resolution specifying the amount due and accepted
+            payment methods. Payment is due within seven (7) days of the invoice date. Fees unpaid
+            after fourteen (14) days accrue interest at 1.5% per month (18% per annum) from the
+            original due date. If your account remains unpaid after thirty (30) days, Tribune
+            reserves the right to: (a) refer the unpaid balance to a collection agency;
+            (b) report the delinquency to consumer credit reporting agencies; and (c) initiate civil
+            legal proceedings to recover the unpaid amount, together with accrued interest,
+            collection costs, and reasonable attorneys&apos; fees as permitted by applicable law.
+            You consent to jurisdiction in Connecticut courts for any action arising from this
+            Agreement. If nothing is recovered, no fee is owed.
           </p>
 
           {/* Key clause with initials */}
           <div className="rounded-lg border-2 border-primary/30 bg-primary/5 p-4 space-y-3">
             <p>
-              <strong className="text-foreground">6. Settlement Verification & Enforcement.</strong>{" "}
+              <strong className="text-foreground">6. Independent Verification & Irrevocable Authorization.</strong>{" "}
               {KEY_CLAUSE_TEXT}
             </p>
             <div className="flex items-center gap-3">

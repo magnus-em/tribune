@@ -8,8 +8,8 @@
  * Only new cases use these defaults.
  */
 
-// Contingency fee percentage (10%)
-export const CONTINGENCY_PCT = 10;
+// Contingency fee percentage (15%)
+export const CONTINGENCY_PCT = 15;
 
 // Statutory deadline in days after tenancy ends (CT § 47a-21)
 // 21 days to return deposit or provide itemized deductions.
@@ -37,6 +37,9 @@ export const ALLOWED_FILE_TYPES = [
 
 // Pending case expiration
 export const PENDING_CASE_TTL_HOURS = 24;
+
+// Payment
+export const PAYMENT_DUE_DAYS = 7; // days after recovery report to pay Tribune fee
 
 // Email config
 export const EMAIL_FROM_NAME = "Tribune";

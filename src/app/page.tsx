@@ -2,6 +2,8 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import {
   Accordion,
@@ -19,9 +21,19 @@ import {
   ShieldAlert,
   Timer,
   Gavel,
+  LayoutDashboard,
 } from "lucide-react";
 
 export default function LandingPage() {
+  const [authed, setAuthed] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setAuthed(!!user);
+    });
+  }, []);
+
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Nav */}
@@ -31,16 +43,25 @@ export default function LandingPage() {
             <Scale className="size-5" />
             Tribune
           </Link>
-          <div className="flex items-center gap-4">
-            <Link
-              href="/login"
-              className="text-sm text-slate-600 hover:text-slate-900 font-medium"
-            >
-              Sign in
-            </Link>
-            <Button size="sm" render={<Link href="/login" />}>
-              Start Your Case <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
+          <div className="flex items-center gap-3">
+            {authed ? (
+              <Button size="sm" render={<Link href="/dashboard" />}>
+                <LayoutDashboard className="mr-2 h-4 w-4" />
+                Dashboard
+              </Button>
+            ) : (
+              <>
+                <Link
+                  href="/login?mode=signin"
+                  className="text-sm text-slate-600 hover:text-slate-900 font-medium"
+                >
+                  Sign in
+                </Link>
+                <Button size="sm" render={<Link href="/login?next=/dashboard/new-case" />}>
+                  Start Your Case <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -60,7 +81,7 @@ export default function LandingPage() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-            <Button size="lg" className="text-base px-8" render={<Link href="/login" />}>
+            <Button size="lg" className="text-base px-8" render={<Link href={authed ? "/dashboard/new-case" : "/login?next=/dashboard/new-case"} />}>
               Start Your Case <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
           </div>
@@ -72,7 +93,7 @@ export default function LandingPage() {
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle2 className="h-5 w-5 text-green-600" />
-              <span>10% of what we recover</span>
+              <span>15% of what we recover</span>
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle2 className="h-5 w-5 text-green-600" />
@@ -311,7 +332,7 @@ export default function LandingPage() {
                 What does it cost?
               </AccordionTrigger>
               <AccordionContent className="text-slate-600">
-                10% of what we recover. If your landlord returns $1,500, you pay $150. If we
+                15% of what we recover. If your landlord returns $1,500, you pay $225. If we
                 don't recover anything, you owe nothing. No upfront fees.
               </AccordionContent>
             </AccordionItem>
@@ -383,7 +404,7 @@ export default function LandingPage() {
           <p className="text-lg text-slate-600 mb-8">
             5 minutes to submit. We take it from there.
           </p>
-          <Button size="lg" className="text-base px-8" render={<Link href="/login" />}>
+          <Button size="lg" className="text-base px-8" render={<Link href={authed ? "/dashboard/new-case" : "/login?next=/dashboard/new-case"} />}>
             Start Your Case <ArrowRight className="ml-2 h-5 w-5" />
           </Button>
         </div>
@@ -393,7 +414,7 @@ export default function LandingPage() {
       <footer className="border-t bg-white py-8 px-4">
         <div className="max-w-6xl mx-auto text-center text-sm text-slate-500">
           <p className="mb-2">
-            Connecticut residential tenants only · 10% contingency · No recovery, no fee
+            Connecticut residential tenants only · 15% contingency · No recovery, no fee
           </p>
           <p className="text-xs">
             Tribune provides legal information and document preparation services. We are not a law firm

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,12 +20,26 @@ import { trackEvent, identifyUser } from "@/lib/analytics/posthog";
 
 export default function AuthPage() {
   const router = useRouter();
-  const [mode, setMode] = useState<"login" | "signup">("signup");
+  const searchParams = useSearchParams();
+  const next = searchParams.get("next") ?? "/dashboard";
+  const modeParam = searchParams.get("mode");
+
+  const [mode, setMode] = useState<"login" | "signup">(
+    modeParam === "signin" ? "login" : "signup"
+  );
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // If already logged in, skip straight to destination
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) router.replace(next);
+    });
+  }, [next, router]);
 
   async function handleGoogle() {
     setGoogleLoading(true);
@@ -34,7 +48,7 @@ export default function AuthPage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
       },
     });
     if (error) {
@@ -55,7 +69,7 @@ export default function AuthPage() {
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
         },
       });
       if (error) {
@@ -67,7 +81,7 @@ export default function AuthPage() {
         identifyUser(data.user.id);
         trackEvent("user_signed_up", { method: "email" });
       }
-      router.push("/dashboard");
+      router.push(next);
     } else {
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -82,7 +96,7 @@ export default function AuthPage() {
         identifyUser(data.user.id);
         trackEvent("user_logged_in", { method: "email" });
       }
-      router.push("/dashboard");
+      router.push(next);
     }
 
     setLoading(false);

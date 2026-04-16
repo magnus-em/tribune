@@ -8,12 +8,12 @@ import {
 } from '../constants';
 
 describe('Business Constants', () => {
-  test('contingency percentage is 10%', () => {
-    expect(CONTINGENCY_PCT).toBe(10);
+  test('contingency percentage is 15%', () => {
+    expect(CONTINGENCY_PCT).toBe(15);
   });
 
-  test('statutory deadline is 30 days', () => {
-    expect(STATUTE_DAYS).toBe(30);
+  test('statutory deadline is 21 days (CT § 47a-21)', () => {
+    expect(STATUTE_DAYS).toBe(21);
   });
 
   test('max file size is 10MB', () => {

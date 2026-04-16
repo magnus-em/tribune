@@ -278,7 +278,12 @@ export default function NewCasePage() {
       has_move_out_photos: moveOutPhotos.length > 0,
       has_itemized: itemizedFile !== null,
     });
-    toast.success("Case submitted!");
+
+    if (result.uploadWarnings && result.uploadWarnings.length > 0) {
+      result.uploadWarnings.forEach((w) => toast.warning(w));
+    } else {
+      toast.success("Case submitted!");
+    }
     router.push(`/dashboard/case/${result.caseId}`);
   }
 

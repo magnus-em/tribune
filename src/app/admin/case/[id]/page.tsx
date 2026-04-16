@@ -35,7 +35,9 @@ import {
   postUpdateWithNotification,
   changeStatus,
   postNote,
+  markInvoicePaid,
 } from "./actions";
+import type { InvoiceData } from "@/app/dashboard/case/[id]/_components";
 import { statusColor, formatCents } from "@/lib/utils/case";
 import {
   FileText,
@@ -60,6 +62,7 @@ import {
   X,
   Circle,
   CheckCircle2,
+  Receipt,
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -627,22 +630,25 @@ export default function AdminCaseDetailPage() {
   const [messages, setMessages] = useState<CaseMessage[]>([]);
   const [actions, setActions] = useState<CaseAction[]>([]);
   const [documents, setDocuments] = useState<CaseDocument[]>([]);
+  const [invoice, setInvoice] = useState<InvoiceData | null>(null);
   const [loading, setLoading] = useState(true);
   const [newStatus, setNewStatus] = useState<CaseStatus>("intake_submitted");
   const [savingStatus, setSavingStatus] = useState(false);
 
   const loadData = useCallback(async () => {
     const supabase = createClient();
-    const [{ data: c }, { data: m }, { data: a }, { data: d }] = await Promise.all([
+    const [{ data: c }, { data: m }, { data: a }, { data: d }, { data: inv }] = await Promise.all([
       supabase.from("cases").select("*").eq("id", caseId).single(),
       supabase.from("case_messages").select("*").eq("case_id", caseId).order("created_at", { ascending: true }),
       supabase.from("case_actions").select("*").eq("case_id", caseId).order("created_at", { ascending: true }),
       supabase.from("case_documents").select("*").eq("case_id", caseId).order("created_at", { ascending: true }),
+      supabase.from("invoices").select("id, invoice_number, amount_cents, status, due_date, paid_at, payment_method, created_at").eq("case_id", caseId).order("created_at", { ascending: false }).limit(1).maybeSingle(),
     ]);
     setCaseData(c);
     setMessages(m || []);
     setActions(a || []);
     setDocuments(d || []);
+    setInvoice(inv ?? null);
     if (c) {
       setNewStatus(c.status);
       // Load profile
@@ -824,6 +830,19 @@ export default function AdminCaseDetailPage() {
         />
       </section>
 
+      {/* Invoice */}
+      {invoice && (
+        <>
+          <Separator />
+          <section className="space-y-4">
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+              Tribune Fee Invoice
+            </h2>
+            <AdminInvoicePanel invoice={invoice} onUpdated={loadData} />
+          </section>
+        </>
+      )}
+
       {/* Admin write panel */}
       <Separator />
       <AdminWritePanel
@@ -832,6 +851,102 @@ export default function AdminCaseDetailPage() {
         messages={messages}
         onPosted={loadData}
       />
+    </div>
+  );
+}
+
+// ─── Admin Invoice Panel ──────────────────────────────────────────────────────
+
+function AdminInvoicePanel({
+  invoice,
+  onUpdated,
+}: {
+  invoice: InvoiceData;
+  onUpdated: () => void;
+}) {
+  const [method, setMethod] = useState<"venmo" | "zelle" | "stripe" | "waived">("venmo");
+  const [reference, setReference] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const isPaid = invoice.status === "paid" || invoice.status === "waived";
+
+  async function handleMarkPaid() {
+    setSaving(true);
+    const r = await markInvoicePaid(invoice.id, method, reference);
+    if (r.error) toast.error(r.error);
+    else { toast.success("Invoice marked as paid"); onUpdated(); }
+    setSaving(false);
+  }
+
+  return (
+    <div className="rounded-xl border bg-card p-4 space-y-4 text-sm">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Receipt className="size-4 text-muted-foreground" />
+          <div>
+            <p className="font-semibold">{invoice.invoice_number}</p>
+            <p className="text-xs text-muted-foreground">
+              Due {format(new Date(invoice.due_date + "T00:00:00"), "MMM d, yyyy")}
+            </p>
+          </div>
+        </div>
+        <div className="text-right">
+          <p className="text-lg font-bold">{formatCents(invoice.amount_cents)}</p>
+          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+            isPaid
+              ? "bg-green-100 text-green-800"
+              : invoice.status === "overdue"
+                ? "bg-red-100 text-red-800"
+                : "bg-amber-100 text-amber-800"
+          }`}>
+            {invoice.status}
+          </span>
+        </div>
+      </div>
+
+      {invoice.payment_method && isPaid && (
+        <p className="text-xs text-muted-foreground">
+          Paid via {invoice.payment_method}
+          {invoice.paid_at ? ` on ${format(new Date(invoice.paid_at), "MMM d, yyyy")}` : ""}
+        </p>
+      )}
+
+      {!isPaid && (
+        <>
+          <Separator />
+          <div className="space-y-3">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Mark as Paid</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs">Payment method</Label>
+                <Select value={method} onValueChange={(v) => setMethod(v as typeof method)}>
+                  <SelectTrigger className="h-8 rounded-lg mt-1 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="venmo">Venmo</SelectItem>
+                    <SelectItem value="zelle">Zelle</SelectItem>
+                    <SelectItem value="stripe">Stripe</SelectItem>
+                    <SelectItem value="waived">Waived</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs">Reference / confirmation</Label>
+                <Input
+                  value={reference}
+                  onChange={(e) => setReference(e.target.value)}
+                  placeholder="Optional"
+                  className="h-8 rounded-lg mt-1 text-xs"
+                />
+              </div>
+            </div>
+            <Button size="sm" onClick={handleMarkPaid} disabled={saving}>
+              {saving ? "Saving…" : "Mark Paid"}
+            </Button>
+          </div>
+        </>
+      )}
     </div>
   );
 }

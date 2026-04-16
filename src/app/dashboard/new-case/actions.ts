@@ -127,6 +127,7 @@ export async function extractLeaseData(formData: FormData): Promise<{
 export async function createCase(formData: FormData): Promise<{
   caseId?: string;
   error?: string;
+  uploadWarnings?: string[];
 }> {
   const supabase = await createClient();
   const {
@@ -254,8 +255,13 @@ export async function createCase(formData: FormData): Promise<{
       uploadErrors.push(`${file.name} is too large (max 10MB)`);
       return;
     }
-    if (!ALLOWED_FILE_TYPES.includes(file.type as (typeof ALLOWED_FILE_TYPES)[number])) {
-      uploadErrors.push(`${file.name} is not a supported file type`);
+
+    // Normalise MIME type — browsers sometimes report "image/jpg" instead of "image/jpeg"
+    const mimeType = file.type === "image/jpg" ? "image/jpeg" : file.type;
+
+    if (!ALLOWED_FILE_TYPES.includes(mimeType as (typeof ALLOWED_FILE_TYPES)[number])) {
+      console.error(`[createCase] rejected file type: "${file.type}" for ${file.name}`);
+      uploadErrors.push(`${file.name} is not a supported file type (got: ${file.type || "unknown"})`);
       return;
     }
 
@@ -264,22 +270,28 @@ export async function createCase(formData: FormData): Promise<{
 
     const { error: uploadError } = await supabase.storage
       .from("case-documents")
-      .upload(storagePath, file, { contentType: file.type, upsert: false });
+      .upload(storagePath, file, { contentType: mimeType, upsert: false });
 
     if (uploadError) {
-      uploadErrors.push(`Failed to upload ${file.name}`);
+      console.error(`[createCase] storage upload failed for ${file.name} (${mimeType}):`, uploadError);
+      uploadErrors.push(`Failed to upload ${file.name}: ${uploadError.message}`);
       return;
     }
 
-    await supabase.from("case_documents").insert({
+    const { error: dbError } = await supabase.from("case_documents").insert({
       case_id: caseId,
       kind,
       storage_path: storagePath,
       original_filename: file.name,
-      content_type: file.type,
+      content_type: mimeType,
       size_bytes: file.size,
       uploaded_by: userId,
     });
+
+    if (dbError) {
+      console.error(`[createCase] case_documents insert failed for ${file.name}:`, dbError);
+      uploadErrors.push(`Failed to record ${file.name}: ${dbError.message}`);
+    }
   }
 
   // Lease (required)
@@ -307,8 +319,8 @@ export async function createCase(formData: FormData): Promise<{
   }
 
   if (uploadErrors.length > 0) {
-    // Case created successfully — log upload errors but don't fail
     console.error("[createCase] upload errors:", uploadErrors);
+    return { caseId, uploadWarnings: uploadErrors };
   }
 
   return { caseId };

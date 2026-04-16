@@ -31,6 +31,9 @@ import {
   Scale,
   Handshake,
   X,
+  Mail,
+  Receipt,
+  Smartphone,
 } from "lucide-react";
 import { toast } from "sonner";
 import { formatCents } from "@/lib/utils/case";
@@ -873,6 +876,104 @@ export function ActionBanner({
   );
 }
 
+// ─── Send Letter Banner ───────────────────────────────────────────────────────
+// Shown when status is letter_ready. Guides tenant through sending the letter
+// from their own email client (copy + mailto), then confirming it was sent.
+
+export function SendLetterBanner({
+  landlordEmail,
+  landlordName,
+  propertyAddress,
+  letterBody,
+  onConfirmSent,
+  confirming,
+}: {
+  landlordEmail: string | null;
+  landlordName: string;
+  propertyAddress: string;
+  letterBody: string | null;
+  onConfirmSent: () => void;
+  confirming: boolean;
+}) {
+  const [emailOpened, setEmailOpened] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const subject = `RE: Security Deposit Return — ${propertyAddress}`;
+
+  async function handleOpenEmail() {
+    if (letterBody) {
+      try {
+        await navigator.clipboard.writeText(letterBody);
+        setCopied(true);
+      } catch {
+        // clipboard may fail in insecure contexts — continue anyway
+      }
+    }
+    const url = `mailto:${landlordEmail ?? ""}?subject=${encodeURIComponent(subject)}`;
+    window.open(url, "_blank");
+    setEmailOpened(true);
+  }
+
+  async function handleCopyOnly() {
+    if (!letterBody) return;
+    await navigator.clipboard.writeText(letterBody);
+    setCopied(true);
+    toast.success("Letter copied to clipboard");
+  }
+
+  return (
+    <div className="rounded-xl border-2 border-primary/25 bg-primary/5 p-5 space-y-4">
+      <div className="flex items-start gap-3">
+        <Mail className="size-4 text-primary shrink-0 mt-0.5" />
+        <div>
+          <p className="font-semibold text-sm">Your demand letter is ready to send</p>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            {landlordEmail ? (
+              <>Send it to <span className="font-medium text-foreground">{landlordName}</span> from your own email — we&apos;ll open your email app with the address and subject pre-filled.</>
+            ) : (
+              <>No email address on file for <span className="font-medium text-foreground">{landlordName}</span>. Copy the letter and send it however you can reach them.</>
+            )}
+          </p>
+        </div>
+      </div>
+
+      {landlordEmail ? (
+        <div className="space-y-2">
+          <Button className="w-full gap-2" onClick={handleOpenEmail}>
+            <Mail className="size-4" />
+            Open email app — {landlordEmail}
+          </Button>
+          {copied && (
+            <p className="text-xs text-center text-muted-foreground">
+              ✓ Letter copied to clipboard — paste into the email with Cmd+V (Mac) or Ctrl+V (Windows)
+            </p>
+          )}
+        </div>
+      ) : (
+        <Button variant="outline" className="w-full gap-2" onClick={handleCopyOnly}>
+          <Copy className="size-4" />
+          {copied ? "✓ Copied to clipboard" : "Copy letter to clipboard"}
+        </Button>
+      )}
+
+      <div className="pt-1 border-t border-primary/10 space-y-1.5">
+        <Button
+          variant={emailOpened || !landlordEmail ? "default" : "outline"}
+          className="w-full"
+          onClick={onConfirmSent}
+          disabled={confirming}
+        >
+          <Send className="size-4 mr-2" />
+          {confirming ? "Confirming…" : "I've sent the email"}
+        </Button>
+        <p className="text-xs text-center text-muted-foreground">
+          This starts the 21-day response clock for {landlordName}.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 // ─── Landlord Next Step ────────────────────────────────────────────────────────
 // Shown when status is awaiting_landlord or letter_sent.
 // Two modes: submit landlord's reply text, or report a refund (full or partial).
@@ -1069,6 +1170,126 @@ export function LandlordNextStep({
           >
             {submitting ? "Saving…" : "Report Recovery & Close Case"}
           </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Invoice Panel ────────────────────────────────────────────────────────────
+
+export interface InvoiceData {
+  id: string;
+  invoice_number: string;
+  amount_cents: number;
+  status: string; // pending | paid | overdue | collections | waived
+  due_date: string;
+  paid_at: string | null;
+  payment_method: string | null;
+  created_at: string;
+}
+
+const INVOICE_STATUS_STYLES: Record<string, string> = {
+  pending: "bg-amber-50 border-amber-200 text-amber-800",
+  paid: "bg-green-50 border-green-200 text-green-800",
+  overdue: "bg-red-50 border-red-200 text-red-800",
+  collections: "bg-red-100 border-red-300 text-red-900",
+  waived: "bg-muted border-border text-muted-foreground",
+};
+
+const INVOICE_STATUS_LABELS: Record<string, string> = {
+  pending: "Payment due",
+  paid: "Paid",
+  overdue: "Overdue",
+  collections: "In collections",
+  waived: "Waived",
+};
+
+export function InvoicePanel({
+  invoice,
+  paymentPhone,
+}: {
+  invoice: InvoiceData;
+  paymentPhone: string;
+}) {
+  const formattedPhone = paymentPhone.replace(/(\d{3})(\d{3})(\d{4})/, "($1) $2-$3");
+  const statusStyle = INVOICE_STATUS_STYLES[invoice.status] ?? INVOICE_STATUS_STYLES.pending;
+  const statusLabel = INVOICE_STATUS_LABELS[invoice.status] ?? invoice.status;
+  const dueDate = format(new Date(invoice.due_date + "T00:00:00"), "MMMM d, yyyy");
+  const isPaid = invoice.status === "paid" || invoice.status === "waived";
+
+  function copyInvoiceNumber() {
+    navigator.clipboard.writeText(invoice.invoice_number);
+    toast.success("Invoice number copied");
+  }
+
+  return (
+    <div className={`rounded-xl border p-5 space-y-4 ${statusStyle}`}>
+      {/* Header row */}
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <Receipt className="size-4 shrink-0" />
+          <div>
+            <p className="font-semibold text-sm">Tribune Service Invoice</p>
+            <button
+              onClick={copyInvoiceNumber}
+              className="flex items-center gap-1 text-xs opacity-70 hover:opacity-100 transition-opacity mt-0.5"
+            >
+              {invoice.invoice_number}
+              <Copy className="size-2.5 ml-0.5" />
+            </button>
+          </div>
+        </div>
+        <div className="text-right shrink-0">
+          <p className="text-xl font-bold">{formatCents(invoice.amount_cents)}</p>
+          <p className="text-xs opacity-70">
+            {isPaid ? `Paid ${invoice.paid_at ? format(new Date(invoice.paid_at), "MMM d, yyyy") : ""}` : `Due ${dueDate}`}
+          </p>
+        </div>
+      </div>
+
+      {/* Status badge */}
+      <div className="flex items-center gap-2">
+        {isPaid ? (
+          <CheckCircle2 className="size-3.5 shrink-0" />
+        ) : (
+          <Clock className="size-3.5 shrink-0" />
+        )}
+        <span className="text-xs font-semibold uppercase tracking-wider">{statusLabel}</span>
+      </div>
+
+      {/* Payment instructions — only when pending/overdue */}
+      {!isPaid && (
+        <div className="space-y-3 pt-1 border-t border-current/10">
+          <p className="text-xs font-semibold uppercase tracking-wider opacity-60">How to Pay</p>
+
+          <div className="space-y-2.5">
+            <div className="flex items-start gap-2.5">
+              <Smartphone className="size-3.5 shrink-0 mt-0.5 opacity-60" />
+              <div className="text-xs leading-relaxed">
+                <p className="font-semibold">Venmo</p>
+                <p>Send to <span className="font-medium">{formattedPhone}</span></p>
+                <p className="opacity-70">
+                  Include <button onClick={copyInvoiceNumber} className="font-medium underline underline-offset-2 hover:no-underline">{invoice.invoice_number}</button> in the payment note.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-2.5">
+              <Smartphone className="size-3.5 shrink-0 mt-0.5 opacity-60" />
+              <div className="text-xs leading-relaxed">
+                <p className="font-semibold">Zelle</p>
+                <p>Send to <span className="font-medium">{formattedPhone}</span></p>
+                <p className="opacity-70">
+                  Include <button onClick={copyInvoiceNumber} className="font-medium underline underline-offset-2 hover:no-underline">{invoice.invoice_number}</button> in the memo field.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <p className="text-xs opacity-60">
+            Questions? Email <a href="mailto:billing@usetribune.org" className="underline underline-offset-2">billing@usetribune.org</a>
+          </p>
         </div>
       )}
     </div>

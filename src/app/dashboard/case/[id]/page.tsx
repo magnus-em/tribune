@@ -23,6 +23,7 @@ import Link from "next/link";
 import { trackEvent } from "@/lib/analytics/posthog";
 import {
   type CaseDocument,
+  type InvoiceData,
   buildEventStream,
   groupIntoRounds,
   getStatusHeadline,
@@ -33,8 +34,10 @@ import {
   RoundGroup,
   EvidenceCenter,
   ActionBanner,
+  SendLetterBanner,
   LandlordNextStep,
   RecoveryForm,
+  InvoicePanel,
 } from "./_components";
 
 export default function CaseDetailPage() {
@@ -45,6 +48,7 @@ export default function CaseDetailPage() {
   const [messages, setMessages] = useState<CaseMessage[]>([]);
   const [actions, setActions] = useState<CaseAction[]>([]);
   const [documents, setDocuments] = useState<CaseDocument[]>([]);
+  const [invoice, setInvoice] = useState<InvoiceData | null>(null);
   const [loading, setLoading] = useState(true);
   const [confirmingSent, setConfirmingSent] = useState(false);
   const evidenceRef = useRef<HTMLDivElement>(null);
@@ -60,6 +64,7 @@ export default function CaseDetailPage() {
       { data: messagesResult },
       { data: actionsResult },
       { data: docsResult },
+      { data: invoiceResult },
     ] = await Promise.all([
       supabase.from("cases").select("*").eq("id", caseId).single(),
       supabase
@@ -78,11 +83,19 @@ export default function CaseDetailPage() {
         .select("*")
         .eq("case_id", caseId)
         .order("created_at", { ascending: true }),
+      supabase
+        .from("invoices")
+        .select("id, invoice_number, amount_cents, status, due_date, paid_at, payment_method, created_at")
+        .eq("case_id", caseId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
     ]);
     setCaseData(caseResult);
     setMessages(messagesResult || []);
     setActions(actionsResult || []);
     setDocuments(docsResult || []);
+    setInvoice(invoiceResult ?? null);
     setLoading(false);
   }, [caseId]);
 
@@ -179,6 +192,10 @@ export default function CaseDetailPage() {
   const activeRoundIdx = 0; // rounds are newest-first, so active round is at index 0
 
   const headline = getStatusHeadline(caseData.status, hasLease);
+
+  // Find the current letter body (active round's tribune_letter event)
+  const currentLetterBody =
+    rounds[0]?.events.find((e) => e.kind === "tribune_letter")?.body ?? null;
 
   // Derive the current action banner
   function getActionBannerProps() {
@@ -308,7 +325,18 @@ export default function CaseDetailPage() {
       </div>
 
       {/* Action banner */}
-      <ActionBanner {...bannerProps} />
+      {caseData.status === "letter_ready" ? (
+        <SendLetterBanner
+          landlordEmail={caseData.landlord_email}
+          landlordName={caseData.landlord_name}
+          propertyAddress={caseData.property_address}
+          letterBody={currentLetterBody}
+          onConfirmSent={handleConfirmLetterSent}
+          confirming={confirmingSent}
+        />
+      ) : (
+        <ActionBanner {...bannerProps} />
+      )}
 
       {/* Landlord next step — primary action when awaiting, placed right after banner */}
       {(caseData.status === "awaiting_landlord" ||
@@ -382,6 +410,22 @@ export default function CaseDetailPage() {
               Recovery
             </h2>
             <RecoveryForm caseData={caseData} onSubmit={handleRecovery} />
+          </section>
+        </>
+      )}
+
+      {/* Invoice — shown once case is resolved and invoice exists */}
+      {invoice && (caseData.status === "resolved" || caseData.status === "closed") && (
+        <>
+          <Separator />
+          <section className="space-y-4">
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+              Tribune Fee
+            </h2>
+            <InvoicePanel
+              invoice={invoice}
+              paymentPhone={process.env.NEXT_PUBLIC_TRIBUNE_PAYMENT_PHONE ?? ""}
+            />
           </section>
         </>
       )}

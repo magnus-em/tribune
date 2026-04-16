@@ -192,6 +192,29 @@ export async function postLetterWithNotification({
   }
 }
 
+export async function markInvoicePaid(
+  invoiceId: string,
+  paymentMethod: "venmo" | "zelle" | "stripe" | "waived",
+  paymentReference: string
+) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const { error } = await supabase
+    .from("invoices")
+    .update({
+      status: paymentMethod === "waived" ? "waived" : "paid",
+      paid_at: new Date().toISOString(),
+      payment_method: paymentMethod,
+      payment_reference: paymentReference || null,
+    })
+    .eq("id", invoiceId);
+
+  if (error) return { error: error.message };
+  return { success: true };
+}
+
 export async function postUpdateWithNotification({
   caseId,
   title,

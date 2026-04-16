@@ -71,6 +71,7 @@ export const depositStepSchema = z
     landlord_stated_reason: z.string().optional(),
     itemized_deductions_received: z.boolean(),
     notice_given: yesNo,
+    notice_given_desc: z.string().optional(),
     preexisting_damage: yesNo,
     preexisting_damage_desc: z.string().optional(),
     apartment_condition: z

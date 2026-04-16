@@ -83,8 +83,7 @@ export async function extractLeaseData(formData: FormData): Promise<{
     ];
   }
 
-  const model =
-    file.type === "application/pdf" ? "grok-2-1212" : "grok-2-vision-1212";
+  const model = "grok-3";
 
   try {
     const response = await fetch("https://api.x.ai/v1/chat/completions", {
@@ -159,6 +158,7 @@ export async function createCase(formData: FormData): Promise<{
     landlord_stated_reason: (formData.get("landlord_stated_reason") as string) || undefined,
     itemized_deductions_received: formData.get("itemized_deductions_received") === "true",
     notice_given: formData.get("notice_given") as "yes" | "no",
+    notice_given_desc: (formData.get("notice_given_desc") as string) || undefined,
     preexisting_damage: formData.get("preexisting_damage") as "yes" | "no",
     preexisting_damage_desc: (formData.get("preexisting_damage_desc") as string) || undefined,
     apartment_condition: formData.get("apartment_condition") as string,
@@ -190,7 +190,7 @@ export async function createCase(formData: FormData): Promise<{
   // Synthesize situation_description from structured answers
   const situation_description = [
     `Landlord's stated reason for withholding: ${data.landlord_stated_reason?.trim() || "None provided"}`,
-    `Written notice given before move-out: ${data.notice_given === "yes" ? "Yes" : "No"}`,
+    `Written notice given before move-out: ${data.notice_given === "yes" ? "Yes" : `No${data.notice_given_desc ? ` — ${data.notice_given_desc}` : ""}`}`,
     `Pre-existing damage at move-in: ${data.preexisting_damage === "yes" ? `Yes — ${data.preexisting_damage_desc || "not described"}` : "None noted"}`,
     `Apartment condition at move-out: ${data.apartment_condition}`,
     `Contact with landlord since moving out: ${data.landlord_contact_since === "yes" ? `Yes — ${data.landlord_contact_desc || "not described"}` : "None"}`,

@@ -699,6 +699,14 @@ export function DepositStep({
             onChange={(v) => setValue("notice_given", v)}
           />
           <FieldError message={errors.notice_given?.message} />
+          {watch("notice_given") === "no" && (
+            <Textarea
+              rows={2}
+              placeholder="Briefly explain why (e.g. month-to-month, landlord knew verbally, lease ended naturally)"
+              {...register("notice_given_desc")}
+              className="mt-1"
+            />
+          )}
         </div>
 
         <div className="space-y-2">
@@ -819,7 +827,7 @@ export function PhotosStep({
 
 // ─── Step 5: Service Agreement ─────────────────────────────────────────────────
 
-const KEY_CLAUSE_TEXT = `Tribune reserves the right to contact your landlord directly to verify settlement and confirm receipt of funds on your behalf. If you receive funds covered by this Agreement and fail to remit Tribune's fee within 30 days of receipt, Tribune may pursue collection through any legal means available, including civil litigation against you in Connecticut courts.`;
+const KEY_CLAUSE_TEXT = `Tribune reserves the right to contact your landlord directly to verify settlement and confirm receipt of funds on your behalf. If you receive funds covered by this Agreement, you must remit Tribune's fee within 1 week of receipt. If payment is not received within 2 weeks of receipt, Tribune may pursue collection through any legal means available, including civil litigation against you in Connecticut courts.`;
 
 export function AgreementStep({
   onBack,
@@ -887,7 +895,7 @@ export function AgreementStep({
           <p>
             <strong className="text-foreground">5. Payment.</strong> Recovered funds go
             directly from your landlord to you. You are responsible for remitting Tribune&apos;s{" "}
-            {CONTINGENCY_PCT}% fee within 30 days of receipt.
+            {CONTINGENCY_PCT}% fee within 1 week of receipt.
           </p>
 
           {/* Key clause with initials */}

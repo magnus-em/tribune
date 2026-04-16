@@ -49,6 +49,10 @@ export default function CaseDetailPage() {
   const [confirmingSent, setConfirmingSent] = useState(false);
   const evidenceRef = useRef<HTMLDivElement>(null);
 
+  async function handleUploadLease(file: File) {
+    await handleUpload("lease", file);
+  }
+
   const loadData = useCallback(async () => {
     const supabase = createClient();
     const [
@@ -183,11 +187,7 @@ export default function CaseDetailPage() {
         variant: "required" as const,
         title: "Upload your lease to begin",
         description:
-          "Tribune cannot review your case until we have a copy of your lease agreement.",
-        cta: {
-          label: "Upload Lease",
-          onClick: () => evidenceRef.current?.scrollIntoView({ behavior: "smooth" }),
-        },
+          "Tribune cannot review your case until we have a copy of your lease agreement. Use the \"Upload Lease\" button in Case Readiness below.",
       };
     }
     if (
@@ -326,9 +326,7 @@ export default function CaseDetailPage() {
         <CaseReadiness
           caseData={caseData}
           documents={documents}
-          onUploadLease={() =>
-            evidenceRef.current?.scrollIntoView({ behavior: "smooth" })
-          }
+          onUploadLeaseFile={handleUploadLease}
         />
       </div>
 

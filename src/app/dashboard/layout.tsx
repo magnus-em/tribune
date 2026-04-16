@@ -28,15 +28,24 @@ export default async function DashboardLayout({
     redirect("/login");
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("is_admin")
-    .eq("id", user.id)
-    .single();
+  const [{ data: profile }, { data: tenantCase }] = await Promise.all([
+    supabase.from("profiles").select("is_admin").eq("id", user.id).single(),
+    supabase
+      .from("cases")
+      .select("id, status, statutory_deadline, amount_withheld_cents, contingency_pct")
+      .eq("tenant_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
 
   return (
     <SidebarProvider>
-      <AppSidebar email={user.email ?? ""} isAdmin={profile?.is_admin ?? false} />
+      <AppSidebar
+        email={user.email ?? ""}
+        isAdmin={profile?.is_admin ?? false}
+        tenantCase={tenantCase}
+      />
       <SidebarInset>
         <header className="flex h-12 shrink-0 items-center gap-2 border-b px-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <SidebarTrigger className="-ml-1" />

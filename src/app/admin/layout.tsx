@@ -38,9 +38,18 @@ export default async function AdminLayout({
     redirect("/dashboard");
   }
 
+  const { count: pendingCount } = await supabase
+    .from("cases")
+    .select("id", { count: "exact", head: true })
+    .in("status", ["intake_submitted", "landlord_responded"]);
+
   return (
     <SidebarProvider>
-      <AppSidebar email={user.email ?? ""} isAdmin={true} />
+      <AppSidebar
+        email={user.email ?? ""}
+        isAdmin={true}
+        adminPendingCount={pendingCount ?? 0}
+      />
       <SidebarInset>
         <header className="flex h-12 shrink-0 items-center gap-2 border-b px-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <SidebarTrigger className="-ml-1" />

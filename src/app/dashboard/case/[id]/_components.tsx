@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -356,16 +356,23 @@ interface ReadinessItem {
 export function CaseReadiness({
   caseData,
   documents,
-  onUploadLease,
+  onUploadLeaseFile,
 }: {
   caseData: Case;
   documents: CaseDocument[];
-  onUploadLease: () => void;
+  onUploadLeaseFile: (file: File) => Promise<void>;
 }) {
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
   const hasLease = documents.some((d) => d.kind === "lease");
-  const hasPhotos = documents.some((d) => d.kind === "photo");
+  const hasPhotos = documents.some(
+    (d) => d.kind === "photo" || d.kind === "photo_move_in" || d.kind === "photo_move_out"
+  );
   const hasContact = !!(caseData.landlord_email || caseData.landlord_phone);
-  const hasDepositProof = documents.some((d) => d.kind === "other" || d.kind === "deduction_itemization");
+  const hasDepositProof = documents.some(
+    (d) => d.kind === "other" || d.kind === "deduction_itemization"
+  );
 
   const items: ReadinessItem[] = [
     { label: "Service agreement signed", done: !!caseData.contingency_agreed_at, required: true },
@@ -377,6 +384,15 @@ export function CaseReadiness({
 
   const requiredDone = items.filter((i) => i.required && i.done).length;
   const requiredTotal = items.filter((i) => i.required).length;
+
+  async function handleLeaseFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    await onUploadLeaseFile(file);
+    setUploading(false);
+    e.target.value = "";
+  }
 
   return (
     <div className="rounded-xl border bg-card p-4 space-y-3">
@@ -416,14 +432,25 @@ export function CaseReadiness({
         ))}
       </div>
       {!hasLease && (
-        <Button
-          size="sm"
-          variant="outline"
-          className="w-full text-xs h-8"
-          onClick={onUploadLease}
-        >
-          <Upload className="size-3 mr-1.5" /> Upload Lease
-        </Button>
+        <>
+          <input
+            ref={fileRef}
+            type="file"
+            accept=".pdf,.jpg,.jpeg,.png"
+            className="sr-only"
+            onChange={handleLeaseFile}
+          />
+          <Button
+            size="sm"
+            variant="outline"
+            className="w-full text-xs h-8"
+            disabled={uploading}
+            onClick={() => fileRef.current?.click()}
+          >
+            <Upload className="size-3 mr-1.5" />
+            {uploading ? "Uploading…" : "Upload Lease"}
+          </Button>
+        </>
       )}
     </div>
   );

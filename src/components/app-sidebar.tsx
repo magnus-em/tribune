@@ -8,7 +8,6 @@ import {
   Shield,
   LogOut,
   ChevronsUpDown,
-  Scale,
   Mail,
   ArrowRight,
 } from "lucide-react";
@@ -151,12 +150,12 @@ export function AppSidebar({
               render={<Link href="/dashboard" />}
               tooltip="Tribune"
             >
-              <div className="flex aspect-square size-7 shrink-0 items-center justify-center rounded-md bg-foreground text-background">
-                <Scale className="size-4" />
+              <div className="flex aspect-square size-7 shrink-0 items-center justify-center rounded-sm bg-[#0a0a08] text-[#b8361f] font-serif italic text-base leading-none select-none">
+                §
               </div>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="font-semibold tracking-tight">Tribune</span>
-                <span className="text-xs text-muted-foreground">Deposit Recovery</span>
+                <span className="text-xs text-muted-foreground">Case Handling</span>
               </div>
             </SidebarMenuButton>
           </SidebarMenuItem>

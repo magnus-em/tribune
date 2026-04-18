@@ -17,7 +17,6 @@ import {
   Clock,
   ArrowRight,
   PlusCircle,
-  Scale,
 } from "lucide-react";
 
 // Human-readable status descriptions shown on the dashboard card
@@ -302,8 +301,8 @@ export default function DashboardPage() {
   if (cases.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-24 px-4">
-        <div className="w-16 h-16 bg-muted rounded-2xl flex items-center justify-center mb-6">
-          <Scale className="size-8 text-muted-foreground" />
+        <div className="w-16 h-16 bg-[#0a0a08] rounded-sm flex items-center justify-center mb-6 font-serif italic text-[#b8361f] text-4xl leading-none select-none">
+          §
         </div>
         <h2 className="text-2xl font-bold mb-2 text-center tracking-tight">
           Ready to recover your deposit?

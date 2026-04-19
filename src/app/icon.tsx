@@ -7,7 +7,7 @@ export default function Icon() {
   return new ImageResponse(
     <div
       style={{
-        background: "#0a0a08",
+        background: "#ffffff",
         width: "100%",
         height: "100%",
         display: "flex",

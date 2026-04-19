@@ -7,13 +7,7 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
-import { Separator } from "@/components/ui/separator";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbList,
-  BreadcrumbPage,
-} from "@/components/ui/breadcrumb";
+import s from "./dashboard.module.css";
 
 
 // Fetches profile + case data and renders the fully-populated sidebar.
@@ -72,19 +66,16 @@ export default async function DashboardLayout({
         <SidebarData userId={user.id} email={user.email ?? ""} />
       </Suspense>
       <SidebarInset>
-        <header className="flex h-12 shrink-0 items-center gap-2 border-b px-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-          <SidebarTrigger className="-ml-1" />
-          <Separator orientation="vertical" className="mr-2 !h-4" />
-          <Breadcrumb>
-            <BreadcrumbList>
-              <BreadcrumbItem>
-                <BreadcrumbPage className="text-sm font-medium">Dashboard</BreadcrumbPage>
-              </BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb>
+        <header className={s.header}>
+          <div className={s.headerLeft}>
+            <SidebarTrigger className="-ml-1" />
+            <div className={s.vSep} />
+            <span className={s.headerLabel}>Dashboard</span>
+          </div>
+          <span className={s.headerRight}><b>§</b> 47a-21</span>
         </header>
         <div className="flex-1 overflow-auto">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">{children}</div>
+          <div className={`max-w-2xl mx-auto px-4 sm:px-6 py-8 ${s.page}`}>{children}</div>
         </div>
       </SidebarInset>
     </SidebarProvider>

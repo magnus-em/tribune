@@ -1,0 +1,264 @@
+.page {
+  --paper: #fff;
+  --ink: #0a0a08;
+  --rule: #d9d5cb;
+  --muted: #6e6a5a;
+  --accent: #b8361f;
+  --bone: #f6f3ea;
+  --serif: var(--font-ibm-plex-serif, "IBM Plex Serif", Georgia, serif);
+  --mono: var(--font-ibm-plex-mono, "Courier New", monospace);
+  font-family: var(--font-sans, system-ui, sans-serif);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Header ── */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 48px;
+  padding: 0 1.25rem;
+  background: var(--bone);
+  border-bottom: 1px solid var(--ink);
+  gap: 0.75rem;
+}
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+.headerLabel {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink);
+  font-weight: 500;
+}
+.headerRight {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.headerRight b {
+  color: var(--accent);
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.vSep {
+  width: 1px;
+  height: 16px;
+  background: var(--rule);
+  flex-shrink: 0;
+}
+
+/* ── Card ── */
+.card {
+  border: 1px solid var(--rule);
+  padding: 1.5rem;
+}
+.cardBone {
+  border: 1px solid var(--rule);
+  background: var(--bone);
+  padding: 1.5rem;
+}
+
+/* ── Typography ── */
+.serif {
+  font-family: var(--serif);
+}
+.mono {
+  font-family: var(--mono);
+}
+.label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.bigNumber {
+  font-family: var(--mono);
+  font-size: 3rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--ink);
+}
+.bigNumberGreen {
+  font-family: var(--mono);
+  font-size: 3rem;
+  font-weight: 700;
+  line-height: 1;
+  color: #2d6a35;
+}
+
+/* ── Status pill ── */
+.statusPill {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border: 1px solid currentColor;
+  white-space: nowrap;
+}
+
+/* ── Rule divider ── */
+.rule {
+  border: none;
+  border-top: 1px solid var(--rule);
+}
+
+/* ── Action notice (replaces blue card) ── */
+.notice {
+  border-left: 3px solid var(--accent);
+  padding: 0.625rem 0.875rem;
+  background: var(--bone);
+  font-size: 0.8125rem;
+  color: var(--ink);
+}
+.noticeLabel {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 0.875rem;
+  margin-bottom: 0.25rem;
+}
+.noticeBody {
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+/* ── Idle status card ── */
+.statusCard {
+  border: 1px solid var(--rule);
+  padding: 0.875rem 1rem;
+  background: var(--paper);
+}
+.statusCardLabel {
+  font-family: var(--serif);
+  font-size: 0.875rem;
+  color: var(--ink);
+}
+
+/* ── Empty state ── */
+.emptyMark {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 2.5rem;
+  color: var(--accent);
+  background: var(--ink);
+  width: 4rem;
+  height: 4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+  flex-shrink: 0;
+}
+.emptyHeading {
+  font-family: var(--serif);
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 0.5rem;
+  text-align: center;
+}
+.emptyBody {
+  font-size: 0.9375rem;
+  color: var(--muted);
+  text-align: center;
+  max-width: 26rem;
+  margin-bottom: 0.5rem;
+  line-height: 1.5;
+}
+
+/* ── Case list row ── */
+.caseRow {
+  border: 1px solid var(--rule);
+  padding: 1rem 1.25rem;
+  transition: border-color 0.15s;
+  text-decoration: none;
+  display: block;
+  background: var(--paper);
+}
+.caseRow:hover {
+  border-color: var(--ink);
+}
+.caseRowOverdue {
+  border-left: 3px solid #b91c1c;
+}
+.caseAddress {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.caseVs {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+/* ── Deadline ── */
+.deadlineRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.875rem;
+  padding: 0 2px;
+}
+.deadlineLabel {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.deadlineValue {
+  font-family: var(--mono);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--ink);
+}
+.deadlineUrgent {
+  color: #b91c1c;
+}
+
+/* ── Meta grid (withheld / fee / net) ── */
+.metaGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--rule);
+}
+.metaCell {}
+.metaCellLabel {
+  font-family: var(--mono);
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+.metaCellValue {
+  font-family: var(--mono);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+.metaCellMuted {
+  font-family: var(--mono);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--muted);
+}

@@ -6,480 +6,457 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import s from "./landing.module.css";
 
+function DepositCalculator() {
+  const [amount, setAmount] = useState(1850);
+
+  const fmt = (n: number) =>
+    n < 0 ? `-$${Math.abs(n).toLocaleString()}` : `$${n.toLocaleString()}`;
+
+  const lawyerFees = 1200;
+  const tribuneNet1x = amount - Math.round(amount * 0.15);
+  const tribuneNet2x = amount * 2 - Math.round(amount * 2 * 0.15);
+  const lawyerNet1x = amount - lawyerFees;
+  const lawyerNet2x = amount * 2 - lawyerFees;
+
+  return (
+    <div className={s.calcCard}>
+      <div className={s.calcBrow}>
+        <span>Case calculator</span>
+        <span className={s.calcBadge}>Estimate</span>
+      </div>
+      <div className={s.calcSubtitle}>What you'd walk away with: Tribune vs. hiring a lawyer</div>
+      <div className={s.calcBody}>
+        <p className={s.calcSliderLabel}>Amount in dispute</p>
+        <div className={s.calcAmount}>{fmt(amount)}</div>
+        <input
+          type="range"
+          min={300}
+          max={5000}
+          step={50}
+          value={amount}
+          onChange={(e) => setAmount(Number(e.target.value))}
+          className={s.calcSlider}
+        />
+        <div className={s.calcSliderRange}>
+          <span>$300</span>
+          <span>$5,000</span>
+        </div>
+
+        <div className={s.calcDivider} />
+
+        <div className={s.calcCompare}>
+          <div className={s.calcCompareLabelEmpty} />
+          <div className={s.calcCompareColHead}>Tribune</div>
+          <div className={s.calcCompareColHead}>Attorney</div>
+
+          <div className={s.calcRowLabel}>They fold (no court)</div>
+          <div className={s.calcColGood}>{fmt(tribuneNet1x)}</div>
+          <div className={`${s.calcColBad} ${lawyerNet1x < 0 ? s.calcColNeg : ""}`}>
+            {fmt(lawyerNet1x)}
+          </div>
+
+          <div className={s.calcRowLabel2x}>We file · up to 2× damages</div>
+          <div className={s.calcColGood2x}>{fmt(tribuneNet2x)}</div>
+          <div className={s.calcColBad2x}>{fmt(lawyerNet2x)}</div>
+        </div>
+
+        <p className={s.calcNote}>
+          Tribune: 15% of recovery, $0 if nothing recovered. Attorney fees estimated ~$1,200 (avg. 4 hrs × $300/hr).
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function useCaseHref() {
+  const [href, setHref] = useState("/login?next=/dashboard/new-case");
+  useEffect(() => {
+    createClient()
+      .auth.getUser()
+      .then(({ data: { user } }) => {
+        if (user) setHref("/dashboard/new-case");
+      });
+  }, []);
+  return href;
+}
+
+const CHARGES = [
+  { item: "Painting / paint touch-ups", amount: "$200–$500", reason: "Normal paint fading is the landlord's cost." },
+  { item: "Carpet cleaning", amount: "$150–$400", reason: "Routine soiling from normal use is wear and tear." },
+  { item: "General cleaning", amount: "$100–$350", reason: "Cleaning between tenants is a cost of being a landlord." },
+  { item: "Scuffs / marks on walls", amount: "$50–$200", reason: "Furniture touches walls. That's everyday living." },
+  { item: "Nail holes", amount: "$50–$150", reason: "Hanging pictures is normal wear and tear." },
+];
+
+const LAW_FACTS = [
+  { sym: "§ 1", title: "21-day deadline", body: "21 days to return the deposit or send an itemized list. Miss it by a day and your claim gets significantly stronger." },
+  { sym: "§ 2", title: "Specific itemization required", body: "\"Cleaning — $300\" isn't compliant. Connecticut requires specific, documented deductions. Most landlords don't meet this bar." },
+  { sym: "§ 3", title: "Interest & escrow", body: "Deposits must be held in interest-bearing accounts with annual statements. If they weren't, that's a separate violation." },
+  { sym: "§ 4", title: "Double damages", body: "Courts can award double the amount wrongfully withheld. That's in the statute — Tribune prepares the documentation; you assert the claim.", highlight: true },
+  { sym: "§ 5", title: "Burden is on them", body: "Your landlord has to justify every dollar kept. Can't document it? Can't deduct it." },
+];
+
 export default function LandingPage() {
-  const [authed, setAuthed] = useState<boolean | null>(null);
+  const caseHref = useCaseHref();
 
   useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data: { user } }) => setAuthed(!!user));
+    const els = document.querySelectorAll("[data-reveal]");
+    const io = new IntersectionObserver(
+      (entries) =>
+        entries.forEach((e) => {
+          if (e.isIntersecting) {
+            e.target.classList.add(s.revealed);
+            io.unobserve(e.target);
+          }
+        }),
+      { threshold: 0.08 }
+    );
+    els.forEach((el) => io.observe(el));
+    return () => io.disconnect();
   }, []);
-
-  const caseHref = authed ? "/dashboard/new-case" : "/login?next=/dashboard/new-case";
 
   return (
     <div className={s.page}>
-      {/* Docket bar */}
-      <div className={s.docket}>
-        <span><b>Case file</b> · Tenant-side · open intake</span>
-        <span>Conn. Gen. Stat. § 47a-21 · Residential deposits</span>
-        <span>Not a law firm · Information only</span>
-      </div>
-
-      {/* Nav */}
+      {/* NAV */}
       <nav className={s.nav}>
-        <Link href="/" className={s.brand}>Tribune</Link>
-        <div className={s.navLinks}>
-          <a href="#playbook">The Playbook</a>
-          <a href="#rights">Your Rights</a>
-          <a href="#process">Process</a>
-          <a href="#faq">Q&A</a>
+        <div className={s.navInner}>
+          <span className={s.navLogo}>Tribune</span>
+          <div className={s.navLinks}>
+            <a href="#charges">What they can't charge</a>
+            <a href="#law">Your rights</a>
+            <a href="#how">How it works</a>
+            <a href="#faq">FAQ</a>
+          </div>
+          <Link href={caseHref} className={s.navCta}>
+            Start free review →
+          </Link>
         </div>
-        {authed ? (
-          <Link href="/dashboard" className={s.navCta}>Dashboard →</Link>
-        ) : (
-          <Link href={caseHref} className={s.navCta}>Open a case →</Link>
-        )}
       </nav>
 
-      {/* Hero */}
+      {/* HERO */}
       <section className={s.hero}>
-        <div className={s.heroWrap}>
-          <div className={s.heroLn}>
-            {Array.from({ length: 13 }, (_, i) => (
-              <span key={i}>{String(i + 1).padStart(2, "0")}</span>
-            ))}
-          </div>
-          <div>
-            <div className={s.caseCaption}>
-              <span><b>The matter</b> · residential security deposit</span>
-              <span><b>Role</b> · tenant-side case handling</span>
-              <span><b>Stage</b> · intake open</span>
+        <div className={s.heroInner}>
+          <div className={s.heroLeft} data-reveal>
+            <div className={s.heroEyebrow}>
+              <span className={s.pill}>Connecticut</span>
+              <span className={s.pill}>§ 47a-21</span>
+              <span className={s.pill}>No fee unless we recover</span>
             </div>
-            <h1 className={s.h1}>
-              Your landlord had 21 days.<br />
-              <em>Time's up.</em>
+            <h1 className={s.heroH1}>
+              Your landlord kept<br />
+              your deposit —<br />
+              <em>or part of it.</em><br />
+              We'll get it back.
             </h1>
-            <p className={s.lede}>
-              Tribune takes the case. Letters drafted, negotiation handled —{" "}
-              <span className={s.hl}>
-                most landlords settle once the statutory exposure is on the table.
-              </span>{" "}
-              You approve each move; we make them.
+            <p className={s.heroSub}>
+              Tribune handles all correspondence, negotiation, and small-claims prep if it gets there. You don't talk to your landlord. You don't write anything.
             </p>
-            <div className={s.ctas}>
-              <Link href={caseHref} className={`${s.btn} ${s.btnP}`}>
-                Open a case — free evaluation →
+            <div className={s.heroCtas}>
+              <Link href={caseHref} className={s.btnPrimary}>
+                Start your free case review →
               </Link>
-              <a href="#playbook" className={`${s.btn} ${s.btnG}`}>
-                See the playbook
+              <a href="#charges" className={s.btnOutline}>
+                See what they can't charge
               </a>
             </div>
-            <div className={s.micro}>
-              Free evaluation · 15% of recovery · No win, no fee · Not a law firm
-            </div>
+          </div>
+
+          <div className={s.heroRight} data-reveal>
+            <DepositCalculator />
           </div>
         </div>
       </section>
 
-      {/* § 01 Playbook */}
-      <section id="playbook" className={s.sectionBone}>
-        <div className={s.sectWrap}>
-          <div className={s.sectHead}>
-            <div className={s.sectNum}>§ 01 · Playbook</div>
-            <div>
-              <h2 className={s.h2}>
-                This isn't personal. <em>It's a numbers game.</em>
-              </h2>
-              <p className={s.dek}>
-                Your landlord doesn't have a grudge — they don't think about you
-                specifically at all. Across every tenancy, they're running the
-                same calculation. For most tenants, it comes out in the landlord's
-                favor. Deposit disputes are among the most common tenant complaints
-                filed with state housing agencies, and the vast majority go
-                unpursued.
-              </p>
-            </div>
-          </div>
-          <div className={s.playbook}>
-            <div className={`${s.pbCol} ${s.pbColThem}`}>
-              <h3 className={s.pbColHead}>
-                <b>The landlord's model</b>
-              </h3>
-              <div className={s.pbItem}>
-                <div className={s.pbItemLabel}>01 · Deposits as income</div>
-                <p className={s.pbItemText}>The landlord keeps it unless formally challenged. Most tenants never challenge it.</p>
-              </div>
-              <div className={s.pbItem}>
-                <div className={s.pbItemLabel}>02 · Turnover costs as "damage"</div>
-                <p className={s.pbItemText}>Repainting, cleaning, re-keying — routine costs billed as tenant damage on the way out.</p>
-              </div>
-              <div className={s.pbItem}>
-                <div className={s.pbItemLabel}>03 · Same letter, every tenant</div>
-                <p className={s.pbItemText}>Nothing personal. The same deductions go to every outgoing tenant — most of them stick.</p>
-              </div>
-              <div className={s.pbItem}>
-                <div className={s.pbItemLabel}>04 · Offer half, close the file</div>
-                <p className={s.pbItemText}>If a tenant pushes back, a partial settlement is cheaper than a dispute. Most tenants take it.</p>
-              </div>
-            </div>
-            <div className={s.pbCol}>
-              <h3 className={s.pbColHead}>
-                <b>What the landlord is counting on</b>
-              </h3>
-              <div className={s.pbItem}>
-                <div className={s.pbItemLabel}>01 · Tenants don't know the statute</div>
-                <p className={s.pbItemText}>Most tenants know they paid a deposit. They don't know landlords have a legal deadline to return it — or what it costs to miss it.</p>
-              </div>
-              <div className={s.pbItem}>
-                <div className={s.pbItemLabel}>02 · Tenants let it go</div>
-                <p className={s.pbItemText}>The overwhelming majority send one email and move on. The model is built around that rate.</p>
-              </div>
-              <div className={s.pbItem}>
-                <div className={s.pbItemLabel}>03 · Filing feels too hard</div>
-                <p className={s.pbItemText}>Small claims sounds slow and complicated. A lot of valid claims drop here — even from tenants who know their rights.</p>
-              </div>
-              <div className={s.pbItem}>
-                <div className={s.pbItemLabel}>04 · Half sounds good enough</div>
-                <p className={s.pbItemText}>When the landlord offers a partial settlement, it feels like progress. For most tenants, it ends the dispute.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* PROOF STRIP */}
+      <div className={s.proofStrip}>
+        <span>15% contingency</span>
+        <span className={s.dot}>·</span>
+        <span>No upfront cost</span>
+        <span className={s.dot}>·</span>
+        <span>CT § 47a-21 specialists</span>
+      </div>
 
-      {/* § 02 Rights */}
-      <section id="rights" className={s.section}>
-        <div className={s.sectWrap}>
-          <div className={s.sectHead}>
-            <div className={s.sectNum}>§ 02 · Your Rights</div>
-            <div>
-              <h2 className={s.h2}>
-                What CT § 47a-21 actually says.{" "}
-                <em>In plain English.</em>
-              </h2>
-              <p className={s.dek}>
-                Connecticut's deposit statute is specific, enforceable, and most
-                landlords are counting on you not having read it.
+      {/* THE STRATEGY */}
+      <section className={s.strategySection}>
+        <div className={s.wrap}>
+          <p className={s.label} data-reveal>01 / The Strategy</p>
+          <div className={s.strategyLead} data-reveal>
+            <div className={s.strategyLeadStat}>
+              Most fold.<br />Before court.
+            </div>
+            <p className={s.strategyLeadBody}>
+              Landlords aren't asking if they're right. They're asking if you'll follow through. A documented claim changes that calculation fast.
+            </p>
+          </div>
+          <div className={s.strategyGrid}>
+            <div className={s.strategyCard} data-reveal>
+              <div className={s.strategyCardN}>01</div>
+              <h3 className={s.strategyCardTitle}>Documented from day one</h3>
+              <p className={s.strategyCardBody}>
+                Every missed deadline named. Every deduction flagged against the statute. Exposure calculated to the dollar.
               </p>
             </div>
-          </div>
-          <div className={s.rights}>
-            <div className={s.rRow}>
-              <div className={s.rNum}>Right i.</div>
-              <div>
-                <h4 className={s.rHead}>21 days to return or itemize.</h4>
-                <p className={s.rText}>After your tenancy ends, your landlord has exactly 21 days to return the full deposit with interest, or deliver a written, itemized list of damages. No list? The full amount is owed.</p>
-              </div>
-              <div className={s.rNote}><b>Deadline missed</b><br />Full return required</div>
-            </div>
-            <div className={s.rRow}>
-              <div className={s.rNum}>Right ii.</div>
-              <div>
-                <h4 className={s.rHead}>Missed deadlines can mean more than the deposit.</h4>
-                <p className={s.rText}>Under § 47a-21, when a landlord fails to comply — no statement, improper deductions, missed deadline — the court may award more than the deposit alone. We assess the full picture during intake and factor it into every letter.</p>
-              </div>
-              <div className={s.rNote}><b>Potential remedy</b><br />More than deposit alone</div>
-            </div>
-            <div className={s.rRow}>
-              <div className={s.rNum}>Right iii.</div>
-              <div>
-                <h4 className={s.rHead}>Wear-and-tear is not deductible.</h4>
-                <p className={s.rText}>Faded paint, worn carpet, minor scuffs — none are lawful deductions in Connecticut. Routine repaint, carpet shampoo, re-keying, and light cleaning are maintenance, not damage.</p>
-              </div>
-              <div className={s.rNote}><b>Tactic</b><br />Line-item dispute</div>
-            </div>
-            <div className={s.rRow}>
-              <div className={s.rNum}>Right iv.</div>
-              <div>
-                <h4 className={s.rHead}>Interest is owed from day one.</h4>
-                <p className={s.rText}>Your landlord is required to hold your deposit in a Connecticut escrow account and issue an annual interest statement by January 31. No statement? Separate violation.</p>
-              </div>
-              <div className={s.rNote}><b>Effect</b><br />Additional violation on record</div>
-            </div>
-            <div className={s.rRow}>
-              <div className={s.rNum}>Right v.</div>
-              <div>
-                <h4 className={s.rHead}>You don't have to talk to them.</h4>
-                <p className={s.rText}>Once Tribune is handling, every contact routes through us. You review and approve; we respond. No phone calls. No letter-drafting at 11pm. Written record preserved throughout.</p>
-              </div>
-              <div className={s.rNote}><b>Method</b><br />Written correspondence only</div>
-            </div>
-            <div className={s.rRow}>
-              <div className={s.rNum}>Right vi.</div>
-              <div>
-                <h4 className={s.rHead}>Small claims is real leverage.</h4>
-                <p className={s.rText}>Connecticut small claims handles deposit disputes — low filing fees, short timelines, no lawyer required. When a landlord believes filing is imminent, most negotiate in earnest. That credibility is the point.</p>
-              </div>
-              <div className={s.rNote}><b>Reality</b><br />Credible escalation changes math</div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* § 03 Exposure */}
-      <section className={s.sectionBone}>
-        <div className={s.sectWrap}>
-          <div className={s.sectHead}>
-            <div className={s.sectNum}>§ 03 · Exposure</div>
-            <div>
-              <h2 className={s.h2}>
-                Your claim may be worth more than the deposit alone.{" "}
-                <em>The statute provides for it.</em>
-              </h2>
-              <p className={s.dek}>
-                Depending on the violations, what you're owed can significantly
-                exceed the original deposit. We run the numbers during intake —
-                here's the shape of a typical case.
+            <div className={s.strategyCard} data-reveal>
+              <div className={s.strategyCardN}>02</div>
+              <h3 className={s.strategyCardTitle}>We run the whole back-and-forth</h3>
+              <p className={s.strategyCardBody}>
+                Tribune manages every letter, response, and counter. You see updates in your case log. You're never in the conversation.
               </p>
             </div>
-          </div>
-          <div className={s.ledgerGrid}>
-            <div className={s.ledgerCard}>
-              <div className={s.ledgerTitle}>Illustrative case · your numbers vary</div>
-              <div className={s.ledRows}>
-                <span className={s.ledRowLabel}>Deposit withheld</span>
-                <span className={s.ledRowVal}>$1,850.00</span>
-                <span className={s.ledRowLabel}>Statutory damages (if applicable)</span>
-                <span className={s.ledRowVal}>+ $1,850.00</span>
-                <span className={s.ledRowLabel}>Interest accrued</span>
-                <span className={s.ledRowVal}>+ $3.85</span>
-                <span className={s.ledRowLabel}>Credit · landlord offer</span>
-                <span className={s.ledRowVal}>($925.00)</span>
-              </div>
-              <div className={s.ledTotal}>
-                <span className={s.ledTotalLabel}>Gap Tribune is negotiating →</span>
-                <span className={s.ledTotalBig}>$2,778</span>
-              </div>
-            </div>
-            <div className={s.ledgerCardBone}>
-              <div className={s.ledgerTitle}>Why the math matters</div>
-              <p style={{ margin: "0 0 12px", fontSize: "15.5px", lineHeight: "1.55" }}>
-                A landlord who sees{" "}
-                <span className={s.hl}>a documented claim, a statute citation, and a filing-ready package</span>{" "}
-                negotiates very differently than one who gets{" "}
-                <span className={s.hl}>a frustrated email</span>.
-              </p>
-              <p style={{ margin: 0, fontSize: "15.5px", lineHeight: "1.55", color: "var(--muted)" }}>
-                <em>Most cases settle before filing. This is why.</em>
+            <div className={s.strategyCard} data-reveal>
+              <div className={s.strategyCardN}>03</div>
+              <h3 className={s.strategyCardTitle}>Ready to file if needed</h3>
+              <p className={s.strategyCardBody}>
+                What moves landlords is the credible prospect of filing. If your case needs small claims, Tribune prepares the full package.
               </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* § 04 Process */}
-      <section id="process" className={s.section}>
-        <div className={s.sectWrap}>
-          <div className={s.sectHead}>
-            <div className={s.sectNum}>§ 04 · Process</div>
-            <div>
-              <h2 className={s.h2}>
-                How we handle your case.
-              </h2>
-              <p className={s.dek}>
-                Once a case is open, Tribune takes over the back-and-forth:
-                drafting, sending, following up, negotiating. If the landlord
-                hasn't responded by the time we're through the sequence, we help
-                you file in small claims.
-              </p>
-            </div>
-          </div>
-          <div className={s.exhibits}>
-            <div className={s.ex}>
-              <div className={s.exN}>Exhibit A · Week 1</div>
-              <h4 className={s.exHead}>Open the case.</h4>
-              <p className={s.exText}>Five minutes. Lease, photos, correspondence, deduction notice. Free evaluation — we'll tell you honestly if you have a case worth pursuing.</p>
-            </div>
-            <div className={s.ex}>
-              <div className={s.exN}>Exhibit B · Week 1</div>
-              <h4 className={s.exHead}>We draft the demand.</h4>
-              <p className={s.exText}>Grounded in § 47a-21, your facts, your numbers. Interest calculated, double-damages exposure quantified. You sign, we send certified.</p>
-            </div>
-            <div className={s.ex}>
-              <div className={s.exN}>Exhibit C · Weeks 2–4</div>
-              <h4 className={s.exHead}>We negotiate.</h4>
-              <p className={s.exText}>Responses, counters, follow-ups — Tribune handles all of it. Every update logged in your case file. Most matters resolve here.</p>
-            </div>
-            <div className={s.ex}>
-              <div className={s.exN}>Exhibit D · If required</div>
-              <h4 className={s.exHead}>We prepare the filing.</h4>
-              <p className={s.exText}>Complaint, indexed exhibits, statutory citations. Small claims in Connecticut is navigable without a lawyer — we make sure yours is filing-ready.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Pull quote */}
-      <section className={s.sectionBone} style={{ padding: "80px 48px" }}>
-        <div className={`${s.sectWrap} ${s.pullQuote}`}>
-          <q>
-            The calculation on the other side assumes the tenant won't act.{" "}
-            <em><span className={s.hl}>We reset the calculation.</span></em>
-          </q>
-          <cite>— Tribune · On Method</cite>
-        </div>
-      </section>
-
-      {/* § 05 Escalation */}
-      <section id="escalate" className={s.section}>
-        <div className={s.sectWrap}>
-          <div className={s.sectHead}>
-            <div className={s.sectNum}>§ 05 · Escalation</div>
-            <div>
-              <h2 className={s.h2}>
-                Why landlords take this seriously.
-              </h2>
-              <p className={s.dek}>
-                Landlords who withhold deposits deal with many tenants. They've
-                learned to read the room — who will follow through and who won't.
-                Everything we do is designed to land clearly on the right side
-                of that read. The vast majority return the deposit before it
-                ever reaches filing.
-              </p>
-            </div>
-          </div>
-          <div className={s.exhibits}>
-            <div className={s.ex}>
-              <div className={s.exN}>Factor 01</div>
-              <h4 className={s.exHead}>The correspondent signal.</h4>
-              <p className={s.exText}>Correspondence from Tribune tells a landlord immediately that someone organized is handling this case — not a tenant writing alone at midnight. That perception shift happens before they've read the first sentence.</p>
-            </div>
-            <div className={s.ex}>
-              <div className={s.exN}>Factor 02</div>
-              <h4 className={s.exHead}>The paper trail.</h4>
-              <p className={s.exText}>Every communication is dated, cited, and on the record. A landlord ignoring a documented § 47a-21 deadline isn't just stalling — they're building a record against themselves. That changes their incentives.</p>
-            </div>
-            <div className={s.ex}>
-              <div className={s.exN}>Factor 03</div>
-              <h4 className={s.exHead}>The credible commitment.</h4>
-              <p className={s.exText}>We prepare your small-claims filing before we need it. "We are ready to file" and "we might file someday" land very differently — experienced landlords and property managers know exactly which one this is.</p>
-            </div>
-            <div className={s.ex}>
-              <div className={s.exN}>Factor 04</div>
-              <h4 className={s.exHead}>The asymmetric cost.</h4>
-              <p className={s.exText}>Settling costs them the deposit. Holding out costs more, takes longer, and ends in court. Every ignored step makes the math clearer. Most landlords reach their own conclusion before we have to explain it.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* § 06 FAQ */}
-      <section id="faq" className={s.sectionBone}>
-        <div className={s.sectWrap}>
-          <div className={s.sectHead}>
-            <div className={s.sectNum}>§ 06 · Q&A</div>
-            <div>
-              <h2 className={s.h2}>Common questions.</h2>
-              <p className={s.dek}>
-                If you don't see yours, open a case — the evaluation is free
-                and you'll get a real answer, not a form reply.
-              </p>
-            </div>
-          </div>
-          <div>
-            <details className={s.faqItem} open>
-              <summary className={s.faqSummary}>
-                <span className={s.faqQNum}>Q 01</span>
-                <span className={s.faqQText}>Are you a law firm?</span>
-              </summary>
-              <div className={s.faqAnswer}>No. Tribune provides legal-information and document-preparation services and handles correspondence and negotiation on your behalf. Letters are signed by you; Tribune is named as preparer. We are not your attorney, do not provide legal advice or legal representation, and if a matter benefits from a lawyer we'll say so.</div>
-            </details>
-            <details className={s.faqItem}>
-              <summary className={s.faqSummary}>
-                <span className={s.faqQNum}>Q 02</span>
-                <span className={s.faqQText}>What does it cost?</span>
-              </summary>
-              <div className={s.faqAnswer}>15% of what we recover, paid after the money reaches you. No recovery, no fee. Hard costs — certified mail, filing fees if it escalates — are pass-through and disclosed up front.</div>
-            </details>
-            <details className={s.faqItem}>
-              <summary className={s.faqSummary}>
-                <span className={s.faqQNum}>Q 03</span>
-                <span className={s.faqQText}>Do I have to talk to my landlord?</span>
-              </summary>
-              <div className={s.faqAnswer}>No. Once your case is open, every contact routes to Tribune. You'll see every update and approve the major moves — but you never have to pick up a phone or write another word to your landlord.</div>
-            </details>
-            <details className={s.faqItem}>
-              <summary className={s.faqSummary}>
-                <span className={s.faqQNum}>Q 04</span>
-                <span className={s.faqQText}>My landlord sent a deduction list. Still a case?</span>
-              </summary>
-              <div className={s.faqAnswer}>Usually. Deductions must be itemized, specific, documented, and exclude normal wear and tear — faded paint, worn carpet, routine cleaning. Most lists don't meet that bar. We evaluate yours line by line against § 47a-21.</div>
-            </details>
-            <details className={s.faqItem}>
-              <summary className={s.faqSummary}>
-                <span className={s.faqQNum}>Q 05</span>
-                <span className={s.faqQText}>Am I eligible?</span>
-              </summary>
-              <div className={s.faqAnswer}>Tribune currently handles matters in Connecticut. If you're a residential tenant whose landlord withheld your deposit or failed to provide an itemized statement within 21 days of move-out, you likely have a case. Open one and we'll confirm in the first response.</div>
-            </details>
-            <details className={s.faqItem}>
-              <summary className={s.faqSummary}>
-                <span className={s.faqQNum}>Q 06</span>
-                <span className={s.faqQText}>What if they ignore us?</span>
-              </summary>
-              <div className={s.faqAnswer}>Every ignored deadline strengthens the record. For true holdouts we prepare a small-claims package — complaint, exhibits, citations — ready to file. Small claims in Connecticut is tenant-navigable without a lawyer. Filing fees are typically under $75.</div>
-            </details>
-          </div>
-        </div>
-      </section>
-
-      {/* § 07 Final CTA */}
-      <section className={s.final}>
-        <div className={s.finalInner}>
-          <div className={s.finalSectNum}>§ 07 · Open a case</div>
-          <h2 className={`${s.h2} ${s.finalH2}`}>
-            Your landlord is counting on you doing nothing.
+      {/* THAT'S NOT DAMAGE — THE INVOICE */}
+      <section className={s.sectionInvoice} id="charges">
+        <div className={s.wrap}>
+          <p className={s.label} data-reveal>02 / What They Can't Charge</p>
+          <h2 className={s.h2} data-reveal>
+            Most deduction lists<br />don't hold up.
           </h2>
-          <p className={`${s.dek} ${s.finalDek}`}>
-            Five minutes to open the case. Free evaluation. If we take it, you
-            don't write another word to your landlord.
+          <p className={s.dek} data-reveal>
+            Under Connecticut law, normal wear and tear is never deductible. Landlords charge for it anyway — because most tenants don't push back.
           </p>
-          <div className={s.ctasCentered}>
-            <Link href={caseHref} className={`${s.btn} ${s.finalBtnP}`}>
-              Open a case →
-            </Link>
-            <a href="#rights" className={`${s.btn} ${s.finalBtnG}`}>
-              Read your rights
-            </a>
+
+          <div className={s.invoice} data-reveal>
+            <div className={s.invoiceHead}>
+              <div>
+                <div className={s.invoiceFrom}>123 Property Holdings LLC · New Haven, CT</div>
+                <div className={s.invoiceDate}>April 2026</div>
+              </div>
+              <div className={s.invoiceTitleBlock}>
+                <div className={s.invoiceTitle}>SECURITY DEPOSIT</div>
+                <div className={s.invoiceTitle}>DEDUCTION NOTICE</div>
+              </div>
+            </div>
+            <div className={s.invoiceCols}>
+              <span>Item charged</span>
+              <span className={s.invoiceColAmt}>Amount</span>
+              <span>Verdict</span>
+            </div>
+            {CHARGES.map((c, i) => (
+              <div
+                key={i}
+                className={s.invoiceRow}
+                style={{ "--delay": `${i * 0.09}s` } as React.CSSProperties}
+              >
+                <span className={s.invoiceItem}>{c.item}</span>
+                <span className={s.invoiceAmt}>{c.amount}</span>
+                <div className={s.invoiceVerdict}>
+                  <span className={s.stamp}>Not deductible</span>
+                  <span className={s.stampReason}>{c.reason}</span>
+                </div>
+              </div>
+            ))}
+            <div className={s.invoiceFoot}>
+              <p className={s.invoiceFootNote}>
+                These charges appear in thousands of CT deduction notices. Most don't hold up under § 47a-21.
+              </p>
+              <div className={s.invoiceFootTotal}>
+                <span className={s.invoiceFootLabel}>Total claimed</span>
+                <span className={s.invoiceFootAmt}><s>$2,850+</s></span>
+                <span className={s.invoiceFootVerdict}>Potentially void under § 47a-21</span>
+              </div>
+            </div>
+          </div>
+
+          <blockquote className={s.ruleBox} data-reveal>
+            <span className={s.ruleBoxLabel}>The rule</span>
+            <p>If it happened because someone <em>lived</em> there — not because they <em>abused</em> it — it's wear and tear. Landlords don't get to charge you for the passage of time.</p>
+          </blockquote>
+        </div>
+      </section>
+
+      {/* LAW BACKS YOU UP */}
+      <section className={s.sectionCream} id="law">
+        <div className={s.wrap}>
+          <p className={s.label} data-reveal>03 / The Law</p>
+          <h2 className={s.h2} data-reveal>
+            Connecticut law is specific.<br /><em>And it's on your side.</em>
+          </h2>
+          <div className={s.lawGrid}>
+            {LAW_FACTS.map((f, i) => (
+              <div
+                key={i}
+                className={`${s.lawCard} ${f.highlight ? s.lawCardHL : ""}`}
+                data-reveal
+                style={{ "--i": i } as React.CSSProperties}
+              >
+                <div className={s.lawSym}>{f.sym}</div>
+                <h3 className={s.lawTitle}>{f.title}</h3>
+                <p className={s.lawBody}>{f.body}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* Footer */}
+      {/* HOW IT WORKS */}
+      <section className={s.sectionNarrative} id="how">
+        <div className={s.narrativeWrap}>
+          <p className={s.label} data-reveal>04 / How It Works</p>
+          <h2 className={s.h2} data-reveal>Built on how<br /><em>landlords actually behave.</em></h2>
+          <div className={s.narrativeLayout}>
+            <div className={s.narrativeLeft} data-reveal>
+              <p style={{ fontSize: "17px", lineHeight: "1.75", color: "var(--ink-mid)", margin: "0 0 24px" }}>
+                The delay, the vague invoice, the lowball offer — each step of our process is built around what landlords actually do.
+              </p>
+              <p style={{ fontSize: "17px", lineHeight: "1.75", color: "var(--ink-light)", margin: "0" }}>
+                You see every update in your case log. You don't have to deal with any of it.
+              </p>
+            </div>
+            <div className={s.narrativeRight}>
+              {[
+                {
+                  n: "01",
+                  title: "Case review",
+                  body: "We evaluate your documents, timeline, and the landlord's compliance with § 47a-21. If the claim isn't strong, we'll tell you directly.",
+                },
+                {
+                  n: "02",
+                  title: "Initial demand goes out",
+                  body: "A certified letter citing the statute, documenting violations, and naming a deadline. Some landlords fold immediately.",
+                },
+                {
+                  n: "03",
+                  title: "We hold the line",
+                  body: "For holdouts: vague rebuttals, lowball offers, silence. Tribune knows what each response actually means and how to counter it. Every round builds the record.",
+                },
+                {
+                  n: "04",
+                  title: "Small claims if needed",
+                  body: "Most cases resolve before this point. For holdouts, we prepare the complete filing package. You show up once. Filing fees are typically under $75.",
+                },
+              ].map((stage, i) => (
+                <div key={i} className={s.narrativeStage} data-reveal style={{ "--i": i } as React.CSSProperties}>
+                  <div className={s.narrativeStageNum}>{stage.n}</div>
+                  <div>
+                    <h3 className={s.narrativeStageTitle}>{stage.title}</h3>
+                    <p className={s.narrativeStageBody}>{stage.body}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className={s.stepsCta} data-reveal style={{ marginTop: "60px" }}>
+            <Link href={caseHref} className={s.btnDark}>
+              Start your free case review →
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* PRICING */}
+      <section className={s.sectionPricing} id="pricing">
+        <div className={s.wrap}>
+          <div className={s.pricingWrap} data-reveal>
+            <p className={s.label}>05 / Pricing</p>
+            <div className={s.pricingFig}>15%</div>
+            <h2 className={s.pricingHead}>No recovery, no fee.</h2>
+            <p className={s.pricingBody}>
+              Tribune charges 15% of what we recover — paid after the money hits your account. If we recover nothing, you owe nothing.
+            </p>
+            <div className={s.pricingVs}>
+              <div className={s.pricingVsCol}>
+                <span className={s.pricingVsLabel}>Attorney</span>
+                <span className={s.pricingVsVal}><s>$250–400/hr</s></span>
+                <span className={s.pricingVsNote}>3–6 hrs typical · $800–2,400+ before recovery</span>
+              </div>
+              <span className={s.pricingVsDivider}>vs</span>
+              <div className={s.pricingVsCol}>
+                <span className={s.pricingVsLabel}>Tribune</span>
+                <span className={s.pricingVsValGood}>15% of recovery</span>
+                <span className={s.pricingVsNote}>$0 if we recover nothing</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* WHO WE ARE */}
+      <section className={s.sectionCream}>
+        <div className={s.wrap}>
+          <p className={s.label} data-reveal>06 / About</p>
+          <div className={s.aboutWrap} data-reveal>
+            <h2 className={s.aboutH2}>Built at Yale.</h2>
+            <p className={s.aboutBody}>
+              We've been through this — bogus deductions, holdout landlords, the whole thing. After researching the statute and learning how bad landlords actually operate, we built Tribune to make what we figured out available to every Connecticut tenant.
+            </p>
+            <p className={s.aboutFine}>
+              Tribune is a document-preparation and legal-information service — not a law firm. Every letter is signed by you; we prepare and send it on your behalf. If a case benefits from an attorney, we'll tell you directly.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section className={s.sectionFaq} id="faq">
+        <div className={s.wrap}>
+          <p className={s.label} data-reveal>07 / FAQ</p>
+          <h2 className={s.h2} data-reveal>Common questions.</h2>
+          <div className={s.faqCols}>
+            {[
+              { q: "Are you a law firm?", a: "No. Tribune is a document-preparation and legal-information service. You sign every letter — we research, draft, and send it on your behalf. If your case needs a lawyer, we'll tell you." },
+              { q: "What does it cost?", a: "15% of what we recover, paid after money hits your account. If we recover nothing, you pay nothing. Hard costs are pass-through and disclosed up front." },
+              { q: "Do I have to deal with my landlord?", a: "No. Tribune handles all correspondence. The entire negotiation runs through us — you see updates but you're completely out of the conversation." },
+              { q: "My landlord sent a deduction list. Still a case?", a: "Often yes. Deductions must be itemized, specific, documented, and exclude normal wear and tear. Most don't meet that standard." },
+              { q: "What if my landlord ignores the letters?", a: "Every ignored deadline raises the statutory exposure and strengthens the record. For holdouts, we prepare the small-claims package ready to file." },
+              { q: "How long does this take?", a: "Most matters resolve in 4–8 weeks. Small claims adds time but is straightforward — filing fees are typically under $75." },
+            ].map((f, i) => (
+              <details key={i} className={s.faqItem} data-reveal>
+                <summary className={s.faqQ}>{f.q}</summary>
+                <p className={s.faqA}>{f.a}</p>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* FINAL CTA */}
+      <section className={s.sectionFinal}>
+        <div className={s.wrap}>
+          <div className={s.finalInner} data-reveal>
+            <h2 className={s.finalH2}>
+              Your landlord is counting on you<br />
+              to do nothing.<br />
+              <em>Prove them wrong.</em>
+            </h2>
+            <div className={s.finalRight}>
+              <Link href={caseHref} className={s.btnPrimary}>
+                Start your free case review →
+              </Link>
+              <p className={s.finalMicro}>
+                Takes about 10 minutes · No credit card · No commitment unless we recover
+              </p>
+              <p className={s.finalFine}>
+                Tribune provides legal-information and document-preparation services for Connecticut tenants. Not a law firm. All correspondence signed by the tenant.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* FOOTER */}
       <footer className={s.footer}>
-        <div className={s.footerWrap}>
-          <div>
+        <div className={s.footerInner}>
+          <div className={s.footerBrand}>
             <strong>Tribune</strong>
-            Case-handling for residential tenants in Connecticut. Rights,
-            correspondence, negotiation, and escalation under § 47a-21 — so you
-            don't do this alone.
+            <p>Security deposit recovery for Connecticut tenants.</p>
           </div>
-          <div>
-            <strong>Service</strong>
+          <div className={s.footerLinks}>
             <Link href={caseHref}>Open a case</Link>
-            <a href="#rights">Your rights</a>
-            <a href="#process">How it works</a>
+            <a href="#charges">What they can't charge</a>
+            <a href="#how">How it works</a>
+            <a href="#faq">FAQ</a>
           </div>
-          <div>
-            <strong>Tribune</strong>
-            <a href="#">About</a>
-            <a href="#">Method</a>
-            <a href="#">Contact</a>
-          </div>
-          <div>
-            <strong>Notice</strong>
-            <a href="#">Terms</a>
-            <a href="#">Privacy</a>
-            <a href="#">Not a law firm</a>
-          </div>
-          <div className={s.footerFine}>
-            Tribune provides legal-information and document-preparation services and
-            handles correspondence and negotiation on behalf of residential tenants.
-            Tribune is not a law firm, is not your attorney, and does not provide
-            legal advice or legal representation. All correspondence is signed by the
-            tenant; Tribune is named as preparer and authorized correspondent.
-            Connecticut residential tenants only. © 2026 Tribune Services, Inc.
-          </div>
+          <p className={s.footerFine}>© 2026 Tribune Services, Inc. · Not a law firm · Connecticut only</p>
         </div>
       </footer>
     </div>

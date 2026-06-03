@@ -87,6 +87,29 @@ The collections language must be literally true — it's a real consequence, not
 - "Information, not legal advice" disclaimers appear on intake, dashboard, case detail, letter previews, and in every outbound email.
 - Every outbound letter is reviewed by you (the admin) before posting. The admin UI is the review surface.
 
+## Strategic Thesis — What Makes Tribune Defensible
+
+The right comparison is McKinsey or AlixPartners, not a legal form generator. That thesis holds only if Tribune becomes a real operating workflow — not a letter generator.
+
+**Tribune is defensible when it is:**
+- **Outcome-driven.** Every feature traces to deposit recovery. The system is evaluated by case outcomes, not activity.
+- **Case-stateful.** The system knows where every case stands, why, and what the landlord is likely calculating. Status is not a label — it is operational context.
+- **Evidence-aware.** Documents, photos, deduction notices, and landlord responses are structured data that inform strategy. Not file attachments that sit in storage.
+- **Escalation-aware.** Tribune understands what makes a landlord settle — the documented, credible prospect of court — and builds pressure methodically. Each step is designed around how landlords actually behave.
+- **Verifier-heavy.** Tribune independently confirms recovery. The tenant cannot make it disappear by not reporting it. Controls exist on both sides.
+- **Memory-rich.** Prior landlord behavior, response patterns, case outcomes, and deduction types accumulate into reusable context across cases. Tribune gets smarter.
+- **Trusted enough that users rely on it to run the process.** They don't manage Tribune — they report outcomes.
+
+**Tribune is not defensible when it is:**
+- Mainly a generator of letters or legal arguments — replicable with a prompt and a spreadsheet.
+- Thin on controls and auditability — easily bypassed or gamed.
+- Not accumulating workflow data across cases — no compounding advantage.
+- A tool users have to manage, rather than a system they trust.
+
+**The key strategic question is not "can Tribune use AI?" It is "can Tribune become the system that actually runs the recovery workflow?"** That is the difference between a cool feature and a defensible company. The moat is the workflow, the escalation logic, the data, and the trust — not the letter templates.
+
+Every feature decision should be evaluated against this. If it makes Tribune more stateful, more verifier-heavy, more memory-rich, or more trustworthy as an operator — build it. If it makes Tribune a better document producer without adding operational depth — deprioritize or reframe it.
+
 ## Open Strategic Questions
 - Minimum case size worth accepting (cost of admin time + mailing vs. 15% of the recovery). Defer until we have real cases.
 - Exact UPL-safe wording for tenant-facing copy and letter templates. Needs attorney review before launch to real users.

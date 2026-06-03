@@ -4,8 +4,8 @@ This document describes what the product does and the rules it operates under. W
 
 ## User Roles
 
-- **Tenant** — the primary end user. Submits a case, uploads supporting documents, reviews case updates, confirms actions (letter sent, response received, resolution).
-- **Admin** — Tribune staff (you). Reviews uploaded documents, drafts and posts demand letters, updates case status, posts tenant-visible updates, adds internal notes, confirms recovery, invoices the tenant for the contingency fee off-platform.
+- **Tenant** — the primary end user. Submits a case, uploads supporting documents, and monitors status. Tribune handles all landlord correspondence on the tenant's behalf; the tenant's active role is intake and reporting recovery when it arrives.
+- **Admin** — Tribune staff (you). Reviews uploaded documents, drafts and dispatches demand letters directly to the landlord, logs landlord replies, updates case status, posts tenant-visible updates, adds internal notes, records recovery, and invoices the tenant for the contingency fee off-platform.
 
 Admin access is granted via `profiles.is_admin = true`, set manually in the database. There is no self-serve admin signup.
 
@@ -13,15 +13,12 @@ Admin access is granted via `profiles.is_admin = true`, set manually in the data
 
 ### Tenant
 - As a tenant, I can submit my case details through a guided intake form.
-- As a tenant, I can sign in by email magic link.
 - As a tenant, I can upload supporting documents to my case — lease, landlord correspondence, itemized deduction letter, photos, or other.
 - As a tenant, I can see all my cases and their current status.
-- As a tenant, I can open a case to see its full timeline and all uploaded documents.
-- As a tenant, I can read demand letters that Tribune has drafted for my case.
-- As a tenant, I receive transactional emails on case events (new update, letter ready, landlord response recorded, deposit recovered, payment due).
-- As a tenant, I can record a response received from my landlord and upload any physical document the landlord sent.
+- As a tenant, I can open a case to see its correspondence timeline: what Tribune sent, when, and what the landlord replied.
+- As a tenant, I receive transactional emails on case events (letter dispatched on my behalf, landlord replied, deposit recovered, payment due).
+- As a tenant, I can report that my landlord returned my deposit (either party may report recovery).
 - As a tenant, I can see pricing, fee terms, and disclaimers ("information, not legal advice") prominently on intake, dashboard, and case detail.
-- *[deferred post-MVP]* As a tenant, I can copy a letter's text to my clipboard and mail it myself (not needed — Tribune mails all letters).
 - *[deferred post-MVP]* As a tenant, I see deadline-approaching warnings on my dashboard.
 
 ### Admin
@@ -29,34 +26,22 @@ Admin access is granted via `profiles.is_admin = true`, set manually in the data
 - As an admin, I can open a case and see full tenant, property, landlord, lease, and deposit details.
 - As an admin, I can view, download, and preview every document the tenant has uploaded, grouped by kind.
 - As an admin, I can change a case's status.
-- As an admin, I can post a demand letter (title + body + letter number 1–3) to a case. Posting a letter produces a timeline entry visible to the tenant and triggers a notification email.
+- As an admin, I can draft a demand letter (title + body + letter number 1–3). Saving a draft sets the case to `correspondence_ready`.
+- As an admin, I can dispatch a staged letter to the landlord via email. Dispatch sends via Resend to `landlord_email`, sets status to `awaiting_landlord`, and notifies the tenant that Tribune sent a letter on their behalf.
 - As an admin, I can post a visible update to the tenant (freeform message, no letter number).
 - As an admin, I can add an internal note (hidden from tenant) or a tenant-visible note.
-- As an admin, I can record that a letter has been mailed (Tribune-side) so the case shows "letter sent" to the tenant.
-- As an admin, I can record recovery: amount recovered, fee calculated, any tenant-reimbursed costs, and mark the case resolved.
-- *[deferred post-MVP]* As an admin, I can generate a letter from a CT § 47a-21 template pre-filled with case data.
+- As an admin, I can manually log a landlord reply (fallback for replies that arrive outside the automated inbound channel).
+- As an admin, I can record recovery: amount recovered, fee calculated, any tenant-reimbursed costs, and mark the case resolved (either party may also report recovery).
 - *[deferred post-MVP]* As an admin, I can run AI extraction against uploaded documents.
 
 ## Main Flows
 
-### Intake → Auth → Case Creation (target — not current)
+### Intake → Case Creation [current]
 
-1. Visitor lands on `/intake`, completes a multi-step form (tenant info → property → landlord → deposit + contingency agreement).
-2. On submit, a server action:
-   - Validates the payload with Zod.
-   - Calls `supabase.auth.signInWithOtp({ email })`.
-   - Writes the intake payload to a `pending_cases` table keyed by email.
-   - Redirects the user to `/auth/confirm`.
-3. The user clicks the magic link → `/auth/callback`.
-4. The callback exchanges the code for a session. A server action then:
-   - Finds the `pending_cases` row by the authenticated user's email.
-   - Inserts a `cases` row.
-   - Deletes the `pending_cases` row.
-   - Redirects to the dashboard.
-
-This eliminates the current `sessionStorage` bridge and the cross-device failure mode.
-
-**Current state:** the `sessionStorage` bridge is still in place. The server-side pipeline is the first planned migration before any new feature work.
+1. Visitor lands on `/login`, signs in via email/password or Google OAuth.
+2. Authenticated user navigates to `/dashboard/new-case`.
+3. User completes 4-step intake form (tenant info → property → landlord → deposit + contingency agreement).
+4. On submit, a server action validates with Zod, inserts a `cases` row, upserts `profiles`, and redirects to the case detail page.
 
 ### Document Upload (new)
 
@@ -77,32 +62,50 @@ This eliminates the current `sessionStorage` bridge and the cross-device failure
 
 1. Admin visits `/admin`; middleware checks session AND `is_admin = true`.
 2. Admin filters cases by status, opens a case → `/admin/case/[id]`.
-3. Admin sees: tenant/property/landlord/lease/deposit details, documents viewer, full timeline (including admin-only notes), status dropdown, letter post form, update post form, note form (internal or visible), actions timeline, resolution controls.
-4. Status changes and letter posts append `case_messages` entries of appropriate type. Letter posts increment `current_letter_number` (the only code path allowed to touch it).
-5. Letter posts and tenant-visible updates send a transactional email to the tenant via Resend.
+3. Admin sees: tenant/property/landlord/lease/deposit details, documents viewer, full timeline (including admin-only notes), status dropdown, letter draft form, update post form, note form (internal or visible), actions timeline, resolution controls.
+4. Status changes and letter dispatches append `case_messages` entries of appropriate type. Letter dispatches increment `current_letter_number` (the only code path allowed to touch it).
+
+### Letter Dispatch Flow
+
+1. Admin drafts a demand letter (letter number 1–3, title, body) in `AdminWritePanel`.
+2. Admin saves draft → case status moves to `correspondence_ready`. Letter body is stored as a `case_messages` row (`tribune_letter`, `is_admin_only = false`).
+3. Admin reviews → clicks "Send via Email". Server action `dispatchLetter(caseId, channel='email')`:
+   - Sends `renderLandlordLetterEmail()` to `landlord_email` via Resend.
+   - Reply-to: `case+{caseId}@inbound.usetribune.org` (encodes case for inbound routing).
+   - Sets case status `awaiting_landlord`.
+   - Creates a `system` timeline entry: "Tribune sent Letter N to landlord via email."
+   - Sends tenant notification: "We sent Letter N to [landlord name] on your behalf."
+4. When landlord replies, Resend inbound webhook fires to `/api/webhooks/resend/inbound`:
+   - Parses case ID from the To address.
+   - Inserts `case_messages` row (`landlord_reply` type, body = email text).
+   - Sets case status `landlord_responded`.
+   - Notifies admin (email or in-app).
+5. Admin manually logs a landlord reply if it arrives outside the inbound channel (phone, mail).
 
 ### Resolution
 
-1. Admin confirms recovery with the landlord off-platform.
-2. Admin opens the case, fills resolution fields (amount recovered in cents, tenant-reimbursed hard costs in cents, resolution notes), sets status to `resolved`.
-3. System records `amount_recovered_cents`, `fee_collected_cents` (15% of recovered by default, editable), `tenant_costs_cents`, `resolved_at`.
-4. Tenant receives "Deposit recovered, invoice attached" email. Invoice is sent off-platform by admin for MVP.
+1. Either the tenant or admin reports recovery. Reporting party fills amount recovered in cents and any notes.
+2. Server action sets status → `resolved`, records `resolved_at` and `resolution_notes`, updates `deposit_returned_cents`.
+3. System auto-creates an `invoices` row (15% of recovered, due in 7 days) and sends invoice email to tenant via Resend.
+4. Admin can mark the invoice paid (Venmo/Zelle/waived) via admin case detail. Stripe payment flow is planned.
 5. If tenant does not pay within the agreed window, admin moves status to `in_collections`.
 
 ## Functional Requirements
 
-- Authentication is email magic link only.
+- Authentication is email/password or Google OAuth via Supabase Auth.
 - Data access from the application:
   - **Reads** go through the anon Supabase client from client components. RLS enforces who can read what.
   - **Writes** that require server-side integrity (intake, uploads, letter post, resolution, case_documents creation) go through server actions operating under the user's session.
 - All money is stored and computed in integer cents.
 - All dates are stored in Postgres `date` columns and exchanged as ISO date strings.
-- The statutory deadline is `move_out_date + 30 days`, stored on the case at creation time.
+- The statutory deadline is `move_out_date + 21 days` (CT § 47a-21), stored on the case at creation time.
 - The contingency rate default is 15% and is recorded on the case at creation time. Historical cases retain the rate they were created with.
 - Letter numbers are 1, 2, or 3. `current_letter_number` is updated only when a letter is posted.
 - Admin actions that change state also produce a visible timeline entry.
 - Internal notes (`is_admin_only = true`) are invisible to tenants via RLS.
-- Transactional email is sent via Resend on: new tenant-visible message posted, letter posted, status transition to `letter_sent`, status transition to `resolved`, status transition to `in_collections`.
+- Transactional email is sent via Resend on: new tenant-visible message posted, letter dispatched to landlord (outbound), landlord reply received (inbound auto-logged), status transition to `resolved`, status transition to `in_collections`.
+- Inbound landlord email is received via Resend inbound webhook. Reply-to addresses encode the case ID (`case+{caseId}@inbound.usetribune.org`) for automatic routing.
+- Letter templates use "our client, [Tenant Name]" framing — Tribune writes on behalf of tenant, not as the tenant. Exact statutory citations and damages language require human review before sending to any real landlord.
 
 ## Non-Functional Requirements
 
@@ -115,10 +118,9 @@ This eliminates the current `sessionStorage` bridge and the cross-device failure
 
 ## Edge Cases
 
-- Tenant's statutory deadline has already passed at intake time — accept; note in the timeline; case is still worth pursuing (statute-of-limitations distinct from the 30-day return deadline).
+- Tenant's statutory deadline has already passed at intake time — accept; note in the timeline; case is still worth pursuing (statute-of-limitations distinct from the 21-day return deadline).
 - Partial deposit return (non-zero `deposit_returned_cents` and non-zero `amount_withheld_cents`).
-- No landlord email on file — letter delivery is by mail; email is nice-to-have.
-- Tenant opens magic link on a different device — handled by server-side `pending_cases` keyed to email, not session.
+- No landlord email on file — letter delivery is by mail; email is nice-to-have. Dispatch flow currently requires `landlord_email`.
 - Tenant submits a case for a property/landlord they've already submitted — accepted; no dedup yet.
 - Landlord provides itemized deductions vs. not — different legal standard (strict vs. double damages). Reflected in letter content; not yet branched in admin flow.
 - Admin changes status backward (e.g. `resolved` → `under_review`). Allowed; timeline shows the transition.
@@ -129,12 +131,11 @@ This eliminates the current `sessionStorage` bridge and the cross-device failure
 
 ## Assumptions
 
-- Users complete intake and open their magic link within the OTP expiry window (cross-device is tolerated via `pending_cases`).
 - One `cases` row per tenant per dispute. Tenants may have multiple cases over time.
-- A single admin (you) handles all cases manually at MVP scale. No concurrent-edit protection.
+- A single admin handles all cases manually at MVP scale. No concurrent-edit protection.
 - Letter sequence escalates: letter 1 (initial demand) → letter 2 (follow-up) → letter 3 (final notice before escalation). Exact content is drafted by admin.
 - Contingency is calculated on the amount *recovered*, not the amount *withheld*.
-- Statutory deadline of `move_out + 30 days` reflects the CT framework. *[uncertain — exact subsection and damages language for letter templates to be hand-authored with review]*.
+- Statutory deadline of `move_out + 21 days` per CT § 47a-21. Exact damages language for letter templates requires human review before production use.
 
 ## Open Questions
 

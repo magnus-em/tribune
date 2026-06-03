@@ -1,6 +1,6 @@
 # Tribune — Tasks
 
-Tracks what's built, what's in progress, and what's next. Updated 2026-04-16.
+Tracks what's built, what's in progress, and what's next. Updated 2026-04-19.
 
 ## Done
 
@@ -98,31 +98,66 @@ Tracks what's built, what's in progress, and what's next. Updated 2026-04-16.
 - [x] Centralized constants (`STATUTE_DAYS = 21`, `CONTINGENCY_PCT = 15`, `PAYMENT_DUE_DAYS = 7`)
 - [x] `NEXT_PUBLIC_TRIBUNE_PAYMENT_PHONE` env var (Vercel + local)
 
+## Next Up — Direct Correspondence Feature
+
+Tribune handles all landlord negotiation directly. Tenants no longer send letters; Tribune dispatches via email (and later SMS/mail). Landlord replies auto-log via inbound email webhook. Either party can report recovery.
+
+### Phase 1 — Schema migration ✓
+- [x] Migration: rename `letter_ready` → `correspondence_ready`, add `landlord_reply` message type, `letter_dispatched` action type, `dispatch_channel` enum + columns on `case_messages`
+- [x] Update all TS/TSX references from `letter_ready` → `correspondence_ready`
+- [x] Deprecate `letter_sent` status in UI logic (enum value left intact)
+
+### Phase 2 — Landlord letter email template ✓
+- [x] `renderLandlordLetterEmail()` in `src/lib/email/templates/landlord-letter.ts`
+- [x] `sendEmail` updated to support `replyTo` param
+- [ ] Update letter template voice (`src/lib/letters/templates.ts`) to "our client" framing — flag for legal review before any real sends
+
+### Phase 3 — Admin dispatch flow ✓
+- [x] `postLetterWithNotification` → "Save Draft" → `correspondence_ready`
+- [x] `dispatchLetter(caseId, messageId, channel)` → sends Resend email, sets `awaiting_landlord`, notifies tenant
+- [x] `AdminWritePanel` updated: staged-letter banner with "Send via Email", "Save Draft" button
+- [x] `AdminActionBanner` updated for `correspondence_ready`
+- [x] `logLandlordReply` action + "Log Reply" tab in admin write panel
+- [x] `adminReportRecovery` server action + "Resolve" tab in admin write panel
+
+### Phase 4 — Inbound email webhook ✓
+- [x] `src/app/api/webhooks/resend/inbound/route.ts` — parses `case+{caseId}@inbound.usetribune.org`, logs landlord reply, sets `landlord_responded`, notifies admin
+- [ ] Configure Resend inbound MX records for `inbound.usetribune.org` (DNS step — do when ready to go live)
+- [ ] Add `ADMIN_EMAIL` env var to Vercel
+
+### Phase 5 — Tenant UI cleanup ✓
+- [x] Removed `SendLetterBanner`, `LandlordResponseForm`, reply branch of `LandlordNextStep`
+- [x] Removed `confirmLetterSent`, `submitLandlordResponse` server actions
+- [x] New `RecoveryStep` component (recovery reporting only)
+- [x] `ActionBanner` updated for `correspondence_ready` and `awaiting_landlord`
+
+## Pending Ops / Config
+- [ ] Add `ADMIN_EMAIL` env var to Vercel (inbound webhook currently falls back to hardcoded `hello@usetribune.org`)
+- [ ] Configure Resend inbound MX records for `inbound.usetribune.org` (do when ready to go live)
+- [ ] Update letter template voice (`src/lib/letters/templates.ts`) to "our client" framing — legal review required before any real sends
+
+## Dead Code — Delete
+- [ ] `src/app/v1/` through `src/app/v5/` — landing page design iterations, not exposed in nav; safe to delete
+
 ## Next Up
 
-### 1. Deadline Alert Cron
-Vercel Cron at `/api/cron/check-deadlines`. Daily check for cases approaching statutory deadline. Email admin + optionally tenant.
+### Admin "Generate from template" UI
+Letter templates exist in `src/lib/letters/templates.ts` with CT § 47a-21 content and full placeholder interpolation. Admin currently types into blank textarea. Wire template selection + preview into `AdminWritePanel`.
+- [ ] Template picker (Letter 1 / 2 / 3 dropdown)
+- [ ] Preview with case data substituted
+- [ ] "Use this draft" → populate textarea for editing before post
 
-### 2. Invoice Overdue Cron
-Mark invoices `overdue` after due date passes. Same cron job as above or separate. Also: flag `collections` after 30 days.
+### Payments — Stripe invoice collection
+`invoices` table and invoice email exist. Tenants currently get Venmo/Zelle copy-paste. Stripe payment intent column is scaffolded on `invoices`.
+- [ ] Stripe account + webhook setup
+- [ ] Payment intent creation on invoice insert
+- [ ] Tenant payment page `/dashboard/invoice/[id]`
+- [ ] Webhook: mark invoice paid on `payment_intent.succeeded`
+- [ ] Admin can still mark paid manually (Venmo/Zelle/waived) — keep existing flow
 
-### 3. PDF Export of Letters
-"Download as PDF" button on letters. Needed for print-and-mail and tenant records. Consider `@react-pdf/renderer`.
+### Deadline cron
+No alerts today. Cases can silently blow past their CT § 47a-21 deadline.
+- [ ] Daily cron (Vercel Cron or Supabase Scheduled Functions) — flag cases where `statutory_deadline < now + 3 days` and status is not terminal
+- [ ] Admin notification email / dashboard badge
+- [ ] `awaiting_tenant` status for cases where Tribune needs tenant action
 
-### 4. Small Claims Court Guidance Flow
-Promised on the landing page. Step-by-step walkthrough for CT small claims: what forms to file, filing fees, court locations, what to bring, what to expect. Static content pages inside the dashboard.
-
-### 5. Stripe Card Payments
-Scaffold is in place (`stripe_payment_intent_id` column, `payment_method: stripe` enum value). Wire up when ready to activate.
-
-## Deferred
-
-- Collections integration (third-party)
-- Multi-jurisdiction (non-CT)
-- AI letter drafting (Claude/Bedrock)
-- AI document extraction (Claude/Bedrock)
-- Print-and-mail API (Lob)
-- Per-case inbound email
-- E2E tests (Playwright)
-- SMS notifications
-- Admin analytics dashboard

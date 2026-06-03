@@ -14,7 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { uploadDocument, getDocumentUrl, reportRecovery, confirmLetterSent, submitLandlordResponse } from "./actions";
+import { uploadDocument, getDocumentUrl, reportRecovery } from "./actions";
 import { LegalDisclaimer } from "@/components/legal-disclaimer";
 import { statusColor } from "@/lib/utils/case";
 import { STATUS_LABELS } from "@/lib/types/database";
@@ -34,8 +34,7 @@ import {
   RoundGroup,
   EvidenceCenter,
   ActionBanner,
-  SendLetterBanner,
-  LandlordNextStep,
+  RecoveryStep,
   RecoveryForm,
   InvoicePanel,
 } from "./_components";
@@ -50,7 +49,6 @@ export default function CaseDetailPage() {
   const [documents, setDocuments] = useState<CaseDocument[]>([]);
   const [invoice, setInvoice] = useState<InvoiceData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [confirmingSent, setConfirmingSent] = useState(false);
   const evidenceRef = useRef<HTMLDivElement>(null);
 
   async function handleUploadLease(file: File) {
@@ -123,32 +121,6 @@ export default function CaseDetailPage() {
     else if (result.url) window.open(result.url, "_blank");
   }
 
-  async function handleConfirmLetterSent() {
-    if (!caseData) return;
-    setConfirmingSent(true);
-    const letterNumber = caseData.current_letter_number || 1;
-    const result = await confirmLetterSent(caseId, letterNumber);
-    if (result.error) {
-      toast.error(result.error);
-    } else {
-      trackEvent("letter_sent_confirmed", { letter_number: letterNumber });
-      toast.success("Noted. We'll track the landlord's response deadline.");
-    }
-    setConfirmingSent(false);
-    loadData();
-  }
-
-  async function handleLandlordResponse(text: string) {
-    const result = await submitLandlordResponse(caseId, text);
-    if (result.error) {
-      toast.error(result.error);
-    } else {
-      trackEvent("landlord_response_submitted");
-      toast.success("Response submitted. Tribune will review and prepare next steps.");
-      loadData();
-    }
-  }
-
   async function handleRecovery(amountCents: number, notes: string) {
     const result = await reportRecovery(caseId, amountCents, notes);
     if (result.error) {
@@ -193,10 +165,6 @@ export default function CaseDetailPage() {
 
   const headline = getStatusHeadline(caseData.status, hasLease);
 
-  // Find the current letter body (active round's tribune_letter event)
-  const currentLetterBody =
-    rounds[0]?.events.find((e) => e.kind === "tribune_letter")?.body ?? null;
-
   // Derive the current action banner
   function getActionBannerProps() {
     if (caseData!.status === "intake_submitted" && !hasLease) {
@@ -218,17 +186,11 @@ export default function CaseDetailPage() {
           "We'll notify you when your demand letter is ready. No action needed right now.",
       };
     }
-    if (caseData!.status === "letter_ready") {
+    if (caseData!.status === "correspondence_ready") {
       return {
-        variant: "required" as const,
-        title: "Your demand letter is ready",
-        description:
-          "Review the letter below, send it to your landlord, then confirm you sent it here so we can track the response timeline.",
-        cta: {
-          label: confirmingSent ? "Confirming…" : "I sent the letter to my landlord",
-          onClick: handleConfirmLetterSent,
-          loading: confirmingSent,
-        },
+        variant: "waiting" as const,
+        title: "Tribune is preparing to contact your landlord",
+        description: "Your demand letter is staged. Tribune will send it to your landlord shortly.",
       };
     }
     if (
@@ -239,17 +201,17 @@ export default function CaseDetailPage() {
         variant: "waiting" as const,
         title: daysOverdue > 0
           ? `Landlord is ${daysOverdue} day${daysOverdue !== 1 ? "s" : ""} overdue`
-          : `Waiting for landlord — ${Math.abs(daysOverdue)} day${Math.abs(daysOverdue) !== 1 ? "s" : ""} left on deadline`,
+          : `Tribune sent your letter — ${Math.abs(daysOverdue)} day${Math.abs(daysOverdue) !== 1 ? "s" : ""} left on deadline`,
         description:
-          "When your landlord replies by email, letter, or text, submit their response below so Tribune can prepare your next step.",
+          "Tribune has contacted your landlord on your behalf. If they return your deposit, report it below.",
       };
     }
     if (caseData!.status === "landlord_responded") {
       return {
         variant: "info" as const,
-        title: "Tribune is preparing your response",
+        title: "Landlord has responded — Tribune is preparing next steps",
         description:
-          "We've received your landlord's reply and are preparing the recommended next step. You'll be notified shortly.",
+          "Your landlord replied to Tribune. We're reviewing their position and will update you shortly.",
       };
     }
     if (caseData!.status === "resolved") {
@@ -320,36 +282,20 @@ export default function CaseDetailPage() {
       </div>
 
       {/* Stage pipeline */}
-      <div className="rounded-xl border bg-card px-4 py-3">
+      <div className="border bg-card overflow-hidden">
         <StageRail status={caseData.status} />
       </div>
 
       {/* ── PRIMARY ACTION ZONE ──────────────────────────────────────────── */}
 
-      {/* letter_ready: full-attention send banner */}
-      {caseData.status === "letter_ready" && (
-        <SendLetterBanner
-          landlordEmail={caseData.landlord_email}
-          landlordName={caseData.landlord_name}
-          propertyAddress={caseData.property_address}
-          letterBody={currentLetterBody}
-          onConfirmSent={handleConfirmLetterSent}
-          confirming={confirmingSent}
-        />
-      )}
+      <ActionBanner {...bannerProps} />
 
-      {/* All other statuses: standard banner */}
-      {caseData.status !== "letter_ready" && (
-        <ActionBanner {...bannerProps} />
-      )}
-
-      {/* awaiting_landlord / letter_sent / landlord_responded: report what happened */}
+      {/* awaiting_landlord / letter_sent / landlord_responded: report recovery */}
       {(caseData.status === "awaiting_landlord" ||
         caseData.status === "letter_sent" ||
         caseData.status === "landlord_responded") && (
-        <LandlordNextStep
+        <RecoveryStep
           caseData={caseData}
-          onSubmitResponse={handleLandlordResponse}
           onReportRecovery={handleRecovery}
         />
       )}

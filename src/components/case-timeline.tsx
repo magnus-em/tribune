@@ -75,7 +75,7 @@ export function CaseTimeline({ messages, actions, statutoryDeadline, moveOutDate
       variant = "success";
     } else if (msg.message_type === "tribune_update") {
       icon = "message";
-    } else if (msg.message_type === "tenant_landlord_reply") {
+    } else if (msg.message_type === "landlord_reply" || msg.message_type === "tenant_landlord_reply") {
       icon = "mail";
     }
 

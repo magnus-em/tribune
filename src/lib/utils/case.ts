@@ -2,7 +2,7 @@ import { type CaseStatus } from "@/lib/types/database";
 
 export function statusColor(status: string): string {
   switch (status) {
-    case "letter_ready":
+    case "correspondence_ready":
       return "bg-yellow-100 text-yellow-800 border-yellow-200";
     case "resolved":
       return "bg-green-100 text-green-800 border-green-200";

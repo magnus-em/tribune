@@ -15,9 +15,9 @@ export type CaseAction = Database['public']['Tables']['case_actions']['Row'];
 export const STATUS_LABELS: Record<CaseStatus, string> = {
   intake_submitted: "Intake Submitted",
   under_review: "Under Review",
-  letter_ready: "Letter Ready",
+  correspondence_ready: "Ready to Send",
   letter_sent: "Letter Sent",
-  awaiting_landlord: "Awaiting Landlord",
+  awaiting_landlord: "Awaiting Response",
   landlord_responded: "Landlord Responded",
   resolved: "Resolved",
   closed: "Closed",
@@ -26,10 +26,10 @@ export const STATUS_LABELS: Record<CaseStatus, string> = {
 export const STATUS_DESCRIPTIONS: Record<CaseStatus, string> = {
   intake_submitted: "We've received your case and will review it shortly.",
   under_review: "We're reviewing your case details.",
-  letter_ready: "Your demand letter is ready for review.",
-  letter_sent: "You've sent the demand letter to your landlord.",
-  awaiting_landlord: "Waiting for your landlord to respond.",
-  landlord_responded: "Your landlord has responded. We're preparing next steps.",
+  correspondence_ready: "Tribune is preparing to send a letter to your landlord.",
+  letter_sent: "Tribune has sent correspondence to your landlord.",
+  awaiting_landlord: "Tribune has sent a letter. Waiting for your landlord to respond.",
+  landlord_responded: "Your landlord has responded. Tribune is preparing the next step.",
   resolved: "Your case has been resolved.",
   closed: "This case has been closed.",
 };

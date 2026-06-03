@@ -31,7 +31,6 @@ import {
   Scale,
   Handshake,
   X,
-  Mail,
   Receipt,
   Smartphone,
 } from "lucide-react";
@@ -103,6 +102,7 @@ export function buildEventStream(
         kind = "tribune_update";
         actor = "tribune";
         break;
+      case "landlord_reply":
       case "tenant_landlord_reply":
         kind = "landlord_reply";
         actor = "landlord";
@@ -226,7 +226,7 @@ function deriveStageKey(status: string): StageKey {
       return "setup";
     case "under_review":
       return "review";
-    case "letter_ready":
+    case "correspondence_ready":
     case "letter_sent":
     case "awaiting_landlord":
     case "landlord_responded":
@@ -245,35 +245,63 @@ export function StageRail({ status }: { status: string }) {
   const currentIdx = STAGES.findIndex((s) => s.key === currentKey);
 
   return (
-    <div className="flex items-center gap-0 overflow-x-auto pb-1">
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: `repeat(${STAGES.length}, 1fr)`,
+        gap: "1px",
+        background: "hsl(var(--border))",
+        overflow: "hidden",
+      }}
+    >
       {STAGES.map((stage, i) => {
         const isDone = i < currentIdx;
         const isActive = i === currentIdx;
         return (
-          <div key={stage.key} className="flex items-center shrink-0">
-            <div className="flex items-center gap-1.5 px-2 py-1 rounded-md">
-              {isDone ? (
-                <CheckCircle2 className="size-3.5 text-primary shrink-0" />
-              ) : isActive ? (
-                <div className="size-3.5 rounded-full bg-primary shrink-0" />
-              ) : (
-                <Circle className="size-3.5 text-muted-foreground/40 shrink-0" />
-              )}
-              <span
-                className={`text-xs font-medium whitespace-nowrap ${
-                  isActive
-                    ? "text-foreground"
-                    : isDone
-                      ? "text-primary"
-                      : "text-muted-foreground/50"
-                }`}
-              >
-                {stage.label}
-              </span>
-            </div>
-            {i < STAGES.length - 1 && (
-              <ChevronRight className="size-3 text-muted-foreground/30 shrink-0" />
-            )}
+          <div
+            key={stage.key}
+            style={{
+              padding: "10px 12px",
+              background: isActive
+                ? "hsl(var(--primary))"
+                : isDone
+                ? "hsl(219 100% 97%)"
+                : "hsl(var(--background))",
+              display: "flex",
+              flexDirection: "column",
+              gap: "3px",
+            }}
+          >
+            <span
+              style={{
+                fontFamily: "var(--font-space-mono, monospace)",
+                fontSize: "8px",
+                letterSpacing: "0.16em",
+                textTransform: "uppercase",
+                color: isActive
+                  ? "rgba(248,250,252,0.55)"
+                  : isDone
+                  ? "hsl(224 71% 40%)"
+                  : "hsl(var(--muted-foreground))",
+              }}
+            >
+              {String(i + 1).padStart(2, "0")}
+            </span>
+            <span
+              style={{
+                fontFamily: "var(--font-fraunces, Georgia, serif)",
+                fontSize: "12px",
+                fontWeight: 600,
+                color: isActive
+                  ? "hsl(var(--primary-foreground))"
+                  : isDone
+                  ? "hsl(224 71% 40%)"
+                  : "hsl(var(--muted-foreground))",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {stage.label}
+            </span>
           </div>
         );
       })}
@@ -289,9 +317,9 @@ export function getStatusHeadline(status: string, hasLease: boolean): string {
   if (status === "intake_submitted")
     return "Case submitted — Tribune will review shortly";
   if (status === "under_review") return "Tribune is reviewing your case";
-  if (status === "letter_ready") return "Your demand letter is ready to send";
+  if (status === "correspondence_ready") return "Tribune is preparing to contact your landlord";
   if (status === "letter_sent" || status === "awaiting_landlord")
-    return "Waiting for your landlord to respond";
+    return "Tribune has contacted your landlord";
   if (status === "landlord_responded")
     return "Tribune is preparing your next response";
   if (status === "resolved") return "Case resolved";
@@ -316,10 +344,22 @@ export function ClaimSummary({
   const deadline = new Date(caseData.statutory_deadline);
 
   return (
-    <div className="rounded-xl border bg-card p-4 space-y-3">
-      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+    <div className="border bg-card overflow-hidden">
+      <div
+        style={{
+          padding: "8px 16px",
+          borderBottom: "1px solid hsl(var(--border))",
+          background: "hsl(var(--muted))",
+          fontFamily: "var(--font-space-mono, monospace)",
+          fontSize: "10px",
+          letterSpacing: "0.12em",
+          textTransform: "uppercase",
+          color: "hsl(var(--muted-foreground))",
+        }}
+      >
         Claim Summary
-      </p>
+      </div>
+      <div className="p-4">
       <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
         <div>
           <p className="text-muted-foreground text-xs">Deposit paid</p>
@@ -343,6 +383,7 @@ export function ClaimSummary({
           <p className="text-muted-foreground text-xs">Statutory deadline</p>
           <p className="font-semibold">{format(deadline, "MMMM d, yyyy")}</p>
         </div>
+      </div>
       </div>
     </div>
   );
@@ -398,15 +439,26 @@ export function CaseReadiness({
   }
 
   return (
-    <div className="rounded-xl border bg-card p-4 space-y-3">
-      <div className="flex items-center justify-between">
-        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Case Readiness
-        </p>
-        <span className="text-xs text-muted-foreground">
-          {requiredDone}/{requiredTotal} required
-        </span>
+    <div className="border bg-card overflow-hidden">
+      <div
+        style={{
+          padding: "8px 16px",
+          borderBottom: "1px solid hsl(var(--border))",
+          background: "hsl(var(--muted))",
+          fontFamily: "var(--font-space-mono, monospace)",
+          fontSize: "10px",
+          letterSpacing: "0.12em",
+          textTransform: "uppercase",
+          color: "hsl(var(--muted-foreground))",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <span>Case Readiness</span>
+        <span>{requiredDone}/{requiredTotal} required</span>
       </div>
+      <div className="p-4 space-y-3">
       <div className="space-y-2">
         {items.map((item) => (
           <div key={item.label} className="flex items-center gap-2">
@@ -455,6 +507,7 @@ export function CaseReadiness({
           </Button>
         </>
       )}
+      </div>
     </div>
   );
 }
@@ -469,7 +522,7 @@ export function CurrentRoundBox({
   status: string;
 }) {
   const inCorrespondence = [
-    "letter_ready",
+    "correspondence_ready",
     "letter_sent",
     "awaiting_landlord",
     "landlord_responded",
@@ -486,9 +539,9 @@ export function CurrentRoundBox({
   const hasLandlordReply = activeRound.events.some((e) => e.kind === "landlord_reply");
   const letterSent = activeRound.events.some((e) => e.kind === "letter_sent");
 
-  let tribuneAction = "Awaiting your action";
-  if (status === "landlord_responded") tribuneAction = "Response prepared";
-  else if (hasTribuneDraft && !letterSent) tribuneAction = "Letter ready for you to send";
+  let tribuneAction = "Handling correspondence";
+  if (status === "landlord_responded") tribuneAction = "Reviewing landlord reply";
+  else if (hasTribuneDraft && !letterSent) tribuneAction = "Letter staged — sending soon";
   else if (letterSent && !hasLandlordReply) tribuneAction = "Waiting for landlord reply";
 
   return (
@@ -519,42 +572,49 @@ export function CurrentRoundBox({
 
 const EVENT_CONFIG: Record<
   EventKind,
-  { icon: React.ReactNode; label: string; colorClass: string }
+  { icon: React.ReactNode; label: string; colorClass: string; borderLeft: string }
 > = {
   tribune_letter: {
     icon: <Scale className="size-3.5" />,
-    label: "Tribune",
-    colorClass: "bg-blue-50 border-blue-200 text-blue-900",
+    label: "Tribune letter",
+    colorClass: "border bg-[#eff6ff] text-[#1e3a8a]",
+    borderLeft: "4px solid #1d4ed8",
   },
   tribune_update: {
     icon: <MessageSquare className="size-3.5" />,
-    label: "Tribune",
-    colorClass: "bg-blue-50 border-blue-200 text-blue-900",
+    label: "Tribune update",
+    colorClass: "border bg-[#eff6ff] text-[#1e3a8a]",
+    borderLeft: "4px solid #1d4ed8",
   },
   landlord_reply: {
     icon: <MessageSquare className="size-3.5" />,
     label: "Landlord reply",
-    colorClass: "bg-orange-50 border-orange-200 text-orange-900",
+    colorClass: "border bg-[#fffbeb] text-[#78350f]",
+    borderLeft: "4px solid #f59e0b",
   },
   letter_sent: {
     icon: <Send className="size-3.5" />,
     label: "Sent to landlord",
-    colorClass: "bg-purple-50 border-purple-200 text-purple-900",
+    colorClass: "border bg-[#eff6ff] text-[#1e3a8a]",
+    borderLeft: "4px solid #1d4ed8",
   },
   document_upload: {
     icon: <FileText className="size-3.5" />,
     label: "Document",
-    colorClass: "bg-muted border-border text-foreground",
+    colorClass: "border border-border bg-card text-foreground",
+    borderLeft: "4px solid hsl(var(--border))",
   },
   resolution: {
     icon: <Handshake className="size-3.5" />,
     label: "Recovery",
-    colorClass: "bg-green-50 border-green-200 text-green-900",
+    colorClass: "border bg-[#f0fdf4] text-[#14532d]",
+    borderLeft: "4px solid #16a34a",
   },
   system: {
     icon: <Clock className="size-3.5" />,
     label: "System",
-    colorClass: "bg-muted border-border text-muted-foreground",
+    colorClass: "border border-border bg-muted text-muted-foreground",
+    borderLeft: "4px solid hsl(var(--border))",
   },
 };
 
@@ -572,7 +632,7 @@ export function EventCard({
   const hasBody = !!event.body?.trim();
 
   return (
-    <div className={`rounded-lg border p-3 text-sm ${config.colorClass}`}>
+    <div className={`p-3 text-sm ${config.colorClass}`} style={{ borderLeft: config.borderLeft }}>
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-2 min-w-0 flex-1">
           <span className="shrink-0 opacity-70">{config.icon}</span>
@@ -669,9 +729,9 @@ export function RoundGroup({
   }
 
   return (
-    <div className="rounded-xl border overflow-hidden">
+    <div className="border overflow-hidden">
       <button
-        className="w-full flex items-center justify-between px-4 py-3 bg-muted/30 hover:bg-muted/50 transition-colors text-left"
+        className="w-full flex items-center justify-between px-4 py-3 bg-muted hover:bg-muted/70 transition-colors text-left"
         onClick={() => setOpen((v) => !v)}
       >
         <div className="flex items-center gap-3">
@@ -841,22 +901,39 @@ export function ActionBanner({
   description,
   cta,
 }: ActionBannerProps) {
-  const styles: Record<ActionVariant, string> = {
-    required: "border-destructive/30 bg-destructive/5",
-    waiting: "border-border bg-muted/40",
-    done: "border-primary/20 bg-primary/5",
-    info: "border-border bg-muted/40",
+  const bgMap: Record<ActionVariant, string> = {
+    required: "#fef2f2",
+    waiting: "hsl(var(--background))",
+    done: "hsl(219 100% 97%)",
+    info: "hsl(var(--background))",
   };
-
+  const borderLeftMap: Record<ActionVariant, string> = {
+    required: "4px solid hsl(var(--destructive))",
+    waiting: "4px solid hsl(var(--border))",
+    done: "4px solid hsl(224 71% 40%)",
+    info: "4px solid hsl(var(--border))",
+  };
   const icons: Record<ActionVariant, React.ReactNode> = {
     required: <AlertTriangle className="size-4 text-destructive shrink-0 mt-0.5" />,
     waiting: <Hourglass className="size-4 text-muted-foreground shrink-0 mt-0.5" />,
-    done: <CheckCircle2 className="size-4 text-primary shrink-0 mt-0.5" />,
+    done: <CheckCircle2 className="size-4 shrink-0 mt-0.5" style={{ color: "hsl(224 71% 40%)" }} />,
     info: <Clock className="size-4 text-muted-foreground shrink-0 mt-0.5" />,
   };
 
   return (
-    <div className={`rounded-xl border p-4 flex items-start gap-3 ${styles[variant]}`}>
+    <div
+      style={{
+        borderLeft: borderLeftMap[variant],
+        borderTop: "1px solid hsl(var(--border))",
+        borderRight: "1px solid hsl(var(--border))",
+        borderBottom: "1px solid hsl(var(--border))",
+        background: bgMap[variant],
+        padding: "16px",
+        display: "flex",
+        alignItems: "flex-start",
+        gap: "12px",
+      }}
+    >
       {icons[variant]}
       <div className="flex-1 min-w-0">
         <p className="font-semibold text-sm">{title}</p>
@@ -876,173 +953,21 @@ export function ActionBanner({
   );
 }
 
-// ─── Send Letter Banner ───────────────────────────────────────────────────────
-// Shown when status is letter_ready. Guides tenant through sending the letter
-// from their own email client (copy + mailto), then confirming it was sent.
+// ─── Recovery Step ────────────────────────────────────────────────────────────
+// Shown when Tribune has sent a letter. Tenant reports if the landlord returned
+// the deposit. Tribune handles all correspondence — no reply submission here.
 
-export function SendLetterBanner({
-  landlordEmail,
-  landlordName,
-  propertyAddress,
-  letterBody,
-  onConfirmSent,
-  confirming,
-}: {
-  landlordEmail: string | null;
-  landlordName: string;
-  propertyAddress: string;
-  letterBody: string | null;
-  onConfirmSent: () => void;
-  confirming: boolean;
-}) {
-  const [emailOpened, setEmailOpened] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [letterExpanded, setLetterExpanded] = useState(false);
-
-  const subject = `RE: Security Deposit Return — ${propertyAddress}`;
-
-  async function handleOpenEmail() {
-    if (letterBody) {
-      try {
-        await navigator.clipboard.writeText(letterBody);
-        setCopied(true);
-      } catch {
-        // clipboard may fail in insecure contexts — continue anyway
-      }
-    }
-    const url = `mailto:${landlordEmail ?? ""}?subject=${encodeURIComponent(subject)}`;
-    window.open(url, "_blank");
-    setEmailOpened(true);
-  }
-
-  async function handleCopyOnly() {
-    if (!letterBody) return;
-    await navigator.clipboard.writeText(letterBody);
-    setCopied(true);
-    toast.success("Letter copied to clipboard");
-  }
-
-  return (
-    <div className="rounded-xl border-2 border-primary/25 bg-primary/5 p-5 space-y-4">
-      {/* Header */}
-      <div className="flex items-start gap-3">
-        <Mail className="size-4 text-primary shrink-0 mt-0.5" />
-        <div>
-          <p className="font-semibold text-sm">Your demand letter is ready to send</p>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            {landlordEmail ? (
-              <>
-                Send it to{" "}
-                <span className="font-medium text-foreground">{landlordName}</span> at{" "}
-                <span className="font-medium text-foreground">{landlordEmail}</span> from
-                your own email — we&apos;ll open your email app with the subject pre-filled
-                and the letter copied to your clipboard.
-              </>
-            ) : (
-              <>
-                No email on file for{" "}
-                <span className="font-medium text-foreground">{landlordName}</span>. Copy
-                the letter and send it however you can reach them.
-              </>
-            )}
-          </p>
-        </div>
-      </div>
-
-      {/* Letter preview */}
-      {letterBody && (
-        <div className="border border-primary/15 rounded-lg overflow-hidden">
-          <button
-            className="w-full flex items-center justify-between px-3 py-2 text-xs font-medium text-primary/80 hover:bg-primary/5 transition-colors text-left"
-            onClick={() => setLetterExpanded((v) => !v)}
-          >
-            <span className="flex items-center gap-1.5">
-              <FileText className="size-3" />
-              {letterExpanded ? "Hide letter" : "Preview letter"}
-            </span>
-            {letterExpanded ? (
-              <ChevronDown className="size-3" />
-            ) : (
-              <ChevronRight className="size-3" />
-            )}
-          </button>
-          {letterExpanded && (
-            <div className="px-3 pb-3 border-t border-primary/10">
-              <pre className="text-xs leading-relaxed whitespace-pre-wrap text-foreground/80 font-sans mt-2 max-h-64 overflow-y-auto">
-                {letterBody}
-              </pre>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Send action */}
-      {landlordEmail ? (
-        <div className="space-y-2">
-          <Button className="w-full gap-2" onClick={handleOpenEmail}>
-            <Mail className="size-4" />
-            Open email app — {landlordEmail}
-          </Button>
-          {copied && (
-            <p className="text-xs text-center text-muted-foreground">
-              ✓ Letter copied to clipboard — paste into the email body with Cmd+V (Mac) or Ctrl+V (Windows)
-            </p>
-          )}
-        </div>
-      ) : (
-        <Button variant="outline" className="w-full gap-2" onClick={handleCopyOnly}>
-          <Copy className="size-4" />
-          {copied ? "✓ Copied to clipboard" : "Copy letter to clipboard"}
-        </Button>
-      )}
-
-      {/* Confirm sent */}
-      <div className="pt-1 border-t border-primary/10 space-y-1.5">
-        <Button
-          variant={emailOpened || !landlordEmail ? "default" : "outline"}
-          className="w-full"
-          onClick={onConfirmSent}
-          disabled={confirming}
-        >
-          <Send className="size-4 mr-2" />
-          {confirming ? "Confirming…" : "I've sent the email →"}
-        </Button>
-        <p className="text-xs text-center text-muted-foreground">
-          Confirming starts the 21-day response clock for {landlordName}.
-        </p>
-      </div>
-    </div>
-  );
-}
-
-// ─── Landlord Next Step ────────────────────────────────────────────────────────
-// Shown when status is awaiting_landlord or letter_sent.
-// Two modes: submit landlord's reply text, or report a refund (full or partial).
-
-export function LandlordNextStep({
+export function RecoveryStep({
   caseData,
-  onSubmitResponse,
   onReportRecovery,
 }: {
   caseData: Case;
-  onSubmitResponse: (text: string) => Promise<void>;
   onReportRecovery: (amountCents: number, notes: string) => Promise<void>;
 }) {
-  const [mode, setMode] = useState<null | "reply" | "refund">(null);
-  const [refundMode, setRefundMode] = useState<null | "full" | "partial">(null);
-  const [text, setText] = useState("");
+  const [refundMode, setRefundMode] = useState<null | "partial">(null);
   const [partialAmount, setPartialAmount] = useState("");
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
-
-  async function submitReply() {
-    if (!text.trim()) return;
-    setSubmitting(true);
-    await onSubmitResponse(text.trim());
-    setSubmitting(false);
-    setText("");
-    setMode(null);
-  }
 
   async function submitFullRefund() {
     setSubmitting(true);
@@ -1062,104 +987,43 @@ export function LandlordNextStep({
   const tribFee = Math.round((partialCents * caseData.contingency_pct) / 100);
 
   return (
-    <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-4 space-y-4">
+    <div className="rounded-xl border border-green-200 bg-green-50/40 p-4 space-y-4">
       <div className="flex items-center gap-2">
-        <MessageSquare className="size-4 text-amber-800 shrink-0" />
-        <p className="text-sm font-semibold text-amber-900">
-          Has your landlord done anything?
+        <Handshake className="size-4 text-green-800 shrink-0" />
+        <p className="text-sm font-semibold text-green-900">
+          Did your landlord return your deposit?
         </p>
       </div>
+      <p className="text-xs text-muted-foreground">
+        If you receive money from your landlord, report it here so we can close your case and calculate the Tribune fee.
+      </p>
 
-      {mode === null && (
+      {refundMode === null && (
         <div className="grid sm:grid-cols-2 gap-3">
           <button
-            onClick={() => setMode("reply")}
+            onClick={submitFullRefund}
+            disabled={submitting}
+            className="flex flex-col gap-1.5 p-3 rounded-lg border border-green-300 bg-white hover:bg-green-100 text-left transition-colors disabled:opacity-60"
+          >
+            <span className="text-sm font-semibold text-green-900">Full refund</span>
+            <span className="text-xs font-medium text-green-800">
+              {formatCents(caseData.amount_withheld_cents)} returned
+            </span>
+            <span className="text-xs text-muted-foreground">Closes your case immediately.</span>
+          </button>
+          <button
+            onClick={() => setRefundMode("partial")}
             className="flex flex-col gap-1.5 p-3 rounded-lg border bg-white hover:bg-muted/30 text-left transition-colors"
           >
-            <div className="flex items-center gap-2 text-sm font-medium">
-              <MessageSquare className="size-3.5 text-muted-foreground" />
-              They sent a written reply
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Paste their email, letter, or text. Tribune will review and prepare your next step.
-            </p>
-          </button>
-          <button
-            onClick={() => setMode("refund")}
-            className="flex flex-col gap-1.5 p-3 rounded-lg border border-green-200 bg-white hover:bg-green-50 text-left transition-colors"
-          >
-            <div className="flex items-center gap-2 text-sm font-medium text-green-800">
-              <Handshake className="size-3.5" />
-              They returned my deposit
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Full or partial. Report the amount to close your case.
-            </p>
+            <span className="text-sm font-medium">Partial refund</span>
+            <span className="text-xs text-muted-foreground">
+              Landlord returned less than the full withheld amount.
+            </span>
           </button>
         </div>
       )}
 
-      {mode === "reply" && (
-        <div className="space-y-3">
-          <button
-            onClick={() => setMode(null)}
-            className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
-          >
-            <ChevronRight className="size-3 rotate-180" /> Back
-          </button>
-          <p className="text-sm text-muted-foreground">
-            Paste the full text of any email, letter, or text message from your landlord.
-            Tribune will review it and prepare a recommended response.
-          </p>
-          <Textarea
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            rows={4}
-            placeholder="Paste your landlord's response here…"
-            className="rounded-lg bg-white"
-          />
-          <Button onClick={submitReply} disabled={submitting || !text.trim()} size="sm">
-            {submitting ? "Submitting…" : "Submit Response"}
-          </Button>
-        </div>
-      )}
-
-      {mode === "refund" && refundMode === null && (
-        <div className="space-y-3">
-          <button
-            onClick={() => setMode(null)}
-            className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
-          >
-            <ChevronRight className="size-3 rotate-180" /> Back
-          </button>
-          <div className="grid sm:grid-cols-2 gap-3">
-            <button
-              onClick={submitFullRefund}
-              disabled={submitting}
-              className="flex flex-col gap-1.5 p-3 rounded-lg border border-green-300 bg-green-50 hover:bg-green-100 text-left transition-colors disabled:opacity-60"
-            >
-              <span className="text-sm font-semibold text-green-900">Full refund</span>
-              <span className="text-xs font-medium text-green-800">
-                {formatCents(caseData.amount_withheld_cents)} returned
-              </span>
-              <span className="text-xs text-muted-foreground">
-                Landlord returned the full withheld amount. Closes the case immediately.
-              </span>
-            </button>
-            <button
-              onClick={() => setRefundMode("partial")}
-              className="flex flex-col gap-1.5 p-3 rounded-lg border bg-white hover:bg-muted/30 text-left transition-colors"
-            >
-              <span className="text-sm font-medium">Partial refund</span>
-              <span className="text-xs text-muted-foreground">
-                Landlord returned less than the full withheld amount. Enter the exact amount.
-              </span>
-            </button>
-          </div>
-        </div>
-      )}
-
-      {mode === "refund" && refundMode === "partial" && (
+      {refundMode === "partial" && (
         <div className="space-y-3">
           <button
             onClick={() => setRefundMode(null)}
@@ -1168,7 +1032,7 @@ export function LandlordNextStep({
             <ChevronRight className="size-3 rotate-180" /> Back
           </button>
           <div className="space-y-1.5">
-            <Label htmlFor="partial_amount">Amount recovered from withheld deposit ($)</Label>
+            <Label htmlFor="partial_amount">Amount recovered ($)</Label>
             <Input
               id="partial_amount"
               type="number"
@@ -1333,44 +1197,6 @@ export function InvoicePanel({
           </p>
         </div>
       )}
-    </div>
-  );
-}
-
-// ─── Landlord Response Form ───────────────────────────────────────────────────
-
-export function LandlordResponseForm({
-  onSubmit,
-}: {
-  onSubmit: (text: string) => Promise<void>;
-}) {
-  const [text, setText] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-
-  async function handleSubmit() {
-    if (!text.trim()) return;
-    setSubmitting(true);
-    await onSubmit(text.trim());
-    setText("");
-    setSubmitting(false);
-  }
-
-  return (
-    <div className="space-y-3">
-      <p className="text-sm text-muted-foreground">
-        Paste the full text of any email, letter, or text message from your landlord.
-        Tribune will review it and prepare a recommended response.
-      </p>
-      <Textarea
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        rows={4}
-        placeholder="Paste your landlord's response here…"
-        className="rounded-lg"
-      />
-      <Button onClick={handleSubmit} disabled={submitting || !text.trim()} size="sm">
-        {submitting ? "Submitting…" : "Submit Response"}
-      </Button>
     </div>
   );
 }

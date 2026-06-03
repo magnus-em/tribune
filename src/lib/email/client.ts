@@ -4,9 +4,10 @@ export interface SendEmailParams {
   to: string;
   subject: string;
   html: string;
+  replyTo?: string;
 }
 
-export async function sendEmail({ to, subject, html }: SendEmailParams) {
+export async function sendEmail({ to, subject, html, replyTo }: SendEmailParams) {
   // Skip email if Resend not configured
   if (!process.env.RESEND_API_KEY) {
     console.log("[Email skipped - Resend not configured]", { to, subject });
@@ -22,6 +23,7 @@ export async function sendEmail({ to, subject, html }: SendEmailParams) {
       to,
       subject,
       html,
+      ...(replyTo ? { reply_to: replyTo } : {}),
     });
 
     if (error) {

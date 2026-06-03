@@ -52,6 +52,8 @@ export type Database = {
           case_id: string
           created_at: string
           created_by: string
+          dispatch_channel: Database["public"]["Enums"]["dispatch_channel"] | null
+          dispatch_metadata: Json | null
           id: string
           is_admin_only: boolean
           letter_number: number | null
@@ -63,6 +65,8 @@ export type Database = {
           case_id: string
           created_at?: string
           created_by: string
+          dispatch_channel?: Database["public"]["Enums"]["dispatch_channel"] | null
+          dispatch_metadata?: Json | null
           id?: string
           is_admin_only?: boolean
           letter_number?: number | null
@@ -74,6 +78,8 @@ export type Database = {
           case_id?: string
           created_at?: string
           created_by?: string
+          dispatch_channel?: Database["public"]["Enums"]["dispatch_channel"] | null
+          dispatch_metadata?: Json | null
           id?: string
           is_admin_only?: boolean
           letter_number?: number | null
@@ -227,19 +233,21 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      action_type: "letter_sent" | "resolution_reported" | "payment_received"
+      action_type: "letter_sent" | "letter_dispatched" | "resolution_reported" | "payment_received"
       case_status:
         | "intake_submitted"
         | "under_review"
-        | "letter_ready"
+        | "correspondence_ready"
         | "letter_sent"
         | "awaiting_landlord"
         | "landlord_responded"
         | "resolved"
         | "closed"
+      dispatch_channel: "email" | "sms" | "mail"
       message_type:
         | "tribune_letter"
         | "tribune_update"
+        | "landlord_reply"
         | "tenant_response"
         | "tenant_landlord_reply"
         | "system"
@@ -370,20 +378,22 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      action_type: ["letter_sent", "resolution_reported", "payment_received"],
+      action_type: ["letter_sent", "letter_dispatched", "resolution_reported", "payment_received"],
       case_status: [
         "intake_submitted",
         "under_review",
-        "letter_ready",
+        "correspondence_ready",
         "letter_sent",
         "awaiting_landlord",
         "landlord_responded",
         "resolved",
         "closed",
       ],
+      dispatch_channel: ["email", "sms", "mail"],
       message_type: [
         "tribune_letter",
         "tribune_update",
+        "landlord_reply",
         "tenant_response",
         "tenant_landlord_reply",
         "system",

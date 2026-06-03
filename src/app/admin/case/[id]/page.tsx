@@ -36,6 +36,9 @@ import {
   changeStatus,
   postNote,
   markInvoicePaid,
+  dispatchLetter,
+  logLandlordReply,
+  adminReportRecovery,
 } from "./actions";
 import type { InvoiceData } from "@/app/dashboard/case/[id]/_components";
 import { statusColor, formatCents } from "@/lib/utils/case";
@@ -372,10 +375,10 @@ function AdminActionBanner({
       title: "Under review — draft Letter 1 when ready",
       description: "Review the tenant's situation description and uploaded documents, then generate and post Letter 1.",
     },
-    letter_ready: {
-      variant: "waiting",
-      title: "Waiting for tenant to send letter",
-      description: "Letter has been posted. Tenant needs to send it to their landlord and confirm.",
+    correspondence_ready: {
+      variant: "required",
+      title: "Letter staged — dispatch to landlord",
+      description: "Letter is drafted. Click 'Send via Email' in the letter tab to dispatch it to the landlord.",
     },
     letter_sent: {
       variant: "waiting",
@@ -445,6 +448,7 @@ function AdminWritePanel({
   const [letterBody, setLetterBody] = useState("");
   const [letterNum, setLetterNum] = useState("1");
   const [postingLetter, setPostingLetter] = useState(false);
+  const [dispatching, setDispatching] = useState(false);
 
   const [updateTitle, setUpdateTitle] = useState("");
   const [updateBody, setUpdateBody] = useState("");
@@ -454,6 +458,20 @@ function AdminWritePanel({
   const [noteBody, setNoteBody] = useState("");
   const [noteAdminOnly, setNoteAdminOnly] = useState(true);
   const [postingNote, setPostingNote] = useState(false);
+
+  const [replyBody, setReplyBody] = useState("");
+  const [loggingReply, setLoggingReply] = useState(false);
+
+  const [recoveryAmountStr, setRecoveryAmountStr] = useState("");
+  const [recoveryNotes, setRecoveryNotes] = useState("");
+  const [reportingRecovery, setReportingRecovery] = useState(false);
+
+  const isTerminal = caseData.status === "resolved" || caseData.status === "closed";
+
+  // Latest staged (unsent) tribune_letter message
+  const stagedLetter = [...messages]
+    .reverse()
+    .find((m) => m.message_type === "tribune_letter" && !m.dispatch_channel);
 
   function buildLetterData(): LetterData | null {
     if (!profile) return null;
@@ -509,8 +527,37 @@ function AdminWritePanel({
     setPostingLetter(true);
     const r = await postLetterWithNotification({ caseId: caseData.id, title: letterTitle, body: letterBody, letterNumber: parseInt(letterNum) });
     if (r.error) toast.error(r.error);
-    else { toast.success("Letter posted"); setLetterTitle(""); setLetterBody(""); onPosted(); }
+    else { toast.success("Letter saved — dispatch when ready"); setLetterTitle(""); setLetterBody(""); onPosted(); }
     setPostingLetter(false);
+  }
+
+  async function handleDispatch() {
+    if (!stagedLetter) return;
+    setDispatching(true);
+    const r = await dispatchLetter(caseData.id, stagedLetter.id, "email");
+    if (r.error) toast.error(r.error);
+    else { toast.success("Letter sent to landlord"); onPosted(); }
+    setDispatching(false);
+  }
+
+  async function handleLogReply() {
+    if (!replyBody.trim()) return;
+    setLoggingReply(true);
+    const r = await logLandlordReply(caseData.id, replyBody);
+    if (r.error) toast.error(r.error);
+    else { toast.success("Landlord reply logged"); setReplyBody(""); onPosted(); }
+    setLoggingReply(false);
+  }
+
+  async function handleReportRecovery() {
+    const dollars = parseFloat(recoveryAmountStr);
+    if (isNaN(dollars) || dollars <= 0) { toast.error("Enter a valid recovery amount"); return; }
+    const cents = Math.round(dollars * 100);
+    setReportingRecovery(true);
+    const r = await adminReportRecovery(caseData.id, cents, recoveryNotes || undefined);
+    if (r.error) toast.error(r.error);
+    else { toast.success("Recovery reported — case resolved"); setRecoveryAmountStr(""); setRecoveryNotes(""); onPosted(); }
+    setReportingRecovery(false);
   }
 
   async function handlePostUpdate() {
@@ -539,15 +586,43 @@ function AdminWritePanel({
       </div>
       <div className="p-4">
         <Tabs defaultValue="letter">
-          <TabsList className="grid w-full grid-cols-3 h-8 mb-4">
-            <TabsTrigger value="letter" className="text-xs gap-1"><Mail className="size-3" /> Letter</TabsTrigger>
-            <TabsTrigger value="update" className="text-xs gap-1"><MessageSquare className="size-3" /> Update</TabsTrigger>
+          <TabsList className={`grid w-full h-8 mb-4 ${isTerminal ? "grid-cols-2" : "grid-cols-5"}`}>
+            {!isTerminal && <TabsTrigger value="letter" className="text-xs gap-1"><Mail className="size-3" /> Letter</TabsTrigger>}
+            {!isTerminal && <TabsTrigger value="reply"  className="text-xs gap-1"><MessageSquare className="size-3" /> Reply</TabsTrigger>}
+            {!isTerminal && <TabsTrigger value="resolve" className="text-xs gap-1"><Handshake className="size-3" /> Resolve</TabsTrigger>}
+            <TabsTrigger value="update" className="text-xs gap-1"><CheckCheck className="size-3" /> Update</TabsTrigger>
             <TabsTrigger value="note"   className="text-xs gap-1"><StickyNote className="size-3" /> Note</TabsTrigger>
           </TabsList>
 
           {/* Letter */}
           <TabsContent value="letter" className="space-y-3 mt-0">
-            <p className="text-xs text-muted-foreground">Post a demand letter. Use &ldquo;Generate from template&rdquo; to auto-fill from case data, then edit before posting.</p>
+            <p className="text-xs text-muted-foreground">Draft a demand letter and save it. Once saved, use &ldquo;Send via Email&rdquo; to dispatch it to the landlord.</p>
+
+            {/* Dispatch banner — shown when there's a staged unsent letter */}
+            {stagedLetter && (
+              <div className="rounded-lg border border-yellow-300 bg-yellow-50 p-3 flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold text-yellow-900">Letter staged — not yet sent</p>
+                  <p className="text-xs text-yellow-800 truncate mt-0.5">{stagedLetter.title}</p>
+                  {caseData.landlord_email && (
+                    <p className="text-xs text-yellow-700 mt-0.5">→ {caseData.landlord_email}</p>
+                  )}
+                  {!caseData.landlord_email && (
+                    <p className="text-xs text-red-700 mt-0.5">⚠ No landlord email on file</p>
+                  )}
+                </div>
+                <Button
+                  size="sm"
+                  className="shrink-0 h-7 text-xs gap-1"
+                  onClick={handleDispatch}
+                  disabled={dispatching || !caseData.landlord_email}
+                >
+                  <Send className="size-3" />
+                  {dispatching ? "Sending…" : "Send via Email"}
+                </Button>
+              </div>
+            )}
+
             <div className="flex gap-3">
               <div>
                 <Label className="text-xs">Letter #</Label>
@@ -575,9 +650,69 @@ function AdminWritePanel({
               <Textarea value={letterBody} onChange={(e) => setLetterBody(e.target.value)} rows={10} placeholder="Paste or generate letter content…" className="rounded-lg font-mono text-xs" />
             </div>
             <Button onClick={handlePostLetter} disabled={!letterTitle.trim() || !letterBody.trim() || postingLetter} size="sm">
-              {postingLetter ? "Posting…" : "Post Letter"}
+              {postingLetter ? "Saving…" : "Save Draft"}
             </Button>
           </TabsContent>
+
+          {/* Landlord Reply */}
+          <TabsContent value="reply" className="space-y-3 mt-0">
+            <p className="text-xs text-muted-foreground">
+              Log a landlord reply that arrived outside the automated inbound channel (e.g., by phone, physical mail, or a forwarded email).
+              This sets the case to &ldquo;Landlord Responded&rdquo;.
+            </p>
+            <div>
+              <Label className="text-xs">Reply content</Label>
+              <Textarea
+                value={replyBody}
+                onChange={(e) => setReplyBody(e.target.value)}
+                rows={6}
+                placeholder="Paste or summarize the landlord's reply…"
+                className="rounded-lg text-sm"
+              />
+            </div>
+            <Button onClick={handleLogReply} disabled={!replyBody.trim() || loggingReply} size="sm">
+              {loggingReply ? "Logging…" : "Log Reply"}
+            </Button>
+          </TabsContent>
+
+          {/* Resolve */}
+          {!isTerminal && (
+            <TabsContent value="resolve" className="space-y-3 mt-0">
+              <p className="text-xs text-muted-foreground">
+                Report a recovery on behalf of the tenant or landlord. Creates an invoice, resolves the case, and notifies the tenant.
+              </p>
+              <div>
+                <Label className="text-xs">Amount recovered ($)</Label>
+                <Input
+                  value={recoveryAmountStr}
+                  onChange={(e) => setRecoveryAmountStr(e.target.value)}
+                  placeholder="e.g. 1500.00"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  className="rounded-lg h-8 text-xs mt-1"
+                />
+              </div>
+              <div>
+                <Label className="text-xs">Notes (optional)</Label>
+                <Textarea
+                  value={recoveryNotes}
+                  onChange={(e) => setRecoveryNotes(e.target.value)}
+                  rows={3}
+                  placeholder="Settlement details, partial payment notes…"
+                  className="rounded-lg text-sm"
+                />
+              </div>
+              <Button
+                onClick={handleReportRecovery}
+                disabled={!recoveryAmountStr || reportingRecovery}
+                size="sm"
+                variant="default"
+              >
+                {reportingRecovery ? "Resolving…" : "Report Recovery & Resolve Case"}
+              </Button>
+            </TabsContent>
+          )}
 
           {/* Update */}
           <TabsContent value="update" className="space-y-3 mt-0">
@@ -697,7 +832,7 @@ export default function AdminCaseDetailPage() {
   const deadline = new Date(caseData.statutory_deadline);
   const daysOverdue = differenceInDays(new Date(), deadline);
   const hasLease = documents.some((d) => d.kind === "lease");
-  const hasLandlordReply = messages.some((m) => m.message_type === "tenant_landlord_reply");
+  const hasLandlordReply = messages.some((m) => m.message_type === "landlord_reply" || m.message_type === "tenant_landlord_reply");
 
   // Build event stream — admin sees ALL messages including admin-only
   const events = buildEventStream(messages, actions);
@@ -707,7 +842,7 @@ export default function AdminCaseDetailPage() {
   // Latest landlord reply (for prominent display)
   const latestLandlordReply = [...messages]
     .reverse()
-    .find((m) => m.message_type === "tenant_landlord_reply");
+    .find((m) => m.message_type === "landlord_reply" || m.message_type === "tenant_landlord_reply");
 
   return (
     <div className="max-w-3xl space-y-6">

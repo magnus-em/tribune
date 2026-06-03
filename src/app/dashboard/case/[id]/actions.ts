@@ -96,35 +96,6 @@ export async function uploadDocument(
   }
 }
 
-export async function confirmLetterSent(caseId: string, letterNumber: number) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { error: "Not authenticated" };
-
-  const { data: caseRow } = await supabase
-    .from("cases")
-    .select("tenant_id, status")
-    .eq("id", caseId)
-    .single();
-
-  if (!caseRow || caseRow.tenant_id !== user.id) return { error: "Not authorized" };
-
-  await supabase.from("case_actions").insert({
-    case_id: caseId,
-    action_type: "letter_sent",
-    metadata: { letter_number: letterNumber, sent_date: new Date().toISOString() },
-  });
-
-  await supabase
-    .from("cases")
-    .update({ status: "awaiting_landlord" })
-    .eq("id", caseId);
-
-  return { success: true };
-}
-
 export async function reportRecovery(
   caseId: string,
   amountRecoveredCents: number,
@@ -218,39 +189,6 @@ export async function reportRecovery(
       html,
     });
   }
-
-  return { success: true };
-}
-
-export async function submitLandlordResponse(caseId: string, text: string) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { error: "Not authenticated" };
-
-  const { data: caseRow } = await supabase
-    .from("cases")
-    .select("tenant_id")
-    .eq("id", caseId)
-    .single();
-
-  if (!caseRow || caseRow.tenant_id !== user.id) return { error: "Not authorized" };
-
-  const { error: msgError } = await supabase.from("case_messages").insert({
-    case_id: caseId,
-    message_type: "tenant_landlord_reply",
-    title: "Landlord's response",
-    body: text,
-    created_by: user.id,
-  });
-
-  if (msgError) return { error: msgError.message };
-
-  await supabase
-    .from("cases")
-    .update({ status: "landlord_responded" })
-    .eq("id", caseId);
 
   return { success: true };
 }

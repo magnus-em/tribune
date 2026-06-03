@@ -4,7 +4,7 @@ import { useState, useCallback } from "react";
 import { useForm, FormProvider } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { extractLeaseData, createCase } from "./actions";
-import { CheckCircle2 } from "lucide-react";
+// CheckCircle2 removed — step indicator no longer uses icons
 import { toast } from "sonner";
 import { trackEvent } from "@/lib/analytics/posthog";
 import { LegalDisclaimer } from "@/components/legal-disclaimer";
@@ -40,38 +40,68 @@ const STEPS = [
 
 function StepIndicator({ current }: { current: number }) {
   return (
-    <div className="flex items-center justify-between mb-8">
-      {STEPS.map((step, i) => (
-        <div key={step.id} className="flex items-center flex-1 last:flex-none">
-          <div className="flex flex-col items-center">
+    <div className="mb-8 overflow-x-auto">
+      <div
+        className="flex"
+        style={{
+          borderBottom: "1px solid hsl(var(--border))",
+          gap: "1px",
+          background: "hsl(var(--border))",
+        }}
+      >
+        {STEPS.map((step, i) => {
+          const isDone = i < current;
+          const isActive = i === current;
+          return (
             <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold transition-colors ${
-                i < current
-                  ? "bg-primary text-primary-foreground"
-                  : i === current
-                    ? "bg-primary text-primary-foreground ring-4 ring-primary/20"
-                    : "bg-muted text-muted-foreground"
-              }`}
+              key={step.id}
+              style={{
+                flex: 1,
+                padding: "10px 12px",
+                background: isActive
+                  ? "hsl(var(--primary))"
+                  : isDone
+                  ? "hsl(219 100% 97%)"
+                  : "hsl(var(--background))",
+                display: "flex",
+                flexDirection: "column",
+                gap: "3px",
+              }}
             >
-              {i < current ? <CheckCircle2 className="size-4" /> : i + 1}
+              <span
+                style={{
+                  fontFamily: "var(--font-space-mono, monospace)",
+                  fontSize: "9px",
+                  letterSpacing: "0.14em",
+                  textTransform: "uppercase",
+                  color: isActive
+                    ? "rgba(248,250,252,0.6)"
+                    : isDone
+                    ? "hsl(224 71% 40%)"
+                    : "hsl(var(--muted-foreground))",
+                }}
+              >
+                {String(i + 1).padStart(2, "0")}
+              </span>
+              <span
+                className="hidden sm:block whitespace-nowrap"
+                style={{
+                  fontFamily: "var(--font-fraunces, Georgia, serif)",
+                  fontSize: "13px",
+                  fontWeight: 600,
+                  color: isActive
+                    ? "hsl(var(--primary-foreground))"
+                    : isDone
+                    ? "hsl(224 71% 40%)"
+                    : "hsl(var(--muted-foreground))",
+                }}
+              >
+                {step.label}
+              </span>
             </div>
-            <span
-              className={`text-[11px] mt-1.5 hidden sm:block whitespace-nowrap ${
-                i <= current ? "text-foreground font-medium" : "text-muted-foreground"
-              }`}
-            >
-              {step.label}
-            </span>
-          </div>
-          {i < STEPS.length - 1 && (
-            <div
-              className={`h-0.5 flex-1 mx-2 mt-[-1rem] sm:mt-0 ${
-                i < current ? "bg-primary" : "bg-muted"
-              }`}
-            />
-          )}
-        </div>
-      ))}
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -297,7 +327,7 @@ export default function NewCasePage() {
           </p>
         </div>
 
-        <div className="rounded-xl border bg-card p-6">
+        <div className="border bg-card p-6">
           <StepIndicator current={step} />
 
           {step === 0 && (

@@ -19,19 +19,19 @@ function statusDescription(status: string): { label: string; action: string | nu
       return { label: "Case submitted — Tribune will review shortly.", action: null };
     case "under_review":
       return { label: "Tribune is reviewing your case.", action: null };
-    case "letter_ready":
+    case "correspondence_ready":
       return {
-        label: "Your demand letter is ready.",
-        action: "Review it and confirm you've sent it to your landlord.",
+        label: "Tribune is preparing to contact your landlord.",
+        action: null,
       };
     case "letter_sent":
     case "awaiting_landlord":
       return {
-        label: "Waiting for your landlord to respond.",
-        action: "If they reply or return your deposit, log it in your case.",
+        label: "Tribune has contacted your landlord.",
+        action: "If your landlord returns your deposit, report it in your case.",
       };
     case "landlord_responded":
-      return { label: "Tribune is preparing your next response.", action: null };
+      return { label: "Landlord has responded — Tribune is preparing next steps.", action: null };
     case "resolved":
       return { label: "Case resolved.", action: null };
     case "closed":
@@ -74,26 +74,26 @@ function SingleCaseView({ c }: { c: Case }) {
 
       {/* Recovery hero */}
       <div className={s.cardBone}>
-        <p className={s.label}>{isTerminal ? "Amount recovered" : "Est. recovery"}</p>
-        <p className={`mt-2 ${isTerminal && netCents > 0 ? s.bigNumberGreen : s.bigNumber}`}>
-          {formatCents(netCents)}
-        </p>
-        {!isTerminal && (
-          <p className={`mt-1 ${s.label}`}>
-            {CONTINGENCY_PCT}% Tribune fee already deducted
+        <div className={s.cardBrow}>
+          <span>{isTerminal ? "Amount recovered" : "Estimated recovery"}</span>
+          {!isTerminal && <span>{CONTINGENCY_PCT}% Tribune fee deducted</span>}
+        </div>
+        <div className={s.cardBody}>
+          <p className={isTerminal && netCents > 0 ? s.bigNumberGreen : s.bigNumber}>
+            {formatCents(netCents)}
           </p>
-        )}
+        </div>
         <div className={s.metaGrid}>
           <div className={s.metaCell}>
-            <p className={s.metaCellLabel}>{isTerminal ? "Recovered" : "Withheld"}</p>
+            <span className={s.metaCellLabel}>{isTerminal ? "Recovered" : "Withheld"}</span>
             <p className={s.metaCellValue}>{formatCents(displayCents)}</p>
           </div>
           <div className={s.metaCell}>
-            <p className={s.metaCellLabel}>Tribune ({c.contingency_pct}%)</p>
+            <span className={s.metaCellLabel}>Tribune ({c.contingency_pct}%)</span>
             <p className={s.metaCellMuted}>−{formatCents(tribFee)}</p>
           </div>
           <div className={s.metaCell}>
-            <p className={s.metaCellLabel}>Your net</p>
+            <span className={s.metaCellLabel}>Your net</span>
             <p className={s.metaCellValue}>{formatCents(netCents)}</p>
           </div>
         </div>
@@ -123,7 +123,7 @@ function SingleCaseView({ c }: { c: Case }) {
         </span>
       </div>
 
-      <Button size="lg" className="w-full rounded-none" render={<Link href={`/dashboard/case/${c.id}`} />}>
+      <Button size="lg" className="w-full" render={<Link href={`/dashboard/case/${c.id}`} />}>
         Open Your Case <ArrowRight className="ml-2 size-4" />
       </Button>
 
@@ -142,7 +142,7 @@ function MultiCaseView({ cases }: { cases: Case[] }) {
           <h1 className={`text-2xl font-semibold ${s.serif}`}>Your Cases</h1>
           <p className={`mt-1 ${s.label}`}>{cases.length} case{cases.length !== 1 ? "s" : ""}</p>
         </div>
-        <Button size="sm" className="rounded-none" render={<Link href="/dashboard/new-case" />}>
+        <Button size="sm" render={<Link href="/dashboard/new-case" />}>
           <PlusCircle className="mr-1.5 size-4" /> New Case
         </Button>
       </div>
@@ -254,7 +254,7 @@ export default function DashboardPage() {
             <CheckCircle2 className="size-3.5" style={{ color: "#2d6a35" }} /> {CONTINGENCY_PCT}% contingency
           </span>
         </div>
-        <Button size="lg" className="rounded-none" render={<Link href="/dashboard/new-case" />}>
+        <Button size="lg" render={<Link href="/dashboard/new-case" />}>
           Start Your Case <ArrowRight className="ml-2 size-4" />
         </Button>
       </div>

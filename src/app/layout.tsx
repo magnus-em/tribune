@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
-import { IBM_Plex_Serif, IBM_Plex_Mono } from "next/font/google";
+import { IBM_Plex_Serif, IBM_Plex_Mono, Fraunces, DM_Sans, Space_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { PostHogProvider } from "@/lib/analytics/posthog";
@@ -28,6 +28,28 @@ const ibmPlexMono = IBM_Plex_Mono({
   display: "swap",
 });
 
+const fraunces = Fraunces({
+  subsets: ["latin"],
+  style: ["normal", "italic"],
+  axes: ["opsz"],
+  variable: "--font-fraunces",
+  display: "swap",
+});
+
+const dmSans = DM_Sans({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600"],
+  variable: "--font-dm-sans",
+  display: "swap",
+});
+
+const spaceMono = Space_Mono({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  variable: "--font-space-mono",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   title: "Tribune — Security Deposit Recovery",
   description:
@@ -40,7 +62,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${geist.variable} ${ibmPlexSerif.variable} ${ibmPlexMono.variable}`}>
+    <html lang="en" className={`${geist.variable} ${ibmPlexSerif.variable} ${ibmPlexMono.variable} ${fraunces.variable} ${dmSans.variable} ${spaceMono.variable}`}>
       <body className="font-sans antialiased bg-background text-foreground">
         <NavigationProgress />
         <PostHogProvider>

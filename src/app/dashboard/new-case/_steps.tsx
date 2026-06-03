@@ -85,17 +85,25 @@ function YesNo({
   onChange: (v: "yes" | "no") => void;
 }) {
   return (
-    <div className="flex gap-2">
+    <div className="flex gap-px" style={{ border: "1px solid hsl(var(--border))", background: "hsl(var(--border))" }}>
       {(["yes", "no"] as const).map((opt) => (
         <button
           key={opt}
           type="button"
           onClick={() => onChange(opt)}
-          className={`flex-1 py-2 rounded-lg border text-sm font-medium capitalize transition-colors ${
-            value === opt
-              ? "bg-primary text-primary-foreground border-primary"
-              : "border-border bg-background hover:bg-muted/40"
-          }`}
+          style={{
+            flex: 1,
+            padding: "10px 0",
+            border: "none",
+            fontFamily: "var(--font-space-mono, monospace)",
+            fontSize: "11px",
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+            cursor: "pointer",
+            transition: "background 0.15s, color 0.15s",
+            background: value === opt ? "hsl(var(--primary))" : "hsl(var(--background))",
+            color: value === opt ? "hsl(var(--primary-foreground))" : "hsl(var(--muted-foreground))",
+          }}
         >
           {opt === "yes" ? "Yes" : "No"}
         </button>
@@ -132,11 +140,11 @@ function FileZone({
         }}
       />
       {file ? (
-        <div className="flex items-center gap-3 p-3 rounded-lg border bg-primary/5 border-primary/20">
-          <CheckCircle2 className="size-4 text-primary shrink-0" />
+        <div className="flex items-center gap-3 p-4 border" style={{ background: "hsl(219 100% 97%)", borderColor: "#bfdbfe" }}>
+          <CheckCircle2 className="size-4 shrink-0" style={{ color: "hsl(224 71% 40%)" }} />
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium truncate">{file.name}</p>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground" style={{ fontFamily: "var(--font-space-mono, monospace)" }}>
               {(file.size / 1024).toFixed(0)} KB
             </p>
           </div>
@@ -154,12 +162,12 @@ function FileZone({
         <button
           type="button"
           onClick={() => ref.current?.click()}
-          className="w-full flex flex-col items-center gap-2 p-6 rounded-lg border-2 border-dashed hover:border-foreground/30 hover:bg-muted/30 transition-colors text-muted-foreground"
+          className="w-full flex flex-col items-center gap-3 p-8 border-2 border-dashed hover:border-foreground/40 hover:bg-muted/20 transition-colors text-muted-foreground"
         >
-          <Upload className="size-6" />
+          <Upload className="size-5" />
           <div className="text-center">
-            <p className="text-sm font-medium text-foreground">{label}</p>
-            {hint && <p className="text-xs mt-0.5">{hint}</p>}
+            <p className="text-sm font-medium text-foreground" style={{ fontFamily: "var(--font-dm-sans, system-ui)" }}>{label}</p>
+            {hint && <p className="text-xs mt-1 text-muted-foreground" style={{ fontFamily: "var(--font-space-mono, monospace)" }}>{hint}</p>}
           </div>
         </button>
       )}
@@ -297,11 +305,11 @@ export function LeaseStep({
       />
 
       {extracting && (
-        <div className="flex items-center gap-3 p-4 rounded-xl border bg-blue-50 border-blue-100">
-          <Loader2 className="size-4 text-blue-600 animate-spin shrink-0" />
+        <div className="flex items-center gap-3 p-4 border" style={{ background: "hsl(219 100% 97%)", borderColor: "#bfdbfe" }}>
+          <Loader2 className="size-4 animate-spin shrink-0" style={{ color: "hsl(224 71% 40%)" }} />
           <div>
-            <p className="text-sm font-medium text-blue-900">Reading your lease…</p>
-            <p className="text-xs text-blue-700/70 mt-0.5">
+            <p className="text-sm font-medium" style={{ color: "hsl(224 71% 40%)" }}>Reading your lease…</p>
+            <p className="text-xs mt-0.5 text-muted-foreground" style={{ fontFamily: "var(--font-space-mono, monospace)" }}>
               This takes about 10–15 seconds.
             </p>
           </div>
@@ -309,14 +317,14 @@ export function LeaseStep({
       )}
 
       {extracted && !extracting && (
-        <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-2">
+        <div className="border p-4 space-y-2" style={{ background: "hsl(219 100% 97%)", borderColor: "#bfdbfe" }}>
           <div className="flex items-center gap-2">
-            <CheckCircle2 className="size-4 text-primary shrink-0" />
-            <p className="text-sm font-semibold text-primary">
+            <CheckCircle2 className="size-4 shrink-0" style={{ color: "hsl(224 71% 40%)" }} />
+            <p className="text-sm font-semibold" style={{ color: "hsl(224 71% 40%)" }}>
               Lease read — we pre-filled what we found
             </p>
           </div>
-          <ul className="text-xs text-muted-foreground space-y-0.5 pl-6">
+          <ul className="text-xs text-muted-foreground space-y-0.5 pl-6" style={{ fontFamily: "var(--font-space-mono, monospace)" }}>
             {extracted.property_address && (
               <li>Property: {extracted.property_address}</li>
             )}
@@ -337,11 +345,11 @@ export function LeaseStep({
       )}
 
       {extractionFailed && !extracting && leaseFile && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
-          <p className="text-sm font-medium text-amber-900">
+        <div className="border p-4" style={{ background: "#fffbeb", borderColor: "#fde68a" }}>
+          <p className="text-sm font-medium" style={{ color: "#92400e" }}>
             Couldn&apos;t read the lease automatically
           </p>
-          <p className="text-xs text-amber-800/70 mt-0.5">
+          <p className="text-xs mt-1" style={{ color: "#78350f", opacity: 0.75, fontFamily: "var(--font-space-mono, monospace)" }}>
             No problem — you&apos;ll fill in the details manually on the next step.
           </p>
         </div>

@@ -1,13 +1,18 @@
-import { Info } from "lucide-react";
-
 export function LegalDisclaimer() {
   return (
-    <div className="flex items-start gap-2.5 text-xs text-muted-foreground py-4 border-t mt-8">
-      <Info className="size-3.5 shrink-0 mt-0.5" />
-      <p>
-        Tribune provides information about Connecticut tenant rights and helps
-        prepare documents. We are not a law firm and do not provide legal advice.
-      </p>
+    <div
+      style={{
+        marginTop: "32px",
+        paddingTop: "16px",
+        borderTop: "1px solid hsl(var(--border))",
+        fontFamily: "var(--font-space-mono, monospace)",
+        fontSize: "10px",
+        letterSpacing: "0.04em",
+        lineHeight: "1.6",
+        color: "hsl(var(--muted-foreground))",
+      }}
+    >
+      Tribune provides information about Connecticut tenant rights and helps prepare documents. We are not a law firm and do not provide legal advice. All correspondence is signed by you.
     </div>
   );
 }

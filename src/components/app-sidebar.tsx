@@ -57,7 +57,7 @@ function statusDot(status: string): string {
     case "landlord_responded": return "bg-orange-500";
     case "letter_sent":
     case "awaiting_landlord": return "bg-purple-500";
-    case "letter_ready": return "bg-yellow-400";
+    case "correspondence_ready": return "bg-yellow-400";
     case "intake_submitted":
     case "under_review": return "bg-blue-500";
     default: return "bg-gray-400";
@@ -87,24 +87,24 @@ function TenantCaseCard({ c }: { c: SidebarTenantCase }) {
   return (
     <Link
       href={`/dashboard/case/${c.id}`}
-      className="block mx-2 mb-1 rounded-lg border bg-sidebar-accent/50 hover:bg-sidebar-accent transition-colors p-3 space-y-2 group"
+      className="block mx-2 mb-1 border border-border hover:border-foreground/30 hover:bg-sidebar-accent transition-colors p-3 space-y-2 group"
     >
       <div className="flex items-center gap-2">
         <span className={`size-2 rounded-full shrink-0 ${statusDot(c.status)}`} />
-        <span className="text-xs font-medium text-sidebar-foreground truncate">{label}</span>
+        <span className="text-[11px] uppercase tracking-wider font-medium text-sidebar-foreground truncate" style={{ fontFamily: "var(--font-space-mono, monospace)" }}>{label}</span>
       </div>
       {deadline && (
-        <p className={`text-xs ${deadline.urgent ? "text-orange-600 font-medium" : "text-muted-foreground"}`}>
+        <p className={`text-xs ${deadline.urgent ? "text-destructive font-medium" : "text-muted-foreground"}`} style={{ fontFamily: "var(--font-space-mono, monospace)" }}>
           {deadline.text}
         </p>
       )}
       {net !== null && (
         <p className="text-xs text-muted-foreground">
           Est. net{" "}
-          <span className="font-semibold text-sidebar-foreground">{formatCents(net)}</span>
+          <span className="font-semibold text-sidebar-foreground" style={{ fontFamily: "var(--font-fraunces, Georgia, serif)" }}>{formatCents(net)}</span>
         </p>
       )}
-      <div className="flex items-center gap-1 text-xs text-muted-foreground group-hover:text-sidebar-foreground transition-colors">
+      <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground group-hover:text-sidebar-foreground transition-colors" style={{ fontFamily: "var(--font-space-mono, monospace)" }}>
         View case <ArrowRight className="size-3" />
       </div>
     </Link>
@@ -150,12 +150,12 @@ export function AppSidebar({
               render={<Link href="/dashboard" />}
               tooltip="Tribune"
             >
-              <div className="flex aspect-square size-7 shrink-0 items-center justify-center rounded-sm bg-[#0a0a08] text-[#b8361f] font-serif italic text-base leading-none select-none">
+              <div className="flex aspect-square size-7 shrink-0 items-center justify-center bg-[#0f172a] text-[#1e40af] italic text-base leading-none select-none" style={{ fontFamily: "var(--font-fraunces, Georgia, serif)", fontWeight: 700 }}>
                 §
               </div>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="font-semibold tracking-tight">Tribune</span>
-                <span className="text-xs text-muted-foreground">Case Handling</span>
+                <span className="font-semibold tracking-tight" style={{ fontFamily: "var(--font-fraunces, Georgia, serif)" }}>Tribune</span>
+                <span className="text-[10px] uppercase tracking-widest text-muted-foreground" style={{ fontFamily: "var(--font-space-mono, monospace)", letterSpacing: "0.1em" }}>CT § 47a-21</span>
               </div>
             </SidebarMenuButton>
           </SidebarMenuItem>

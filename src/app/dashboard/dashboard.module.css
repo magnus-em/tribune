@@ -1,264 +1,340 @@
+/* ============================================================
+   Dashboard — v6 design language
+   Fraunces display · DM Sans body · Space Mono labels
+   ============================================================ */
+
 .page {
-  --paper: #fff;
-  --ink: #0a0a08;
-  --rule: #d9d5cb;
-  --muted: #6e6a5a;
-  --accent: #b8361f;
-  --bone: #f6f3ea;
-  --serif: var(--font-ibm-plex-serif, "IBM Plex Serif", Georgia, serif);
-  --mono: var(--font-ibm-plex-mono, "Courier New", monospace);
-  font-family: var(--font-sans, system-ui, sans-serif);
+  --cream: #f8fafc;
+  --cream-deep: #f1f5f9;
+  --cream-border: #e2e8f0;
+  --white: #ffffff;
+  --ink: #0f172a;
+  --ink-mid: #334155;
+  --ink-light: #64748b;
+  --muted: #64748b;
+  --blue: #1e40af;
+  --blue-bg: #eff6ff;
+  --blue-dark: #1d4ed8;
+  --red: #b91c1c;
+  --green: #166534;
+
+  --display: var(--font-fraunces, Georgia, serif);
+  --mono: var(--font-space-mono, "Courier New", monospace);
+  --body: var(--font-dm-sans, system-ui, sans-serif);
+
+  font-family: var(--body);
   -webkit-font-smoothing: antialiased;
 }
 
-/* ── Header ── */
+/* ── Header ──────────────────────────────────────────────── */
 .header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 48px;
-  padding: 0 1.25rem;
-  background: var(--bone);
-  border-bottom: 1px solid var(--ink);
-  gap: 0.75rem;
+  height: 52px;
+  padding: 0 24px;
+  background: var(--white);
+  border-bottom: 1px solid var(--cream-border);
+  gap: 12px;
 }
+
 .headerLeft {
   display: flex;
   align-items: center;
-  gap: 0.625rem;
+  gap: 12px;
 }
+
 .headerLabel {
   font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.08em;
+  font-size: 10px;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--ink);
-  font-weight: 500;
+  color: var(--ink-light);
+  font-weight: 400;
 }
+
 .headerRight {
   font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.06em;
+  font-size: 10px;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: var(--ink-light);
 }
+
 .headerRight b {
-  color: var(--accent);
+  color: var(--blue);
   font-style: italic;
-  font-weight: 400;
+  font-weight: 700;
   letter-spacing: 0;
   text-transform: none;
 }
+
 .vSep {
   width: 1px;
   height: 16px;
-  background: var(--rule);
+  background: var(--cream-border);
   flex-shrink: 0;
 }
 
-/* ── Card ── */
+/* ── Cards ───────────────────────────────────────────────── */
 .card {
-  border: 1px solid var(--rule);
-  padding: 1.5rem;
-}
-.cardBone {
-  border: 1px solid var(--rule);
-  background: var(--bone);
-  padding: 1.5rem;
+  border: 1px solid var(--cream-border);
+  background: var(--white);
 }
 
-/* ── Typography ── */
-.serif {
-  font-family: var(--serif);
+.cardBone {
+  border: 1px solid var(--cream-border);
+  background: var(--cream);
+  overflow: hidden;
 }
+
+.cardBrow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--cream-border);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: var(--cream-deep);
+}
+
+.cardBody {
+  padding: 20px;
+}
+
+/* ── Typography ──────────────────────────────────────────── */
+.serif {
+  font-family: var(--display);
+}
+
 .mono {
   font-family: var(--mono);
 }
+
 .label {
   font-family: var(--mono);
   font-size: 10px;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--muted);
 }
+
+/* Recovery hero number */
 .bigNumber {
-  font-family: var(--mono);
-  font-size: 3rem;
-  font-weight: 700;
-  line-height: 1;
-  color: var(--ink);
-}
-.bigNumberGreen {
-  font-family: var(--mono);
-  font-size: 3rem;
-  font-weight: 700;
-  line-height: 1;
-  color: #2d6a35;
+  font-family: var(--display);
+  font-size: 3.5rem;
+  font-weight: 800;
+  line-height: 0.9;
+  color: var(--blue-dark);
+  letter-spacing: -0.04em;
 }
 
-/* ── Status pill ── */
+.bigNumberGreen {
+  font-family: var(--display);
+  font-size: 3.5rem;
+  font-weight: 800;
+  line-height: 0.9;
+  color: var(--green);
+  letter-spacing: -0.04em;
+}
+
+/* ── Status pill ──────────────────────────────────────────── */
 .statusPill {
   font-family: var(--mono);
   font-size: 9px;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  padding: 3px 8px;
-  border: 1px solid currentColor;
+  padding: 3px 10px;
+  border: 1px solid var(--cream-border);
+  background: var(--cream);
+  color: var(--muted);
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
-/* ── Rule divider ── */
+/* ── Rule ────────────────────────────────────────────────── */
 .rule {
   border: none;
-  border-top: 1px solid var(--rule);
+  border-top: 1px solid var(--cream-border);
+  margin: 0;
 }
 
-/* ── Action notice (replaces blue card) ── */
+/* ── Action notice ───────────────────────────────────────── */
 .notice {
-  border-left: 3px solid var(--accent);
-  padding: 0.625rem 0.875rem;
-  background: var(--bone);
-  font-size: 0.8125rem;
-  color: var(--ink);
+  border-left: 4px solid var(--blue);
+  padding: 14px 16px;
+  background: var(--blue-bg);
+  border-top: 1px solid #bfdbfe;
+  border-right: 1px solid #bfdbfe;
+  border-bottom: 1px solid #bfdbfe;
 }
+
 .noticeLabel {
-  font-family: var(--serif);
+  font-family: var(--display);
   font-weight: 600;
-  font-size: 0.875rem;
-  margin-bottom: 0.25rem;
-}
-.noticeBody {
-  font-size: 0.8125rem;
-  color: var(--muted);
-}
-
-/* ── Idle status card ── */
-.statusCard {
-  border: 1px solid var(--rule);
-  padding: 0.875rem 1rem;
-  background: var(--paper);
-}
-.statusCardLabel {
-  font-family: var(--serif);
-  font-size: 0.875rem;
+  font-size: 15px;
   color: var(--ink);
+  margin-bottom: 4px;
 }
 
-/* ── Empty state ── */
+.noticeBody {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--ink-mid);
+}
+
+/* ── Idle status card ────────────────────────────────────── */
+.statusCard {
+  border: 1px solid var(--cream-border);
+  padding: 14px 16px;
+  background: var(--white);
+}
+
+.statusCardLabel {
+  font-family: var(--display);
+  font-size: 15px;
+  color: var(--ink-mid);
+}
+
+/* ── Empty state ─────────────────────────────────────────── */
 .emptyMark {
-  font-family: var(--serif);
+  font-family: var(--display);
   font-style: italic;
-  font-size: 2.5rem;
-  color: var(--accent);
+  font-size: 2rem;
+  color: var(--blue);
   background: var(--ink);
-  width: 4rem;
-  height: 4rem;
+  width: 64px;
+  height: 64px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 1.5rem;
+  margin-bottom: 28px;
   flex-shrink: 0;
 }
+
 .emptyHeading {
-  font-family: var(--serif);
-  font-size: 1.5rem;
-  font-weight: 600;
+  font-family: var(--display);
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
   color: var(--ink);
-  margin-bottom: 0.5rem;
+  margin-bottom: 12px;
   text-align: center;
-}
-.emptyBody {
-  font-size: 0.9375rem;
-  color: var(--muted);
-  text-align: center;
-  max-width: 26rem;
-  margin-bottom: 0.5rem;
-  line-height: 1.5;
 }
 
-/* ── Case list row ── */
+.emptyBody {
+  font-size: 16px;
+  line-height: 1.65;
+  color: var(--ink-mid);
+  text-align: center;
+  max-width: 420px;
+  margin-bottom: 8px;
+}
+
+/* ── Case list row ───────────────────────────────────────── */
 .caseRow {
-  border: 1px solid var(--rule);
-  padding: 1rem 1.25rem;
-  transition: border-color 0.15s;
+  border: 1px solid var(--cream-border);
+  padding: 16px 20px;
+  transition: border-color 0.15s, background 0.15s;
   text-decoration: none;
   display: block;
-  background: var(--paper);
+  background: var(--white);
 }
+
 .caseRow:hover {
-  border-color: var(--ink);
+  border-color: var(--ink-light);
+  background: var(--cream);
 }
+
 .caseRowOverdue {
-  border-left: 3px solid #b91c1c;
+  border-left: 3px solid var(--red);
 }
+
 .caseAddress {
-  font-family: var(--serif);
+  font-family: var(--display);
   font-weight: 600;
-  font-size: 1rem;
+  font-size: 17px;
   color: var(--ink);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
 .caseVs {
   font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.04em;
+  font-size: 10px;
+  letter-spacing: 0.06em;
   color: var(--muted);
-  margin-top: 2px;
+  margin-top: 3px;
 }
 
-/* ── Deadline ── */
+/* ── Deadline ────────────────────────────────────────────── */
 .deadlineRow {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 0.875rem;
-  padding: 0 2px;
+  padding: 12px 0;
+  border-top: 1px solid var(--cream-border);
 }
+
 .deadlineLabel {
   font-family: var(--mono);
   font-size: 10px;
-  letter-spacing: 0.07em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--muted);
 }
+
 .deadlineValue {
   font-family: var(--mono);
-  font-size: 0.8125rem;
-  font-weight: 500;
+  font-size: 13px;
+  font-weight: 700;
   color: var(--ink);
 }
+
 .deadlineUrgent {
-  color: #b91c1c;
+  color: var(--red);
 }
 
-/* ── Meta grid (withheld / fee / net) ── */
+/* ── Meta grid ───────────────────────────────────────────── */
 .metaGrid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 0.5rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--rule);
+  gap: 1px;
+  background: var(--cream-border);
+  border: 1px solid var(--cream-border);
+  margin-top: 20px;
 }
-.metaCell {}
+
+.metaCell {
+  padding: 12px 14px;
+  background: var(--white);
+}
+
 .metaCellLabel {
   font-family: var(--mono);
   font-size: 9px;
   text-transform: uppercase;
-  letter-spacing: 0.07em;
+  letter-spacing: 0.1em;
   color: var(--muted);
   margin-bottom: 4px;
+  display: block;
 }
+
 .metaCellValue {
   font-family: var(--mono);
-  font-size: 0.875rem;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 700;
   color: var(--ink);
 }
+
 .metaCellMuted {
   font-family: var(--mono);
-  font-size: 0.875rem;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 700;
   color: var(--muted);
 }

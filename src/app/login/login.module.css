@@ -1,0 +1,342 @@
+/* ============================================================
+   Login — v6 editorial split layout
+   ============================================================ */
+
+.shell {
+  --cream: #f8fafc;
+  --cream-deep: #f1f5f9;
+  --cream-border: #e2e8f0;
+  --white: #ffffff;
+  --ink: #0f172a;
+  --ink-mid: #334155;
+  --ink-light: #64748b;
+  --blue: #1e40af;
+  --blue-bg: #eff6ff;
+  --blue-dark: #1d4ed8;
+  --red: #b91c1c;
+
+  --display: var(--font-fraunces, Georgia, serif);
+  --mono: var(--font-space-mono, "Courier New", monospace);
+  --body: var(--font-dm-sans, system-ui, sans-serif);
+
+  font-family: var(--body);
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 420px 1fr;
+  background: var(--cream);
+}
+
+/* ── Left panel (dark brand) ──────────────────────────────── */
+.left {
+  background: var(--ink);
+  display: flex;
+  flex-direction: column;
+  padding: 48px 44px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.brand {
+  font-family: var(--display);
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--cream);
+  letter-spacing: -0.02em;
+  text-decoration: none;
+  display: block;
+  margin-bottom: auto;
+}
+
+.heroSection {
+  padding: 48px 0 40px;
+}
+
+.heroSym {
+  font-family: var(--display);
+  font-style: italic;
+  font-size: 96px;
+  font-weight: 800;
+  color: var(--blue);
+  line-height: 0.85;
+  letter-spacing: -0.05em;
+  display: block;
+  margin-bottom: 24px;
+}
+
+.heroH {
+  font-family: var(--display);
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--cream);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  margin: 0 0 14px;
+}
+
+.heroH em {
+  font-style: italic;
+  color: var(--blue);
+}
+
+.heroSub {
+  font-size: 15px;
+  line-height: 1.65;
+  color: rgba(248, 250, 252, 0.55);
+  margin: 0;
+}
+
+.proofList {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border-top: 1px solid rgba(248, 250, 252, 0.08);
+}
+
+.proofItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(248, 250, 252, 0.08);
+}
+
+.proofLabel {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(248, 250, 252, 0.35);
+}
+
+.proofVal {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--blue);
+}
+
+/* ── Right panel (form) ───────────────────────────────────── */
+.right {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 64px 56px;
+  overflow-y: auto;
+}
+
+.formWrap {
+  max-width: 400px;
+  width: 100%;
+}
+
+.formBrow {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--blue);
+  margin-bottom: 20px;
+  display: block;
+}
+
+.formTitle {
+  font-family: var(--display);
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: var(--ink);
+  margin: 0 0 8px;
+  line-height: 1.05;
+}
+
+.formSub {
+  font-size: 15px;
+  color: var(--ink-light);
+  margin: 0 0 36px;
+  line-height: 1.55;
+}
+
+/* Google button */
+.googleBtn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px 20px;
+  border: 1px solid var(--cream-border);
+  background: var(--white);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  margin-bottom: 24px;
+}
+
+.googleBtn:hover {
+  border-color: var(--ink-light);
+  background: var(--cream);
+}
+
+.googleBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Divider */
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.dividerLine {
+  flex: 1;
+  height: 1px;
+  background: var(--cream-border);
+}
+
+.dividerText {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-light);
+}
+
+/* Form fields */
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.fieldLabel {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-mid);
+  display: block;
+  margin-bottom: 6px;
+}
+
+.fieldInput {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1px solid var(--cream-border);
+  background: var(--white);
+  font-family: var(--body);
+  font-size: 15px;
+  color: var(--ink);
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.fieldInput:focus {
+  border-color: var(--blue);
+}
+
+.fieldInput::placeholder {
+  color: var(--ink-light);
+}
+
+/* Error */
+.fieldError {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--red);
+  margin-top: 8px;
+}
+
+/* Submit */
+.submitBtn {
+  width: 100%;
+  padding: 13px 20px;
+  background: var(--ink);
+  color: var(--cream);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s;
+  margin-top: 16px;
+  margin-bottom: 20px;
+}
+
+.submitBtn:hover {
+  background: var(--blue);
+}
+
+.submitBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Toggle */
+.toggleRow {
+  font-size: 13px;
+  color: var(--ink-light);
+  text-align: center;
+}
+
+.toggleBtn {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--blue-dark);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Fine print */
+.finePrint {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--ink-light);
+  line-height: 1.6;
+  margin-top: 32px;
+  padding-top: 20px;
+  border-top: 1px solid var(--cream-border);
+}
+
+/* ── Responsive ───────────────────────────────────────────── */
+@media (max-width: 800px) {
+  .shell {
+    grid-template-columns: 1fr;
+  }
+
+  .left {
+    position: static;
+    height: auto;
+    padding: 36px 28px;
+  }
+
+  .heroSym {
+    font-size: 60px;
+  }
+
+  .heroH {
+    font-size: 22px;
+  }
+
+  .right {
+    padding: 40px 28px;
+    justify-content: flex-start;
+  }
+}

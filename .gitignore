@@ -37,3 +37,5 @@ next-env.d.ts
 .env.sentry-build-plugin
 .env.local
 supabase/.temp/
+.claude/settings.local.json
+.claude/scheduled_tasks.lock

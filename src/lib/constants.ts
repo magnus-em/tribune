@@ -44,3 +44,8 @@ export const PAYMENT_DUE_DAYS = 7; // days after recovery report to pay Tribune 
 // Email config
 export const EMAIL_FROM_NAME = "Tribune";
 export const EMAIL_FROM_DEFAULT = "hello@usetribune.org";
+
+// Marker title for the system message logged when a tenant confirms they sent
+// the introductory "I've authorized Tribune" email to their landlord. Used to
+// detect the agency hand-off on both tenant and admin views.
+export const INTRO_SENT_TITLE = "Tenant introduced Tribune to landlord";

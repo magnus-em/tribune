@@ -22,6 +22,14 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -39,6 +47,7 @@ import {
   dispatchLetter,
   logLandlordReply,
   adminReportRecovery,
+  declineCase,
 } from "./actions";
 import type { InvoiceData } from "@/app/dashboard/case/[id]/_components";
 import { statusColor, formatCents } from "@/lib/utils/case";
@@ -770,6 +779,12 @@ export default function AdminCaseDetailPage() {
   const [newStatus, setNewStatus] = useState<CaseStatus>("intake_submitted");
   const [savingStatus, setSavingStatus] = useState(false);
 
+  // Decline dialog state
+  const [declineOpen, setDeclineOpen] = useState(false);
+  const [declineInternal, setDeclineInternal] = useState("");
+  const [declineMessage, setDeclineMessage] = useState("");
+  const [declining, setDeclining] = useState(false);
+
   const loadData = useCallback(async () => {
     const supabase = createClient();
     const [{ data: c }, { data: m }, { data: a }, { data: d }, { data: inv }] = await Promise.all([
@@ -802,6 +817,26 @@ export default function AdminCaseDetailPage() {
     if (r.error) toast.error(r.error);
     else { toast.success("Status updated"); loadData(); }
     setSavingStatus(false);
+  }
+
+  async function handleDeclineCase() {
+    if (!declineMessage.trim()) {
+      toast.error("Tenant-visible message is required");
+      return;
+    }
+    setDeclining(true);
+    const r = await declineCase(caseId, declineInternal, declineMessage);
+    if (r.error) {
+      toast.error(r.error);
+      setDeclining(false);
+      return;
+    }
+    toast.success("Case declined — tenant has been notified");
+    setDeclineOpen(false);
+    setDeclineInternal("");
+    setDeclineMessage("");
+    setDeclining(false);
+    loadData();
   }
 
   async function handleDownload(storagePath: string) {
@@ -906,7 +941,74 @@ export default function AdminCaseDetailPage() {
         <Button onClick={handleChangeStatus} disabled={newStatus === caseData.status || savingStatus} size="sm">
           {savingStatus ? "Saving…" : "Update"}
         </Button>
+        {caseData.status !== "declined" && caseData.status !== "resolved" && caseData.status !== "closed" && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setDeclineOpen(true)}
+            className="border-red-300 text-red-700 hover:bg-red-50 hover:text-red-800"
+          >
+            Decline Case
+          </Button>
+        )}
       </div>
+
+      {/* Decline dialog */}
+      <Dialog open={declineOpen} onOpenChange={setDeclineOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Decline this case</DialogTitle>
+            <DialogDescription>
+              The tenant will see the tenant-visible message and a pointer to
+              free CT tenant resources (NHLAA, CT Fair Housing, the statute).
+              The internal reason is admin-only.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="decline-internal">Internal reason (admin-only)</Label>
+              <Textarea
+                id="decline-internal"
+                rows={2}
+                value={declineInternal}
+                onChange={(e) => setDeclineInternal(e.target.value)}
+                placeholder="e.g. Outside CT, deposit too small, no documentation"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="decline-message">
+                Tenant-visible message <span className="text-red-600">*</span>
+              </Label>
+              <Textarea
+                id="decline-message"
+                rows={5}
+                value={declineMessage}
+                onChange={(e) => setDeclineMessage(e.target.value)}
+                placeholder="Write in Tribune's voice. Explain why Tribune can't take this case on, without judging the underlying claim."
+              />
+              <p className="text-xs text-muted-foreground">
+                Sent to the tenant by email and shown on their case page.
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeclineOpen(false)}
+              disabled={declining}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleDeclineCase}
+              disabled={declining || !declineMessage.trim()}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              {declining ? "Declining…" : "Decline & notify tenant"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Landlord reply spotlight */}
       {caseData.status === "landlord_responded" && latestLandlordReply && (

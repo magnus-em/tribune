@@ -6,6 +6,7 @@ import { sendEmail } from "@/lib/email/client";
 import { renderCaseUpdateEmail } from "@/lib/email/templates/case-update";
 import { renderLandlordLetterEmail } from "@/lib/email/templates/landlord-letter";
 import { renderInvoiceEmail } from "@/lib/email/templates/invoice";
+import { renderCaseDeclinedEmail } from "@/lib/email/templates/case-declined";
 import { revalidatePath } from "next/cache";
 import type { CaseStatus } from "@/lib/types/database";
 import { STATUS_LABELS } from "@/lib/types/database";
@@ -198,7 +199,7 @@ export async function dispatchLetter(
         to: caseData.landlord_email,
         subject: `${caseData.tenant_name} via Tribune — Security Deposit Demand Letter`,
         html,
-        replyTo: `case+${caseId}@inbound.usetribune.org`,
+        replyTo: `case+${caseId}@usetribune.org`,
       });
 
       // Record dispatch metadata on the message
@@ -426,6 +427,80 @@ export async function adminReportRecovery(
       subject: `Invoice ${invoiceNumber} — Tribune service fee`,
       html,
     });
+  }
+
+  revalidatePath(`/admin/case/${caseId}`);
+  revalidatePath(`/dashboard/case/${caseId}`);
+  return { success: true };
+}
+
+// Decline a case. Sets status to "declined", stores both an admin-only reason
+// and a tenant-visible message, emails the tenant, and posts a system event
+// into the case timeline.
+export async function declineCase(
+  caseId: string,
+  internalReason: string,
+  tenantMessage: string
+) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const trimmedInternal = internalReason.trim();
+  const trimmedTenant = tenantMessage.trim();
+  if (!trimmedTenant) return { error: "A tenant-visible message is required" };
+
+  const caseData = await getCaseWithTenant(supabase, caseId);
+  if (!caseData) return { error: "Case not found" };
+
+  const { error: updateError } = await supabase
+    .from("cases")
+    .update({
+      status: "declined",
+      declined_at: new Date().toISOString(),
+      decline_reason: trimmedInternal || null,
+      decline_message: trimmedTenant,
+    })
+    .eq("id", caseId);
+
+  if (updateError) return { error: "Failed to update case: " + updateError.message };
+
+  await supabase.from("case_messages").insert({
+    case_id: caseId,
+    message_type: "system",
+    title: "Case declined",
+    body: trimmedInternal
+      ? `Internal reason: ${trimmedInternal}\n\nTenant-visible message: ${trimmedTenant}`
+      : `Tenant-visible message: ${trimmedTenant}`,
+    is_admin_only: true,
+    created_by: user.id,
+  });
+
+  await supabase.from("case_messages").insert({
+    case_id: caseId,
+    message_type: "tribune_update",
+    title: "Tribune is unable to take this case",
+    body: trimmedTenant,
+    is_admin_only: false,
+    created_by: user.id,
+  });
+
+  if (caseData.tenant_email) {
+    try {
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://usetribune.org";
+      await sendEmail({
+        to: caseData.tenant_email,
+        subject: "Tribune is unable to take your case",
+        html: renderCaseDeclinedEmail({
+          tenantName: caseData.tenant_name,
+          caseId,
+          declineMessage: trimmedTenant,
+          siteUrl,
+        }),
+      });
+    } catch (err) {
+      console.error("[declineCase] email failed:", err);
+    }
   }
 
   revalidatePath(`/admin/case/${caseId}`);

@@ -110,7 +110,7 @@ Tribune handles all landlord negotiation directly. Tenants no longer send letter
 ### Phase 2 — Landlord letter email template ✓
 - [x] `renderLandlordLetterEmail()` in `src/lib/email/templates/landlord-letter.ts`
 - [x] `sendEmail` updated to support `replyTo` param
-- [ ] Update letter template voice (`src/lib/letters/templates.ts`) to "our client" framing — flag for legal review before any real sends
+- [x] Outbound wrapper rewritten to **agent / pro-se** framing (NOT "our client"). Tribune = authorized communications agent; demand body stays the tenant's first-person voice, signed by tenant. Establishes agency, avoids attorney "our client" language. Verify with CT counsel before scaling. (Letter *body* in `src/lib/letters/templates.ts` left as-is for human/legal review.)
 
 ### Phase 3 — Admin dispatch flow ✓
 - [x] `postLetterWithNotification` → "Save Draft" → `correspondence_ready`
@@ -121,9 +121,15 @@ Tribune handles all landlord negotiation directly. Tenants no longer send letter
 - [x] `adminReportRecovery` server action + "Resolve" tab in admin write panel
 
 ### Phase 4 — Inbound email webhook ✓
-- [x] `src/app/api/webhooks/resend/inbound/route.ts` — parses `case+{caseId}@inbound.usetribune.org`, logs landlord reply, sets `landlord_responded`, notifies admin
-- [ ] Configure Resend inbound MX records for `inbound.usetribune.org` (DNS step — do when ready to go live)
-- [ ] Add `ADMIN_EMAIL` env var to Vercel
+- [x] `src/app/api/webhooks/resend/inbound/route.ts` — REWRITTEN for Resend's real `email.received` format: Svix signature verification, fetches body via `resend.emails.receiving.get()` (webhook payload is metadata-only), logs landlord reply, sets `landlord_responded`, emails admin with deep link
+- [x] Webhook writes via **service-role client** (`createServiceClient()` in `src/lib/supabase/server.ts`) — runs without a user session, so bypasses RLS. Narrow scope: only logs landlord_reply + status flip.
+- [ ] Configure Resend inbound MX records for `inbound.usetribune.org` (DNS — see Pending Ops)
+- [ ] Add `ADMIN_EMAIL`, `RESEND_WEBHOOK_SECRET`, `SUPABASE_SERVICE_ROLE_KEY` env vars to Vercel
+
+### Phase 6 — Tenant landlord-intro step ✓
+- [x] Tenant sends one introductory email from their own inbox (mailto + copy) announcing Tribune as authorized rep — primes landlord + establishes tenant-originated agency record
+- [x] `LandlordIntroStep` component + `buildIntroEmail()` in `_components.tsx`, shown during setup statuses
+- [x] `markLandlordIntroSent()` server action logs a system message (marker `INTRO_SENT_TITLE` in constants); visible in tenant + admin timeline. No schema migration.
 
 ### Phase 5 — Tenant UI cleanup ✓
 - [x] Removed `SendLetterBanner`, `LandlordResponseForm`, reply branch of `LandlordNextStep`
@@ -131,10 +137,41 @@ Tribune handles all landlord negotiation directly. Tenants no longer send letter
 - [x] New `RecoveryStep` component (recovery reporting only)
 - [x] `ActionBanner` updated for `correspondence_ready` and `awaiting_landlord`
 
-## Pending Ops / Config
-- [ ] Add `ADMIN_EMAIL` env var to Vercel (inbound webhook currently falls back to hardcoded `hello@usetribune.org`)
-- [ ] Configure Resend inbound MX records for `inbound.usetribune.org` (do when ready to go live)
-- [ ] Update letter template voice (`src/lib/letters/templates.ts`) to "our client" framing — legal review required before any real sends
+## Launch — DECISIONS & CONFIG
+
+**Inbound landlord replies (decided):** DNS is on Cloudflare; MX = Cloudflare Email Routing
+(`route1/2/3.mx.cloudflare.net`) already forwards `*@usetribune.org` → Magnus's Gmail.
+- For launch: reply-to = `case+{id}@usetribune.org` (code updated) → replies land in Gmail →
+  Magnus logs them manually via admin "Log Reply" tab. $0, no new infra, Gmail untouched.
+- Auto-logging webhook (`/api/webhooks/resend/inbound`) is BUILT but parked as a fast-follow.
+  To activate later, pick ONE: (a) Cloudflare Email Worker → POST our endpoint (free), or
+  (b) Resend Pro upgrade + `inbound.usetribune.org` subdomain (~$20/mo, uses webhook as-is +
+  `RESEND_WEBHOOK_SECRET` + `SUPABASE_SERVICE_ROLE_KEY` + `ADMIN_EMAIL`).
+
+**Sending:** verified working — `usetribune.org` sending enabled, test send succeeded with the
+key in `.env.local`. Prod "no emails sent" = `RESEND_API_KEY` missing in Vercel.
+
+### LAUNCH BLOCKERS (config; Magnus)
+- [ ] Vercel prod env: `RESEND_API_KEY`, `RESEND_FROM_EMAIL=hello@usetribune.org` (← fixes "no emails sent")
+- [ ] Vercel prod env: `NEXT_PUBLIC_SITE_URL` (prod domain), `NEXT_PUBLIC_TRIBUNE_PAYMENT_PHONE`
+- [ ] Vercel prod env (optional): `XAI_API_KEY` (lease auto-extraction; intake works without it)
+- [ ] Supabase: add prod domain to OAuth redirect URL allowlist
+- [ ] Set `is_admin = true` on Magnus's profile in **prod** DB
+- [ ] Confirm Cloudflare has a **catch-all → Gmail** route (so `case+{id}@` replies forward)
+- [ ] Deploy current code (reply-to fix, intro step, wrapper rewrite)
+
+### Legal
+- [ ] Have CT counsel review the agent-framing wrapper + letter body before scaling beyond MVP
+
+## Done — Direct Correspondence polish
+- [x] Fixed broken sentence + unused `propertyAddress` in landlord-letter email wrapper
+
+## Done — Intake review experience (2026-06-03)
+- [x] **Voice & brand rule** codified — Tribune is the actor in all tenant-facing copy; never "Magnus", "the admin", operator-scale "we". Short rule in CLAUDE.md, full guide in PRODUCT_BRIEF.md.
+- [x] **Post-submit confirmation** — tenant case banner promises a response "within a few hours"; transactional email goes out on intake submit via `renderCaseSubmittedEmail` (best-effort, never blocks).
+- [x] **Statutory deadline urgency in intake** — once `move_out_date` is entered in step 2, a banner shows the CT § 47a-21 deadline date, days remaining, and a "mail by" recommendation (3 days before). Past-deadline cases get a double-damages framing instead.
+- [x] **Declined-case flow** — new `declined` enum value + `decline_reason` (admin-only) + `decline_message` (tenant-visible) columns. Admin gets a Decline dialog; tenant case page surfaces a Tribune-voiced banner + free CT resources (NHLAA, CT Fair Housing, § 47a-21 statute). Email template `renderCaseDeclinedEmail`. Migration: [supabase/migrations/20260603_declined_case_flow.sql](supabase/migrations/20260603_declined_case_flow.sql) (already applied to remote).
+- [x] **Test data wipe** — all non-admin auth users, cases, messages, actions, documents, invoices, and storage objects cleared. Admin profile (`melbournemagnus@gmail.com`) preserved.
 
 ## Dead Code — Delete
 - [x] `src/app/v1/` through `src/app/v5/` — landing page design iterations, deleted

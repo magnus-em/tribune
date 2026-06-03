@@ -234,6 +234,7 @@ function deriveStageKey(status: string): StageKey {
     case "resolved":
       return "recovery";
     case "closed":
+    case "declined":
       return "closed";
     default:
       return "setup";
@@ -315,7 +316,7 @@ export function getStatusHeadline(status: string, hasLease: boolean): string {
   if (status === "intake_submitted" && !hasLease)
     return "Action needed — upload your lease to begin";
   if (status === "intake_submitted")
-    return "Case submitted — Tribune will review shortly";
+    return "Case submitted — Tribune will review within a few hours";
   if (status === "under_review") return "Tribune is reviewing your case";
   if (status === "correspondence_ready") return "Tribune is preparing to contact your landlord";
   if (status === "letter_sent" || status === "awaiting_landlord")
@@ -324,6 +325,7 @@ export function getStatusHeadline(status: string, hasLease: boolean): string {
     return "Tribune is preparing your next response";
   if (status === "resolved") return "Case resolved";
   if (status === "closed") return "Case closed";
+  if (status === "declined") return "Tribune is unable to take this case";
   return "Your case is in progress";
 }
 
@@ -948,6 +950,152 @@ export function ActionBanner({
             {cta.loading ? "Working…" : cta.label}
           </Button>
         )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Landlord Intro Step ────────────────────────────────────────────────────
+// Step 1 of the tenant journey: the tenant sends ONE email from their own inbox
+// introducing Tribune as their authorized representative. This primes the
+// landlord to expect Tribune's correspondence and — more importantly —
+// establishes a tenant-originated record of agency. After this, Tribune ("the
+// AI brain" / admin) takes over all correspondence.
+
+export function buildIntroEmail(
+  caseData: Case,
+  tenantName: string
+): { subject: string; body: string } {
+  const tenant = tenantName || "the tenant";
+  const subject = `Security deposit — ${caseData.property_address}`;
+  const body = `Dear ${caseData.landlord_name},
+
+I am writing regarding the return of my security deposit for the property at ${caseData.property_address}.
+
+I have authorized Tribune, a Connecticut tenant-advocacy service, to manage correspondence with you on my behalf regarding this matter. You will receive an email from them shortly. Please treat their messages as authorized communications from me, and you may reply directly to them.
+
+Thank you,
+${tenant}`;
+  return { subject, body };
+}
+
+export function LandlordIntroStep({
+  caseData,
+  tenantName,
+  introSent,
+  onConfirmSent,
+}: {
+  caseData: Case;
+  tenantName: string;
+  introSent: boolean;
+  onConfirmSent: () => Promise<void>;
+}) {
+  const [confirming, setConfirming] = useState(false);
+  const { subject, body } = buildIntroEmail(caseData, tenantName);
+  const to = caseData.landlord_email ?? "";
+
+  const mailtoHref = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(
+    subject
+  )}&body=${encodeURIComponent(body)}`;
+
+  async function handleConfirm() {
+    setConfirming(true);
+    await onConfirmSent();
+    setConfirming(false);
+  }
+
+  if (introSent) {
+    return (
+      <div
+        style={{
+          borderLeft: "4px solid hsl(224 71% 40%)",
+          border: "1px solid hsl(var(--border))",
+          background: "hsl(219 100% 97%)",
+          padding: "12px 16px",
+          display: "flex",
+          alignItems: "center",
+          gap: "10px",
+        }}
+      >
+        <CheckCircle2 className="size-4 shrink-0" style={{ color: "hsl(224 71% 40%)" }} />
+        <p className="text-sm">
+          <span className="font-semibold">Landlord introduced.</span>{" "}
+          <span className="text-muted-foreground">
+            Tribune will handle all correspondence from here.
+          </span>
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="border bg-card overflow-hidden">
+      <div
+        style={{
+          padding: "8px 16px",
+          borderBottom: "1px solid hsl(var(--border))",
+          background: "hsl(var(--muted))",
+          fontFamily: "var(--font-space-mono, monospace)",
+          fontSize: "10px",
+          letterSpacing: "0.12em",
+          textTransform: "uppercase",
+          color: "hsl(var(--muted-foreground))",
+        }}
+      >
+        Step 1 — Introduce Tribune to your landlord
+      </div>
+      <div className="p-4 space-y-4">
+        <p className="text-sm text-muted-foreground">
+          Send this one email to your landlord from your own inbox. It tells them to expect
+          our messages and authorizes us to handle the rest. After this,{" "}
+          <span className="font-medium text-foreground">Tribune takes over all correspondence.</span>
+        </p>
+
+        <div className="rounded-lg border bg-muted/30 p-3 text-sm">
+          <p className="text-xs text-muted-foreground mb-1">
+            <span className="font-semibold text-foreground">To:</span>{" "}
+            {to || <span className="text-destructive">No landlord email on file</span>}
+          </p>
+          <p className="text-xs text-muted-foreground mb-2">
+            <span className="font-semibold text-foreground">Subject:</span> {subject}
+          </p>
+          <p className="whitespace-pre-wrap leading-relaxed text-foreground/90">{body}</p>
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-2">
+          <Button
+            size="sm"
+            className="flex-1"
+            render={<a href={mailtoHref} />}
+            disabled={!to}
+          >
+            <Send className="size-3.5 mr-1.5" /> Open in email app
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="flex-1"
+            onClick={() => {
+              navigator.clipboard.writeText(`To: ${to}\nSubject: ${subject}\n\n${body}`);
+              toast.success("Email copied");
+            }}
+          >
+            <Copy className="size-3.5 mr-1.5" /> Copy email
+          </Button>
+        </div>
+
+        <div className="border-t pt-3">
+          <Button
+            size="sm"
+            variant="secondary"
+            className="w-full"
+            onClick={handleConfirm}
+            disabled={confirming}
+          >
+            <CheckCheck className="size-3.5 mr-1.5" />
+            {confirming ? "Saving…" : "I've sent this to my landlord"}
+          </Button>
+        </div>
       </div>
     </div>
   );

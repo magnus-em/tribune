@@ -27,6 +27,7 @@ Connecticut security deposit recovery service. Helps residential tenants recover
 - **shadcn components via Radix.** CSS variables in HSL (Tailwind v3). Do not migrate to `@base-ui/react`.
 - **No PII in logs or analytics.** Sentry and PostHog must scrub names, emails, phone numbers, addresses, and deposit amounts. Anonymized user ids and event names only. Centralize scrubbing in the analytics wrapper.
 - **"Information, not legal advice."** Every tenant-facing page and outbound email carries a visible disclaimer. Tenant-facing copy describes statutory rights and procedures; it does not advise on which action to take in a specific case.
+- **Tribune is the actor in all tenant-facing copy.** Reviews, decisions, letters, and replies are attributed to "Tribune" — never to a person, "the admin", "the team", "I", or "we" in a way that hints at a solo operator. The MVP has a human (Magnus) in the loop; the product surface presents as an autonomous service. This applies to UI strings, transactional emails, error messages, decline messages, status descriptions, and timeline entries. See PRODUCT_BRIEF.md for the full voice guide.
 
 ## Product Constraints (currently hardcoded, treat as business rules)
 

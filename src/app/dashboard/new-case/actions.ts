@@ -1,10 +1,12 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { addDays } from "date-fns";
+import { addDays, format } from "date-fns";
 import { CONTINGENCY_PCT, STATUTE_DAYS, MAX_FILE_SIZE_BYTES, ALLOWED_FILE_TYPES } from "@/lib/constants";
 import { intakeSchema } from "@/lib/schemas/intake";
 import type { ExtractedLeaseData } from "@/lib/schemas/intake";
+import { sendEmail } from "@/lib/email/client";
+import { renderCaseSubmittedEmail } from "@/lib/email/templates/case-submitted";
 
 // ─── Lease extraction ─────────────────────────────────────────────────────────
 
@@ -316,6 +318,26 @@ export async function createCase(formData: FormData): Promise<{
   const moveOutPhotos = formData.getAll("move_out_photos") as File[];
   for (const photo of moveOutPhotos) {
     if (photo.size > 0) await uploadFile(photo, "photo_move_out");
+  }
+
+  // Confirmation email — best-effort, never block on failure
+  if (user.email) {
+    try {
+      const siteUrl =
+        process.env.NEXT_PUBLIC_SITE_URL || "https://usetribune.org";
+      await sendEmail({
+        to: user.email,
+        subject: "Tribune received your case",
+        html: renderCaseSubmittedEmail({
+          tenantName: data.full_name,
+          caseId,
+          statutoryDeadline: format(statutoryDeadline, "MMM d, yyyy"),
+          siteUrl,
+        }),
+      });
+    } catch (err) {
+      console.error("[createCase] confirmation email failed:", err);
+    }
   }
 
   if (uploadErrors.length > 0) {

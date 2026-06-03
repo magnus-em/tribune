@@ -14,7 +14,8 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { uploadDocument, getDocumentUrl, reportRecovery } from "./actions";
+import { uploadDocument, getDocumentUrl, reportRecovery, markLandlordIntroSent } from "./actions";
+import { INTRO_SENT_TITLE } from "@/lib/constants";
 import { LegalDisclaimer } from "@/components/legal-disclaimer";
 import { statusColor } from "@/lib/utils/case";
 import { STATUS_LABELS } from "@/lib/types/database";
@@ -34,6 +35,7 @@ import {
   RoundGroup,
   EvidenceCenter,
   ActionBanner,
+  LandlordIntroStep,
   RecoveryStep,
   RecoveryForm,
   InvoicePanel,
@@ -48,6 +50,7 @@ export default function CaseDetailPage() {
   const [actions, setActions] = useState<CaseAction[]>([]);
   const [documents, setDocuments] = useState<CaseDocument[]>([]);
   const [invoice, setInvoice] = useState<InvoiceData | null>(null);
+  const [tenantName, setTenantName] = useState("");
   const [loading, setLoading] = useState(true);
   const evidenceRef = useRef<HTMLDivElement>(null);
 
@@ -57,12 +60,16 @@ export default function CaseDetailPage() {
 
   const loadData = useCallback(async () => {
     const supabase = createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     const [
       { data: caseResult },
       { data: messagesResult },
       { data: actionsResult },
       { data: docsResult },
       { data: invoiceResult },
+      { data: profileResult },
     ] = await Promise.all([
       supabase.from("cases").select("*").eq("id", caseId).single(),
       supabase
@@ -88,12 +95,16 @@ export default function CaseDetailPage() {
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle(),
+      user
+        ? supabase.from("profiles").select("full_name").eq("id", user.id).single()
+        : Promise.resolve({ data: null }),
     ]);
     setCaseData(caseResult);
     setMessages(messagesResult || []);
     setActions(actionsResult || []);
     setDocuments(docsResult || []);
     setInvoice(invoiceResult ?? null);
+    setTenantName((profileResult as { full_name?: string } | null)?.full_name ?? "");
     setLoading(false);
   }, [caseId]);
 
@@ -119,6 +130,17 @@ export default function CaseDetailPage() {
     const result = await getDocumentUrl(storagePath);
     if (result.error) toast.error("Failed to download");
     else if (result.url) window.open(result.url, "_blank");
+  }
+
+  async function handleConfirmIntro() {
+    const result = await markLandlordIntroSent(caseId);
+    if (result.error) {
+      toast.error(result.error);
+    } else {
+      trackEvent("landlord_intro_sent");
+      toast.success("Marked as sent. Tribune will take it from here.");
+      loadData();
+    }
   }
 
   async function handleRecovery(amountCents: number, notes: string) {
@@ -157,6 +179,9 @@ export default function CaseDetailPage() {
   const deadline = new Date(caseData.statutory_deadline);
   const daysOverdue = differenceInDays(new Date(), deadline);
   const isTerminal = caseData.status === "resolved" || caseData.status === "closed";
+  const introSent = messages.some((m) => m.title === INTRO_SENT_TITLE);
+  const inSetup =
+    caseData.status === "intake_submitted" || caseData.status === "under_review";
 
   // Build event stream and rounds
   const events = buildEventStream(messages, actions);
@@ -183,7 +208,7 @@ export default function CaseDetailPage() {
         variant: "waiting" as const,
         title: "Tribune is reviewing your case",
         description:
-          "We'll notify you when your demand letter is ready. No action needed right now.",
+          "Tribune typically responds to new cases within a few hours. You'll receive an email when your demand letter is ready or if Tribune needs anything else from you. No action needed right now.",
       };
     }
     if (caseData!.status === "correspondence_ready") {
@@ -219,6 +244,15 @@ export default function CaseDetailPage() {
         variant: "done" as const,
         title: "Case resolved",
         description: "Your case has been resolved. See the outcome below.",
+      };
+    }
+    if (caseData!.status === "declined") {
+      return {
+        variant: "info" as const,
+        title: "Tribune is unable to take this case",
+        description:
+          caseData!.decline_message ||
+          "Tribune has reviewed your intake and isn't able to take this case on. Connecticut tenants still have rights under § 47a-21 — see the free resources listed below.",
       };
     }
     return {
@@ -289,6 +323,82 @@ export default function CaseDetailPage() {
       {/* ── PRIMARY ACTION ZONE ──────────────────────────────────────────── */}
 
       <ActionBanner {...bannerProps} />
+
+      {/* Declined: free CT resources */}
+      {caseData.status === "declined" && (
+        <div className="rounded-xl border bg-card p-5 space-y-3">
+          <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+            Free Connecticut tenant resources
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            Declining to take this case is not a legal opinion on your claim.
+            You may still have strong rights under CT § 47a-21. These groups
+            can help you pursue this directly.
+          </p>
+          <ul className="space-y-3 text-sm">
+            <li>
+              <p className="font-semibold text-foreground">
+                New Haven Legal Assistance Association (NHLAA)
+              </p>
+              <p className="text-muted-foreground">
+                Free civil legal help for low-income CT tenants.{" "}
+                <a
+                  href="https://nhlegal.org"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary underline"
+                >
+                  nhlegal.org
+                </a>{" "}
+                · (203)&nbsp;946-4811
+              </p>
+            </li>
+            <li>
+              <p className="font-semibold text-foreground">
+                Connecticut Fair Housing Center
+              </p>
+              <p className="text-muted-foreground">
+                Statewide tenant resources and referrals.{" "}
+                <a
+                  href="https://www.ctfairhousing.org"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary underline"
+                >
+                  ctfairhousing.org
+                </a>
+              </p>
+            </li>
+            <li>
+              <p className="font-semibold text-foreground">
+                CT § 47a-21 statutory text
+              </p>
+              <p className="text-muted-foreground">
+                What the law says about security deposits, deadlines, and
+                damages.{" "}
+                <a
+                  href="https://www.cga.ct.gov/current/pub/chap_831.htm#sec_47a-21"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary underline"
+                >
+                  Connecticut General Statutes, Chapter 831
+                </a>
+              </p>
+            </li>
+          </ul>
+        </div>
+      )}
+
+      {/* Setup: tenant introduces Tribune to the landlord (agency hand-off) */}
+      {inSetup && (
+        <LandlordIntroStep
+          caseData={caseData}
+          tenantName={tenantName}
+          introSent={introSent}
+          onConfirmSent={handleConfirmIntro}
+        />
+      )}
 
       {/* awaiting_landlord / letter_sent / landlord_responded: report recovery */}
       {(caseData.status === "awaiting_landlord" ||

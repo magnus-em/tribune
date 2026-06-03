@@ -32,6 +32,7 @@ Admin access is granted via `profiles.is_admin = true`, set manually in the data
 - As an admin, I can add an internal note (hidden from tenant) or a tenant-visible note.
 - As an admin, I can manually log a landlord reply (fallback for replies that arrive outside the automated inbound channel).
 - As an admin, I can record recovery: amount recovered, fee calculated, any tenant-reimbursed costs, and mark the case resolved (either party may also report recovery).
+- As an admin, I can decline a case at review. The flow captures an internal reason and a separate tenant-visible message; declining sets status to `declined`, emails the tenant a Tribune-voiced explanation plus pointers to free CT resources (NHLAA, CT Fair Housing, the § 47a-21 statute), and posts a tenant-visible timeline entry.
 - *[deferred post-MVP]* As an admin, I can run AI extraction against uploaded documents.
 
 ## Main Flows

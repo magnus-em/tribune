@@ -17,9 +17,10 @@ import {
   X,
   Image as ImageIcon,
 } from "lucide-react";
-import { CONTINGENCY_PCT } from "@/lib/constants";
+import { CONTINGENCY_PCT, STATUTE_DAYS } from "@/lib/constants";
 import type { IntakeFormData, ExtractedLeaseData } from "@/lib/schemas/intake";
 import { formatCents } from "@/lib/utils/case";
+import { addDays, format, differenceInDays } from "date-fns";
 
 // ─── Shared helpers ────────────────────────────────────────────────────────────
 
@@ -377,7 +378,23 @@ export function DetailsStep({
   const {
     register,
     formState: { errors },
+    watch,
   } = useFormContext<IntakeFormData>();
+
+  const moveOutDate = watch("move_out_date");
+  const deadlineInfo = (() => {
+    if (!moveOutDate) return null;
+    const m = new Date(moveOutDate);
+    if (isNaN(m.getTime())) return null;
+    const deadline = addDays(m, STATUTE_DAYS);
+    const daysFromNow = differenceInDays(deadline, new Date());
+    const mailBy = addDays(deadline, -3);
+    return {
+      deadlineLabel: format(deadline, "MMM d, yyyy"),
+      mailByLabel: format(mailBy, "MMM d"),
+      daysFromNow,
+    };
+  })();
 
   return (
     <div className="space-y-5">
@@ -500,6 +517,46 @@ export function DetailsStep({
           </div>
         </div>
       </div>
+
+      {deadlineInfo && (
+        <div
+          className="rounded-md border-l-2 px-4 py-3 text-sm"
+          style={{
+            borderLeftColor:
+              deadlineInfo.daysFromNow < 0
+                ? "hsl(0 80% 50%)"
+                : deadlineInfo.daysFromNow <= 7
+                ? "hsl(28 90% 50%)"
+                : "hsl(var(--primary))",
+            background: "hsl(var(--muted) / 0.4)",
+          }}
+        >
+          <p className="font-semibold text-foreground">
+            Your landlord&apos;s legal deadline:{" "}
+            <span className="text-primary">{deadlineInfo.deadlineLabel}</span>
+          </p>
+          <p className="text-muted-foreground mt-1">
+            {deadlineInfo.daysFromNow < 0 ? (
+              <>
+                The {STATUTE_DAYS}-day window under CT § 47a-21 has already passed
+                ({Math.abs(deadlineInfo.daysFromNow)} day
+                {Math.abs(deadlineInfo.daysFromNow) === 1 ? "" : "s"} ago). If your deposit
+                wasn&apos;t returned in full, you may be entitled to double damages. Tribune
+                aims to send a demand letter immediately.
+              </>
+            ) : (
+              <>
+                Tribune aims to send the first demand letter by{" "}
+                <strong className="text-foreground">{deadlineInfo.mailByLabel}</strong> —{" "}
+                {deadlineInfo.daysFromNow} day
+                {deadlineInfo.daysFromNow === 1 ? "" : "s"} from today. Finishing intake now
+                gives Tribune time to review and prepare the letter before the statutory clock
+                runs out.
+              </>
+            )}
+          </p>
+        </div>
+      )}
 
       <StepNav onBack={onBack} onNext={onNext} />
     </div>

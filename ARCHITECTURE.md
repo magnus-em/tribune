@@ -88,7 +88,7 @@ supabase/
 ## Data Model [current]
 
 **Enums**
-- `case_status`: `intake_submitted` → `under_review` → `correspondence_ready` → `awaiting_landlord` → `landlord_responded` → `resolved` → `closed`. Also defined (not yet actively used in UI flows): `awaiting_tenant`, `in_collections`, `dead`. `letter_sent` remains in the enum for historical rows but is deprecated — new flows use `awaiting_landlord`. Transitions are not enforced in the database.
+- `case_status`: `intake_submitted` → `under_review` → `correspondence_ready` → `awaiting_landlord` → `landlord_responded` → `resolved` → `closed`. Terminal-but-off-path: `declined` (Tribune reviewed intake and chose not to take the case). Also defined (not yet actively used in UI flows): `awaiting_tenant`, `in_collections`, `dead`. `letter_sent` remains in the enum for historical rows but is deprecated — new flows use `awaiting_landlord`. Transitions are not enforced in the database.
 - `message_type`: `tribune_letter`, `tribune_update`, `landlord_reply`, `system`.
 - `action_type`: `letter_dispatched`, `landlord_reply_received`, `resolution_reported`, `payment_received`.
 - `document_kind`: `lease`, `landlord_correspondence`, `deduction_itemization`, `photo`, `other`.
@@ -96,7 +96,7 @@ supabase/
 
 **`profiles`** — extends `auth.users`. Fields: `id`, `email`, `full_name`, `phone`, `is_admin`, timestamps. Trigger `handle_new_user` auto-inserts on signup.
 
-**`cases`** — one per tenant dispute. Tenant identity via `tenant_id`; property info; landlord info (name, email, phone, address); lease dates; `deposit_amount_cents`, `amount_withheld_cents`, `deposit_returned_cents`; withholding context; `contingency_pct` (stored at case creation — historical rows keep their rate); `current_letter_number`; `statutory_deadline`; resolution fields (`resolved_at`, `resolution_notes`); timestamps.
+**`cases`** — one per tenant dispute. Tenant identity via `tenant_id`; property info; landlord info (name, email, phone, address); lease dates; `deposit_amount_cents`, `amount_withheld_cents`, `deposit_returned_cents`; withholding context; `contingency_pct` (stored at case creation — historical rows keep their rate); `current_letter_number`; `statutory_deadline`; resolution fields (`resolved_at`, `resolution_notes`); decline fields (`declined_at`, `decline_reason` — admin-only, `decline_message` — tenant-visible); timestamps.
 
 **`case_messages`** — correspondence timeline. `case_id`, `message_type`, `title`, `body`, `letter_number`, `is_admin_only`, `created_by`, `dispatch_channel`, `dispatch_metadata` (jsonb), `created_at`.
 

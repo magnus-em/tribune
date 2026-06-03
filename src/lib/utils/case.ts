@@ -8,6 +8,8 @@ export function statusColor(status: string): string {
       return "bg-green-100 text-green-800 border-green-200";
     case "closed":
       return "bg-gray-100 text-gray-800 border-gray-200";
+    case "declined":
+      return "bg-red-50 text-red-800 border-red-200";
     case "landlord_responded":
       return "bg-orange-100 text-orange-800 border-orange-200";
     case "intake_submitted":
@@ -29,5 +31,5 @@ export function formatCents(cents: number): string {
 }
 
 export function isTerminalStatus(status: CaseStatus): boolean {
-  return status === "resolved" || status === "closed";
+  return status === "resolved" || status === "closed" || status === "declined";
 }

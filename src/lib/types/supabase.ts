@@ -110,6 +110,9 @@ export type Database = {
           contingency_pct: number
           created_at: string
           current_letter_number: number
+          decline_message: string | null
+          decline_reason: string | null
+          declined_at: string | null
           deposit_amount_cents: number
           deposit_returned_cents: number
           forwarding_address: string | null
@@ -137,6 +140,9 @@ export type Database = {
           contingency_pct?: number
           created_at?: string
           current_letter_number?: number
+          decline_message?: string | null
+          decline_reason?: string | null
+          declined_at?: string | null
           deposit_amount_cents: number
           deposit_returned_cents?: number
           forwarding_address?: string | null
@@ -164,6 +170,9 @@ export type Database = {
           contingency_pct?: number
           created_at?: string
           current_letter_number?: number
+          decline_message?: string | null
+          decline_reason?: string | null
+          declined_at?: string | null
           deposit_amount_cents?: number
           deposit_returned_cents?: number
           forwarding_address?: string | null
@@ -243,6 +252,7 @@ export type Database = {
         | "landlord_responded"
         | "resolved"
         | "closed"
+        | "declined"
       dispatch_channel: "email" | "sms" | "mail"
       message_type:
         | "tribune_letter"
@@ -388,6 +398,7 @@ export const Constants = {
         "landlord_responded",
         "resolved",
         "closed",
+        "declined",
       ],
       dispatch_channel: ["email", "sms", "mail"],
       message_type: [

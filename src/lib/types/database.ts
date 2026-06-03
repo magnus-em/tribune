@@ -21,15 +21,17 @@ export const STATUS_LABELS: Record<CaseStatus, string> = {
   landlord_responded: "Landlord Responded",
   resolved: "Resolved",
   closed: "Closed",
+  declined: "Declined",
 };
 
 export const STATUS_DESCRIPTIONS: Record<CaseStatus, string> = {
-  intake_submitted: "We've received your case and will review it shortly.",
-  under_review: "We're reviewing your case details.",
+  intake_submitted: "Tribune has received your case and will review it within a few hours.",
+  under_review: "Tribune is reviewing your case details.",
   correspondence_ready: "Tribune is preparing to send a letter to your landlord.",
   letter_sent: "Tribune has sent correspondence to your landlord.",
   awaiting_landlord: "Tribune has sent a letter. Waiting for your landlord to respond.",
   landlord_responded: "Your landlord has responded. Tribune is preparing the next step.",
   resolved: "Your case has been resolved.",
   closed: "This case has been closed.",
+  declined: "Tribune is unable to take this case.",
 };

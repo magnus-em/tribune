@@ -1,4 +1,13 @@
-// Temporary placeholder — letter design/content to be finalized separately.
+// Outbound demand-letter email sent to the landlord.
+//
+// Framing note (legal posture for MVP — verify with CT counsel before scaling):
+// The demand BODY is the tenant's own, in the tenant's first-person voice, and is
+// signed by the tenant. Tribune is presented as the tenant's authorized
+// communications agent (the debt-negotiator posture), NOT as counsel. We never
+// say "our client" and never assert that Tribune itself is enforcing the law —
+// the legal position belongs to the tenant, who is asserting their own statutory
+// rights pro se. Tribune is the conduit. This keeps us out of "our client"
+// attorney language while still looking organized and competent.
 
 export interface LandlordLetterEmailParams {
   caseId: string;
@@ -12,31 +21,55 @@ export interface LandlordLetterEmailParams {
 export function renderLandlordLetterEmail({
   letterBody,
   tenantName,
-  landlordName,
-  letterNumber,
+  propertyAddress,
 }: LandlordLetterEmailParams): string {
   return `
 <!DOCTYPE html>
 <html>
 <head><meta charset="utf-8" /></head>
-<body style="font-family: Georgia, serif; max-width: 640px; margin: 0 auto; padding: 32px 24px; color: #0a0a08;">
-  <p style="font-size: 12px; color: #6e6a5a; margin-bottom: 32px; border-bottom: 1px solid #d9d5cb; padding-bottom: 16px;">
-    This correspondence is sent on behalf of our client, <strong>${tenantName}</strong>,
-    by Tribune, a Connecticut tenant advocacy service.
-  </p>
+<body style="font-family: Georgia, 'Times New Roman', serif; max-width: 640px; margin: 0 auto; padding: 32px 24px; color: #0a0a08; background: #ffffff;">
 
-  <p>Dear ${landlordName},</p>
+  <!-- Tribune masthead -->
+  <table width="100%" style="border-collapse: collapse; margin-bottom: 24px;">
+    <tr>
+      <td style="font-family: Georgia, serif; font-size: 20px; font-weight: 700; letter-spacing: 0.02em; color: #0a0a08;">
+        TRIBUNE
+      </td>
+      <td style="text-align: right; font-size: 11px; color: #6e6a5a; letter-spacing: 0.04em;">
+        Connecticut Tenant Advocacy &amp; Deposit Recovery
+      </td>
+    </tr>
+  </table>
 
-  <div style="white-space: pre-wrap; line-height: 1.7; font-size: 15px;">
+  <!-- Authorization / agency notice -->
+  <div style="font-size: 13px; line-height: 1.65; color: #44413a; border-top: 2px solid #0a0a08; border-bottom: 1px solid #d9d5cb; padding: 16px 0; margin-bottom: 28px;">
+    <p style="margin: 0 0 10px 0;">
+      This correspondence is sent by Tribune on behalf of <strong>${tenantName}</strong>,
+      the tenant of <strong>${propertyAddress}</strong>, who has authorized Tribune to manage
+      communications regarding the return of their security deposit under
+      Connecticut General Statutes &sect; 47a-21.
+    </p>
+    <p style="margin: 0;">
+      Please direct all further correspondence on this matter to Tribune at this email
+      address; replies are shared directly with ${tenantName}. The demand set out below is
+      made by ${tenantName}.
+    </p>
+  </div>
+
+  <!-- The tenant's letter, verbatim -->
+  <div style="white-space: pre-wrap; line-height: 1.7; font-size: 15px; color: #0a0a08;">
 ${letterBody}
   </div>
 
-  <div style="margin-top: 48px; padding-top: 16px; border-top: 1px solid #d9d5cb; font-size: 12px; color: #6e6a5a;">
-    <p>
-      This letter was prepared and sent by Tribune on behalf of ${tenantName} regarding the property at ${letterNumber > 0 ? `(Letter ${letterNumber})` : ""}.
-      Tribune is a legal-information and document-preparation service, not a law firm. This is not legal advice.
+  <!-- Footer -->
+  <div style="margin-top: 44px; padding-top: 16px; border-top: 1px solid #d9d5cb; font-size: 11px; line-height: 1.6; color: #6e6a5a;">
+    <p style="margin: 0 0 8px 0;">
+      Tribune prepared and transmitted this letter at the direction of and on behalf of
+      ${tenantName}, and is authorized to receive correspondence regarding this matter.
+      Tribune is a tenant-advocacy and document-preparation service, not a law firm, and
+      does not provide legal advice.
     </p>
-    <p>To reply, respond directly to this email.</p>
+    <p style="margin: 0;">To respond, reply directly to this email.</p>
   </div>
 </body>
 </html>

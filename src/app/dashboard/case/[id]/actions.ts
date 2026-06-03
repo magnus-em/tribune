@@ -2,7 +2,7 @@
 
 import { addDays, format } from "date-fns";
 import { createClient } from "@/lib/supabase/server";
-import { MAX_FILE_SIZE_BYTES, ALLOWED_FILE_TYPES, PAYMENT_DUE_DAYS } from "@/lib/constants";
+import { MAX_FILE_SIZE_BYTES, ALLOWED_FILE_TYPES, PAYMENT_DUE_DAYS, INTRO_SENT_TITLE } from "@/lib/constants";
 import { sendEmail } from "@/lib/email/client";
 import { renderInvoiceEmail } from "@/lib/email/templates/invoice";
 
@@ -190,6 +190,35 @@ export async function reportRecovery(
     });
   }
 
+  return { success: true };
+}
+
+// Tenant confirms they sent the introductory email to their landlord.
+// Logged as a system message so it appears in the timeline and the admin can
+// see the agency hand-off happened before Tribune sends the first letter.
+export async function markLandlordIntroSent(caseId: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const { data: caseRow } = await supabase
+    .from("cases")
+    .select("tenant_id")
+    .eq("id", caseId)
+    .single();
+  if (!caseRow || caseRow.tenant_id !== user.id) return { error: "Not authorized" };
+
+  const { error } = await supabase.from("case_messages").insert({
+    case_id: caseId,
+    message_type: "system",
+    title: INTRO_SENT_TITLE,
+    body: "Tenant confirmed they emailed their landlord to introduce Tribune as their authorized representative.",
+    created_by: user.id,
+  });
+
+  if (error) return { error: error.message };
   return { success: true };
 }
 

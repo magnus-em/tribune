@@ -1,6 +1,6 @@
 # Tribune — Tasks
 
-Tracks what's built, what's in progress, and what's next. Updated 2026-04-19.
+Tracks what's built, what's in progress, and what's next. Updated 2026-06-02.
 
 ## Done
 
@@ -137,7 +137,7 @@ Tribune handles all landlord negotiation directly. Tenants no longer send letter
 - [ ] Update letter template voice (`src/lib/letters/templates.ts`) to "our client" framing — legal review required before any real sends
 
 ## Dead Code — Delete
-- [ ] `src/app/v1/` through `src/app/v5/` — landing page design iterations, not exposed in nav; safe to delete
+- [x] `src/app/v1/` through `src/app/v5/` — landing page design iterations, deleted
 
 ## Next Up
 

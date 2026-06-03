@@ -22,10 +22,10 @@ The result is that tenants forfeit money they are legally entitled to, and landl
 ## Core Value Proposition
 - **Structured intake** that captures the facts needed to evaluate and pursue a claim.
 - **Evidence intake.** Tenants upload their lease, landlord correspondence, itemized-deduction letters, photos, and any other supporting documents directly into the case.
-- **Tribune handles the correspondence.** Drafted demand letters are prepared by Tribune, signed by the tenant, and mailed by Tribune on the tenant's behalf. The tenant does not need to print, sign, or mail anything themselves.
+- **Tribune handles the correspondence directly.** Demand letters are drafted by Tribune and dispatched to the landlord by Tribune (email today; SMS and certified mail planned). The tenant does not draft, sign, or send anything themselves. Landlord replies come back into the case automatically via inbound email.
 - **Case management** so the tenant sees exactly where their case stands and what to do next.
 - **Contingency pricing (15%)** — tenants owe nothing unless money is recovered.
-- **Pro se model.** There is no attorney in the loop on either side. Tribune is a legal-information and document-preparation service.
+- **Pro se model.** There is no attorney in the loop on either side. Tribune is a legal-information and document-preparation service writing on the tenant's behalf.
 
 ## MVP Scope
 
@@ -33,43 +33,48 @@ The MVP is a **document-centric case workflow**. The loop is:
 
 1. Tenant signs up, completes intake, and uploads supporting documents.
 2. Admin (you) reviews the uploads in an internal panel.
-3. Admin posts a tenant-visible update ("Tribune has reviewed your case and is preparing your initial demand letter") and, when ready, a drafted letter.
-4. Tenant receives transactional email notifications on case updates.
-5. From the tenant's perspective, the system behaves as though Tribune is operating autonomously — emails arrive, status changes, letters appear. Under the hood it is manual admin work.
+3. Admin drafts a demand letter and dispatches it directly to the landlord via email (Resend). Reply-to is a per-case inbound address so landlord replies auto-route back into the case timeline.
+4. Tenant receives transactional email notifications when Tribune sends a letter, when the landlord replies, and when the case resolves.
+5. From the tenant's perspective, the system behaves as though Tribune is operating autonomously — Tribune handles the back-and-forth with the landlord and the tenant only acts to upload evidence and confirm recovery. Under the hood it is manual admin work.
 
 This is the groundwork for eventually replacing the manual admin step with AI-generated drafts; the tenant-facing surface stays the same.
 
 ### In scope for MVP
-- Tenant signup + magic link auth (existing).
-- Structured intake form (existing — to be rebuilt on a server-side pipeline).
+- Tenant signup via email/password or Google OAuth.
+- Structured intake form at `/dashboard/new-case` writing directly to `cases` via server action.
 - Document upload (lease, landlord correspondence, deduction itemization, photos, other) stored in Supabase Storage.
-- Tenant case detail with timeline, documents list, status, and "mark letter as sent" / "record landlord response" actions (most of this exists; needs updating).
-- Admin case detail with uploads viewer, status controls, letter post, update post, internal/tenant-visible notes (most of this exists; needs the uploads panel).
-- Transactional email on case events (new message, letter ready, landlord response recorded, deposit recovered, payment due).
-- Pricing / contingency / costs agreement captured at intake and visible on the case.
+- Tenant case detail with timeline, documents list, status, and "report recovery" action.
+- Admin case detail with uploads viewer, status controls, letter draft + dispatch, update post, internal/tenant-visible notes, manual landlord-reply logging.
+- Direct dispatch of demand letters to landlord via Resend, with per-case inbound reply address.
+- Inbound webhook auto-logging landlord email replies into the case timeline (code shipped; DNS/MX pending).
+- Transactional email on case events: letter dispatched, tenant-visible update posted, landlord reply received, deposit recovered (invoice).
+- Invoice generation (`TRB-YYYY-NNNN`) on recovery, with Venmo/Zelle copy-paste payment instructions.
+- Pricing / contingency / costs agreement captured at intake (15% contingency) and visible on the case.
 - "Information, not legal advice" disclaimers on intake, dashboard, case detail, and email footers.
 - Sentry for error monitoring, PostHog for product analytics — both with PII scrubbing.
 
 ### Out of scope for MVP
-- Automated letter generation from templates.
-- AI drafting of letters or responses.
-- Automated letter delivery (print-and-mail API). Tribune mails manually in MVP.
+- AI drafting of letters or responses (templates exist in code; admin still writes manually).
+- Print-and-mail delivery for landlords without email (Lob or similar). Email-only dispatch today.
 - Court filing assistance. Mentioned in product copy as something Tribune will help with later; not built.
-- Payment processing, invoicing, or a settlement trust account. Tenant pays Tribune directly after recovery.
+- Stripe-based invoice collection. Scaffolded on the `invoices` table but not wired; tenants pay via Venmo/Zelle today.
+- Settlement trust account — money never flows through Tribune; landlord pays tenant directly.
 - Collections integration. The *threat* of collections for non-payment is communicated; the mechanism is off-platform for now.
 - Landlord-facing portal.
 - Multi-tenant co-signers on a single account. MVP assumes one user account per case, even if the lease has multiple tenants. Co-tenant names are captured as data.
 - SMS notifications.
 - Document-content extraction (OCR / parsing lease terms or deduction amounts from uploaded files).
+- Deadline-approaching alerts / cron.
 - Jurisdictions other than Connecticut.
 
 ## Direction Beyond MVP (not commitments)
+- **Admin "generate from template" UI.** Letter templates already exist in `src/lib/letters/templates.ts`; wire them into the admin write panel with case-data substitution.
 - **AI-drafted letters** grounded in CT § 47a-21 templates and case data. Replaces manual admin drafting; admin review stays in place.
 - **Document content extraction** (likely Claude vision against uploaded PDFs) to pre-fill structured deduction fields and accelerate admin review.
-- **Automated letter delivery** via a print-and-mail API (Lob or similar) with certified mail tracking.
+- **Stripe invoice collection** so tenants can pay the 15% contingency by card without manual Venmo/Zelle reconciliation. Scaffolded; not wired.
+- **Print-and-mail delivery** via Lob or similar for landlords without email addresses, with certified-mail tracking.
 - **Court filing assistance** — structured small-claims filing package (CT JD-CV-40 equivalent) tenants can file pro se.
-- **Deadline monitoring** with automated reminders as the statutory clock runs out.
-- **Landlord-inbound email** via per-case addresses (AgentMail or equivalent) so landlord replies land in the case timeline automatically.
+- **Deadline monitoring cron** with automated reminders as the statutory clock runs out, plus admin badges for at-risk cases.
 
 ## Pricing, Costs, and Enforcement
 
@@ -82,10 +87,11 @@ The collections language must be literally true — it's a real consequence, not
 
 ## Legal Posture (UPL)
 
-- All correspondence is signed by the tenant. Tribune is named as the preparer of the document, not its author-in-authority.
+- Tribune writes letters on the tenant's behalf as their authorized non-attorney representative, in the "our client, [Tenant Name]" voice. The tenant signs the service agreement at intake granting Tribune authority to communicate with the landlord on their behalf. Tribune does not present itself as a law firm and does not give advice on case strategy in a specific situation.
 - Tenant-facing copy presents **information**, not **advice** — what the statute says, what typical next steps look like, what the deadlines are. It does not tell a specific tenant what they should do in their specific situation.
 - "Information, not legal advice" disclaimers appear on intake, dashboard, case detail, letter previews, and in every outbound email.
-- Every outbound letter is reviewed by you (the admin) before posting. The admin UI is the review surface.
+- Every outbound letter is drafted and dispatched by the admin. The admin write panel is the review surface — there is no automated send.
+- Letter template voice ("our client" framing) requires attorney review before any real-world dispatch.
 
 ## Strategic Thesis — What Makes Tribune Defensible
 

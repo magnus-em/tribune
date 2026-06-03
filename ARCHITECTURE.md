@@ -23,10 +23,14 @@ Describes the system as built, decisions implicit in the code, risks, and recomm
 src/
   app/
     page.tsx                      landing page
-    layout.tsx                    root layout
+    layout.tsx                    root layout (PostHog provider, Sentry init)
     globals.css                   Tailwind + CSS variables (HSL)
-    contact/page.tsx              contact page (not linked in nav)
-    login/page.tsx                email/password + Google OAuth
+    error.tsx, global-error.tsx   error boundaries
+    icon.tsx                      app icon
+    landing.module.css            landing-page-specific styles
+    contact/page.tsx              static contact page (not linked in main nav)
+    demo/case/page.tsx            static case-page mockup for marketing (linked from landing)
+    login/page.tsx                email/password + Google OAuth, respects ?next=
     auth/
       callback/route.ts           OAuth code exchange
       signout/route.ts            sign out
@@ -46,11 +50,14 @@ src/
         actions.ts                admin server actions
     api/
       webhooks/resend/inbound/route.ts  parses landlord email replies, logs to timeline, sets status
-    v1/ … v5/                     landing page design iterations — dead code, delete
   components/
-    ui/                           shadcn components
+    ui/                           shadcn components (Radix-based)
     app-sidebar.tsx               collapsible sidebar with case cards, status dots, deadline urgency
     case-timeline.tsx             timeline visualization
+    data-table.tsx                generic @tanstack/react-table wrapper used by admin
+    error-boundary.tsx            client error boundary
+    legal-disclaimer.tsx          "information, not legal advice" banner
+    navigation-progress.tsx       top-of-page progress bar on internal link clicks
   lib/
     supabase/
       client.ts                   browser client
@@ -59,20 +66,24 @@ src/
     types/
       supabase.ts                 generated DB types (authoritative — supabase gen types)
       database.ts                 hand-written types (being phased out)
+    schemas/
+      intake.ts                   Zod schemas for intake form + server action
+    analytics/
+      posthog.tsx                 PostHog provider + scrubbed event helpers
     constants.ts                  CONTINGENCY_PCT=15, STATUTE_DAYS=21, PAYMENT_DUE_DAYS=7
-    utils/case.ts                 case utility functions
+    utils.ts                      shadcn cn() helper
+    utils/case.ts                 case utility functions (status labels, deadline math)
     letters/templates.ts          CT § 47a-21 demand letter templates (1, 2, 3)
     email/
       client.ts                   Resend wrapper (sendEmail, replyTo support)
       templates/
-        case-update.ts            case update notification email
+        case-update.ts            tenant-facing case update notification email
         landlord-letter.ts        landlord demand letter email wrapper
+        invoice.ts                tenant invoice email with Venmo/Zelle instructions
   middleware.ts                   route protection (/dashboard/* auth, /admin/* auth + is_admin)
 supabase/
   migrations/                     versioned SQL migrations (authoritative schema source)
 ```
-
-`src/app/v1/`–`v5/` are landing page design iterations not linked in any nav. Safe to delete.
 
 ## Data Model [current]
 
@@ -163,7 +174,6 @@ DNS/MX records for `inbound.usetribune.org` are not yet configured. Inbound webh
 - **`ADMIN_EMAIL` env var not set.** Inbound webhook falls back to hardcoded `hello@usetribune.org`.
 - **Limited test coverage.** Jest unit tests for schemas, templates, email, constants. No E2E tests.
 - **RLS correctness untested end-to-end.** No test confirms a tenant cannot read another tenant's case or documents.
-- **Dead code:** `src/app/v1/`–`v5/` (landing page iterations) should be deleted.
 
 ## Recommended Next Work [planned]
 

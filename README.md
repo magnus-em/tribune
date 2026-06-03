@@ -1,36 +1,37 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Tribune
 
-## Getting Started
+Connecticut security-deposit recovery service for residential tenants. Helps tenants recover wrongfully withheld deposits under CT § 47a-21 on a 15% contingency. Tribune drafts and dispatches demand letters directly to landlords on the tenant's behalf — no attorney in the loop, no print-and-mail.
 
-First, run the development server:
+This repo holds the tenant-facing web app, admin console, and integrations (Supabase, Resend, Sentry, PostHog).
+
+## Where to start
+
+- [`PRODUCT_BRIEF.md`](./PRODUCT_BRIEF.md) — what Tribune is and the strategic thesis.
+- [`SPEC.md`](./SPEC.md) — user stories, flows, and rules.
+- [`ARCHITECTURE.md`](./ARCHITECTURE.md) — stack, data model, and module layout.
+- [`TASKS.md`](./TASKS.md) — what's built, in progress, and next.
+- [`CLAUDE.md`](./CLAUDE.md) — conventions and footguns for anyone (human or AI) editing this codebase.
+
+## Stack
+
+Next.js 15 (App Router) · React 19 · TypeScript · Tailwind v3 · shadcn/ui · Supabase (Postgres + Auth + RLS + Storage) · Resend · Sentry · PostHog · Vercel.
+
+## Local development
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev      # http://localhost:3000
+npm run build    # production build
+npm run lint
+npm test         # Jest
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Environment variables — see `.env.local.example` (or pull from Vercel via `vercel env pull`). Required for local dev: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `RESEND_API_KEY`, `RESEND_FROM_EMAIL`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Deploying
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+`main` auto-deploys to Vercel production. Preview deployments are created per branch.
 
-## Learn More
+## Legal posture
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The product drafts legal correspondence based on CT § 47a-21. Citations, deadlines, and damages math have legal consequences — see the "Legal Stakes" section in `CLAUDE.md` before editing letter templates or statute references. Every tenant-facing surface carries an "information, not legal advice" disclaimer.

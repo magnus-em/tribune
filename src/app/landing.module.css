@@ -10,6 +10,7 @@
   --cream-border: #e2e8f0;
   --white: #ffffff;
   --ink: #0f172a;
+  --headline: #1e293b;
   --ink-mid: #334155;
   --ink-light: #64748b;
   --muted: #64748b;
@@ -130,13 +131,38 @@
   background: var(--cream);
 }
 
+/* Yale credential — first eyebrow element, authentic Yale blue */
+.yalePill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #ffffff;
+  background: #00356b;
+  border: 1px solid #00356b;
+  padding: 4px 11px;
+}
+
+.yalePill::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ffffff;
+  opacity: 0.9;
+}
+
 .heroH1 {
   font-family: var(--display);
-  font-size: clamp(40px, 5.5vw, 76px);
+  font-size: clamp(34px, 4.4vw, 58px);
   font-weight: 700;
-  line-height: 1.05;
-  letter-spacing: -0.03em;
-  color: var(--ink);
+  line-height: 1.08;
+  letter-spacing: -0.025em;
+  color: var(--headline);
   margin: 0 0 28px;
 }
 
@@ -301,8 +327,10 @@
 
 /* ── PROOF STRIP ──────────────────────────────────────── */
 .proofStrip {
-  background: var(--ink);
-  color: var(--cream);
+  background: var(--cream-deep);
+  color: var(--ink-mid);
+  border-top: 1px solid var(--cream-border);
+  border-bottom: 1px solid var(--cream-border);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -316,7 +344,8 @@
 }
 
 .dot {
-  opacity: 0.3;
+  opacity: 0.35;
+  color: var(--blue);
 }
 
 /* ── SHARED SECTION SHELLS ────────────────────────────── */
@@ -382,11 +411,11 @@
 
 .h2 {
   font-family: var(--display);
-  font-size: clamp(36px, 4vw, 60px);
+  font-size: clamp(30px, 3.2vw, 48px);
   font-weight: 700;
-  line-height: 1.05;
-  letter-spacing: -0.025em;
-  color: var(--ink);
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  color: var(--headline);
   margin: 0 0 28px;
 }
 
@@ -984,9 +1013,9 @@
 
 .aboutH2 {
   font-family: var(--display);
-  font-size: clamp(32px, 3.5vw, 52px);
+  font-size: clamp(28px, 3vw, 44px);
   font-weight: 700;
-  color: var(--ink);
+  color: var(--headline);
   margin: 0 0 20px;
   letter-spacing: -0.02em;
 }
@@ -1073,17 +1102,17 @@
 
 .finalH2 {
   font-family: var(--display);
-  font-size: clamp(40px, 5vw, 68px);
+  font-size: clamp(34px, 4vw, 54px);
   font-weight: 800;
-  line-height: 1.0;
-  letter-spacing: -0.03em;
+  line-height: 1.05;
+  letter-spacing: -0.025em;
   color: var(--cream);
   margin: 0;
 }
 
 .finalH2 em {
   font-style: italic;
-  color: var(--blue);
+  color: var(--blue-bright);
 }
 
 .finalRight {
@@ -1184,21 +1213,20 @@
 
 .strategyLeadStat {
   font-family: var(--display);
-  font-size: clamp(52px, 6vw, 80px);
+  font-size: clamp(40px, 4.6vw, 60px);
   font-weight: 800;
   color: var(--blue);
-  line-height: 0.9;
-  letter-spacing: -0.04em;
-  margin-bottom: 20px;
+  line-height: 0.98;
+  letter-spacing: -0.03em;
+  margin-bottom: 24px;
 }
 
 .strategyLeadStat em {
-  font-size: 0.5em;
-  font-style: normal;
+  font-size: 0.62em;
+  font-style: italic;
   font-weight: 500;
-  color: var(--ink-light);
-  vertical-align: middle;
-  letter-spacing: -0.01em;
+  color: var(--ink-mid);
+  letter-spacing: -0.02em;
 }
 
 .strategyLeadBody {

@@ -138,8 +138,8 @@ export default function LandingPage() {
         <div className={s.heroInner}>
           <div className={s.heroLeft} data-reveal>
             <div className={s.heroEyebrow}>
-              <span className={s.pill}>Connecticut</span>
-              <span className={s.pill}>§ 47a-21</span>
+              <span className={s.yalePill}>Built by Yale students</span>
+              <span className={s.pill}>Connecticut · § 47a-21</span>
               <span className={s.pill}>No fee unless we recover</span>
             </div>
             <h1 className={s.heroH1}>
@@ -149,7 +149,7 @@ export default function LandingPage() {
               We'll get it back.
             </h1>
             <p className={s.heroSub}>
-              Tribune handles all correspondence, negotiation, and small-claims prep if it gets there. You don't talk to your landlord. You don't write anything.
+              Not a form letter you could send yourself — a system that adapts to your landlord and makes paying you back their cheapest move. You stay out of it.
             </p>
             <div className={s.heroCtas}>
               <Link href={caseHref} className={s.btnPrimary}>
@@ -179,35 +179,35 @@ export default function LandingPage() {
       {/* THE STRATEGY */}
       <section className={s.strategySection}>
         <div className={s.wrap}>
-          <p className={s.label} data-reveal>01 / The Strategy</p>
+          <p className={s.label} data-reveal>01 / Why Landlords Fold</p>
           <div className={s.strategyLead} data-reveal>
             <div className={s.strategyLeadStat}>
-              Most fold.<br />Before court.
+              They do this<br />all the time.<br /><em>You've done it once.</em>
             </div>
             <p className={s.strategyLeadBody}>
-              Landlords aren't asking if they're right. They're asking if you'll follow through. A documented claim changes that calculation fast.
+              That asymmetry is a landlord's whole advantage. They're betting you don't know the rules and won't follow through — because most tenants don't. Tribune erases the bet. Now they're the one negotiating against someone who has seen the entire playbook.
             </p>
           </div>
           <div className={s.strategyGrid}>
             <div className={s.strategyCard} data-reveal>
               <div className={s.strategyCardN}>01</div>
-              <h3 className={s.strategyCardTitle}>Documented from day one</h3>
+              <h3 className={s.strategyCardTitle}>We know the script</h3>
               <p className={s.strategyCardBody}>
-                Every missed deadline named. Every deduction flagged against the statute. Exposure calculated to the dollar.
+                Stall, vague invoice, lowball, silence. Landlords run a small set of plays — and we know what each one is actually worth under § 47a-21.
               </p>
             </div>
             <div className={s.strategyCard} data-reveal>
               <div className={s.strategyCardN}>02</div>
-              <h3 className={s.strategyCardTitle}>We run the whole back-and-forth</h3>
+              <h3 className={s.strategyCardTitle}>Every move is calibrated</h3>
               <p className={s.strategyCardBody}>
-                Tribune manages every letter, response, and counter. You see updates in your case log. You're never in the conversation.
+                This isn't a template you could've downloaded. We read your landlord's specific response and adapt the next step to the leverage your case actually has.
               </p>
             </div>
             <div className={s.strategyCard} data-reveal>
               <div className={s.strategyCardN}>03</div>
-              <h3 className={s.strategyCardTitle}>Ready to file if needed</h3>
+              <h3 className={s.strategyCardTitle}>Folding becomes the smart move</h3>
               <p className={s.strategyCardBody}>
-                What moves landlords is the credible prospect of filing. If your case needs small claims, Tribune prepares the full package.
+                Against documented exposure and someone who won't go away, paying you back is cheaper than fighting. We make that math impossible to miss.
               </p>
             </div>
           </div>
@@ -321,13 +321,13 @@ export default function LandingPage() {
                 },
                 {
                   n: "02",
-                  title: "Initial demand goes out",
-                  body: "A certified letter citing the statute, documenting violations, and naming a deadline. Some landlords fold immediately.",
+                  title: "The opening demand",
+                  body: "A formal demand citing § 47a-21, documenting every violation, and naming the deadline — with their exposure calculated to the dollar. Some landlords settle on this alone.",
                 },
                 {
                   n: "03",
-                  title: "We hold the line",
-                  body: "For holdouts: vague rebuttals, lowball offers, silence. Tribune knows what each response actually means and how to counter it. Every round builds the record.",
+                  title: "We read the response and adapt",
+                  body: "Holdouts test you with vague rebuttals, lowball offers, and silence. We know what each one means and answer it specifically — every round adding to the record and to what they stand to lose.",
                 },
                 {
                   n: "04",
@@ -390,7 +390,7 @@ export default function LandingPage() {
               We've been through this — bogus deductions, holdout landlords, the whole thing. After researching the statute and learning how bad landlords actually operate, we built Tribune to make what we figured out available to every Connecticut tenant.
             </p>
             <p className={s.aboutFine}>
-              Tribune is a document-preparation and legal-information service — not a law firm. Every letter is signed by you; we prepare and send it on your behalf. If a case benefits from an attorney, we'll tell you directly.
+              Tribune is a legal-information and document-preparation service — not a law firm, and nothing here is legal advice. We handle the research, drafting, and correspondence; you authorize what goes out. If a case would be better with an attorney, we'll tell you directly.
             </p>
           </div>
         </div>
@@ -403,7 +403,8 @@ export default function LandingPage() {
           <h2 className={s.h2} data-reveal>Common questions.</h2>
           <div className={s.faqCols}>
             {[
-              { q: "Are you a law firm?", a: "No. Tribune is a document-preparation and legal-information service. You sign every letter — we research, draft, and send it on your behalf. If your case needs a lawyer, we'll tell you." },
+              { q: "Are you a law firm?", a: "No. Tribune is a document-preparation and legal-information service. You authorize what goes out — we research, draft, and handle the correspondence. If your case needs a lawyer, we'll tell you." },
+              { q: "Why not just send a letter myself?", a: "You can — and if your landlord is reasonable, it might work. Most aren't. They stall because they're betting you'll give up, and a one-off letter from a tenant who won't follow through is a bet they're happy to take. Tribune doesn't give up, knows every move they'll try, and adapts each response to your specific case. You stop being one tenant guessing at the rules." },
               { q: "What does it cost?", a: "15% of what we recover, paid after money hits your account. If we recover nothing, you pay nothing. Hard costs are pass-through and disclosed up front." },
               { q: "Do I have to deal with my landlord?", a: "No. Tribune handles all correspondence. The entire negotiation runs through us — you see updates but you're completely out of the conversation." },
               { q: "My landlord sent a deduction list. Still a case?", a: "Often yes. Deductions must be itemized, specific, documented, and exclude normal wear and tear. Most don't meet that standard." },

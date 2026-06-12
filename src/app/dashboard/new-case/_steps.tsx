@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { CONTINGENCY_PCT, STATUTE_DAYS } from "@/lib/constants";
 import type { IntakeFormData, ExtractedLeaseData } from "@/lib/schemas/intake";
-import { formatCents } from "@/lib/utils/case";
+import { formatCents, parseDateOnly } from "@/lib/utils/case";
 import { addDays, format, differenceInDays } from "date-fns";
 
 // ─── Shared helpers ────────────────────────────────────────────────────────────
@@ -384,7 +384,7 @@ export function DetailsStep({
   const moveOutDate = watch("move_out_date");
   const deadlineInfo = (() => {
     if (!moveOutDate) return null;
-    const m = new Date(moveOutDate);
+    const m = parseDateOnly(moveOutDate);
     if (isNaN(m.getTime())) return null;
     const deadline = addDays(m, STATUTE_DAYS);
     const daysFromNow = differenceInDays(deadline, new Date());
@@ -523,7 +523,7 @@ export function DetailsStep({
           className="rounded-md border-l-2 px-4 py-3 text-sm"
           style={{
             borderLeftColor:
-              deadlineInfo.daysFromNow < 0
+              deadlineInfo.daysFromNow <= 0
                 ? "hsl(0 80% 50%)"
                 : deadlineInfo.daysFromNow <= 7
                 ? "hsl(28 90% 50%)"
@@ -531,30 +531,37 @@ export function DetailsStep({
             background: "hsl(var(--muted) / 0.4)",
           }}
         >
-          <p className="font-semibold text-foreground">
-            Your landlord&apos;s legal deadline:{" "}
-            <span className="text-primary">{deadlineInfo.deadlineLabel}</span>
-          </p>
-          <p className="text-muted-foreground mt-1">
-            {deadlineInfo.daysFromNow < 0 ? (
-              <>
-                The {STATUTE_DAYS}-day window under CT § 47a-21 has already passed
-                ({Math.abs(deadlineInfo.daysFromNow)} day
-                {Math.abs(deadlineInfo.daysFromNow) === 1 ? "" : "s"} ago). If your deposit
-                wasn&apos;t returned in full, you may be entitled to double damages. Tribune
-                aims to send a demand letter immediately.
-              </>
-            ) : (
-              <>
+          {deadlineInfo.daysFromNow <= 0 ? (
+            <>
+              <p className="font-semibold text-foreground">
+                This deadline appears to have passed.
+              </p>
+              <p className="text-muted-foreground mt-1">
+                Under CT § 47a-21, a landlord generally has until{" "}
+                <strong className="text-foreground">{deadlineInfo.deadlineLabel}</strong>{" "}
+                to return the deposit or deliver a written itemized statement of deductions.
+                When a landlord violates the statute, it provides for liability of up to{" "}
+                <strong className="text-foreground">twice the security deposit</strong>.
+                Whether that applies depends on the facts of your case — Tribune will review
+                and explain your options.
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="font-semibold text-foreground">
+                Your landlord&apos;s legal deadline:{" "}
+                <span className="text-primary">{deadlineInfo.deadlineLabel}</span>
+              </p>
+              <p className="text-muted-foreground mt-1">
                 Tribune aims to send the first demand letter by{" "}
                 <strong className="text-foreground">{deadlineInfo.mailByLabel}</strong> —{" "}
                 {deadlineInfo.daysFromNow} day
                 {deadlineInfo.daysFromNow === 1 ? "" : "s"} from today. Finishing intake now
                 gives Tribune time to review and prepare the letter before the statutory clock
                 runs out.
-              </>
-            )}
-          </p>
+              </p>
+            </>
+          )}
         </div>
       )}
 
@@ -931,8 +938,8 @@ export function AgreementStep({
         </div>
         <div className="max-h-96 overflow-y-auto px-4 py-4 space-y-4 leading-relaxed text-muted-foreground">
           <p>
-            This Agreement is between you (&ldquo;Client&rdquo;) and Tribune, a legal-information
-            and document-preparation service operating in Connecticut.
+            This Agreement is between you and Tribune, a legal-information and
+            document-preparation service operating in Connecticut.
           </p>
           <p>
             <strong className="text-foreground">1. Services.</strong> Tribune will review your
@@ -1044,24 +1051,31 @@ export function AgreementStep({
         </div>
       </div>
 
-      <div className="flex gap-3">
-        <Button type="button" variant="outline" onClick={onBack} className="flex-1">
-          <ArrowLeft className="mr-2 size-4" /> Back
-        </Button>
-        <Button
-          type="button"
-          onClick={onSubmit}
-          disabled={submitting}
-          className="flex-1"
-        >
-          {submitting ? (
-            <>
-              <Loader2 className="mr-2 size-4 animate-spin" /> Submitting…
-            </>
-          ) : (
-            "Submit Case"
-          )}
-        </Button>
+      <div className="space-y-2">
+        <div className="flex gap-3">
+          <Button type="button" variant="outline" onClick={onBack} disabled={submitting} className="flex-1">
+            <ArrowLeft className="mr-2 size-4" /> Back
+          </Button>
+          <Button
+            type="button"
+            onClick={onSubmit}
+            disabled={submitting}
+            className="flex-1"
+          >
+            {submitting ? (
+              <>
+                <Loader2 className="mr-2 size-4 animate-spin" /> Uploading…
+              </>
+            ) : (
+              "Submit Case"
+            )}
+          </Button>
+        </div>
+        {submitting && (
+          <p className="text-xs text-muted-foreground text-center" style={{ fontFamily: "var(--font-space-mono, monospace)" }}>
+            Uploading your lease and photos — this can take 10–20 seconds.
+          </p>
+        )}
       </div>
     </div>
   );

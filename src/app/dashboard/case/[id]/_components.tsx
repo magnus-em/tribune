@@ -35,7 +35,7 @@ import {
   Smartphone,
 } from "lucide-react";
 import { toast } from "sonner";
-import { formatCents } from "@/lib/utils/case";
+import { formatCents, parseDateOnly } from "@/lib/utils/case";
 import type { Case, CaseMessage, CaseAction } from "@/lib/types/database";
 import { CONTINGENCY_PCT } from "@/lib/constants";
 
@@ -343,7 +343,7 @@ export function ClaimSummary({
     caseData.deposit_returned_cents - originalReturnedCents
   );
   const tribFee = Math.round((recoveredCents * caseData.contingency_pct) / 100);
-  const deadline = new Date(caseData.statutory_deadline);
+  const deadline = parseDateOnly(caseData.statutory_deadline);
 
   return (
     <div className="border bg-card overflow-hidden">
@@ -620,6 +620,41 @@ const EVENT_CONFIG: Record<
   },
 };
 
+// Tenant-facing strategic summary of what Tribune is doing in each round.
+// We never show the literal letter text — the system is the moat, not the
+// template. Frame every round as a deliberate move in a negotiation, not
+// "here's a stronger letter."
+function tenantLetterTactics(letterNumber?: number): string[] {
+  switch (letterNumber) {
+    case 1:
+      return [
+        "Opening move: cite § 47a-21 by section and state the statutory exposure — up to twice the security deposit.",
+        "Set a hard 14-day reply window. Silence converts into the next round automatically; doing nothing becomes the most expensive option for them.",
+        "Document the deadline they already missed. Their best-case outcome only gets worse from here, and the letter says so out loud.",
+        "Voice: factual and procedural — no threats, no emotion. Pay-the-tenant becomes the cheapest, fastest path off their desk.",
+      ];
+    case 2:
+      return [
+        "Escalation: raise their cost of inaction without raising ours. The longer they stall, the more leverage we accumulate.",
+        "Reframe their last reply against the statute — every defense they offered gets priced and compared to the cost of just paying.",
+        "Name the next step explicitly: Small Claims filing, fee shifting, and the public record. Removes any ambiguity about where this is going.",
+        "Time pressure tightens. 7-day window, not 14. Each round shortens the reply runway.",
+      ];
+    case 3:
+      return [
+        "Final demand: the negotiation surface closes. This letter is the last off-ramp before filing.",
+        "Quantify everything one more time — principal, statutory damages, statutory interest, filing fee, the time they've already burned.",
+        "No further correspondence offered. The next document they get is the court summons. Silence is no longer free.",
+        "Frame settlement as the rational choice in clear dollar terms. Make the math do the talking.",
+      ];
+    default:
+      return [
+        "Tribune is applying coordinated pressure: statutory citations, hard deadlines, and rising costs of inaction.",
+        "Each round narrows their options. Doing nothing keeps getting more expensive than just paying.",
+      ];
+  }
+}
+
 export function EventCard({
   event,
   onDownload,
@@ -627,11 +662,13 @@ export function EventCard({
   event: CaseEvent;
   onDownload?: (path: string) => void;
 }) {
-  const [expanded, setExpanded] = useState(
-    event.kind === "tribune_letter" ? false : true
-  );
+  const isLetter = event.kind === "tribune_letter";
+  // For letters we always show the strategy bullets (no toggle). For other
+  // events with a body, keep the existing expand/collapse behavior.
+  const [expanded, setExpanded] = useState(!isLetter);
   const config = EVENT_CONFIG[event.kind];
   const hasBody = !!event.body?.trim();
+  const tactics = isLetter ? tenantLetterTactics(event.letterNumber) : null;
 
   return (
     <div className={`p-3 text-sm ${config.colorClass}`} style={{ borderLeft: config.borderLeft }}>
@@ -661,7 +698,7 @@ export function EventCard({
               <Download className="size-3" />
             </Button>
           )}
-          {hasBody && (
+          {!isLetter && hasBody && (
             <Button
               variant="ghost"
               size="sm"
@@ -678,24 +715,27 @@ export function EventCard({
         </div>
       </div>
 
-      {hasBody && expanded && (
+      {isLetter && tactics && (
+        <div className="mt-3 pt-3 border-t border-current/10 space-y-2">
+          <p className="text-[10px] uppercase tracking-widest opacity-60" style={{ fontFamily: "var(--font-space-mono, monospace)" }}>
+            Tribune&apos;s play
+          </p>
+          <ul className="space-y-1.5 text-[13px] leading-relaxed">
+            {tactics.map((t, i) => (
+              <li key={i} className="flex gap-2">
+                <span className="opacity-50 shrink-0" style={{ fontFamily: "var(--font-fraunces, Georgia, serif)" }}>§</span>
+                <span className="opacity-90">{t}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {!isLetter && hasBody && expanded && (
         <div className="mt-2 pt-2 border-t border-current/10">
           <p className="whitespace-pre-wrap text-sm leading-relaxed opacity-80">
             {event.body}
           </p>
-          {event.kind === "tribune_letter" && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="mt-2 h-7 text-xs opacity-60 hover:opacity-100 -ml-1"
-              onClick={() => {
-                navigator.clipboard.writeText(event.body!);
-                toast.success("Copied to clipboard");
-              }}
-            >
-              <Copy className="size-3 mr-1" /> Copy text
-            </Button>
-          )}
         </div>
       )}
     </div>
@@ -972,7 +1012,7 @@ export function buildIntroEmail(
 
 I am writing regarding the return of my security deposit for the property at ${caseData.property_address}.
 
-I have authorized Tribune, a Connecticut tenant-advocacy service, to manage correspondence with you on my behalf regarding this matter. You will receive an email from them shortly. Please treat their messages as authorized communications from me, and you may reply directly to them.
+I have authorized Tribune, a Connecticut tenant-advocacy service, to manage correspondence with you on my behalf regarding this matter. Tribune will be in touch shortly from an @usetribune.org email address (more about Tribune at https://usetribune.org). Please treat their messages as authorized communications from me, and you may reply directly to them.
 
 Thank you,
 ${tenant}`;

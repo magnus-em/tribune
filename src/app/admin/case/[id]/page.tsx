@@ -50,7 +50,7 @@ import {
   declineCase,
 } from "./actions";
 import type { InvoiceData } from "@/app/dashboard/case/[id]/_components";
-import { statusColor, formatCents } from "@/lib/utils/case";
+import { statusColor, formatCents, parseDateOnly } from "@/lib/utils/case";
 import {
   FileText,
   AlertTriangle,
@@ -302,8 +302,14 @@ function CaseAssessmentPanel({
   daysOverdue: number;
 }) {
   const hasLease = documents.some((d) => d.kind === "lease");
-  const hasPhotos = documents.some((d) => d.kind === "photo");
+  const hasPhotos = documents.some(
+    (d) => d.kind === "photo" || d.kind === "photo_move_in" || d.kind === "photo_move_out"
+  );
   const hasLandlordContact = !!(caseData.landlord_email || caseData.landlord_phone);
+  // § 47a-21(d): a violating landlord is liable for "twice the amount of any
+  // security deposit paid" — i.e. twice the FULL deposit (the statute's plain
+  // text), which is the figure the demand letters now assert. Subject to the
+  // attorney review in LEGAL_REVIEW_47a-21.md.
   const exposure = caseData.deposit_amount_cents * 2;
 
   const items = [
@@ -361,15 +367,24 @@ function CaseAssessmentPanel({
 
 function AdminActionBanner({
   status,
-  daysOverdue,
   hasLease,
   hasLandlordReply,
+  lastLetterNumber,
+  daysSinceLastLetter,
+  replyWindowDays,
 }: {
   status: CaseStatus;
-  daysOverdue: number;
   hasLease: boolean;
   hasLandlordReply: boolean;
+  lastLetterNumber: number | null;
+  daysSinceLastLetter: number | null;
+  replyWindowDays: number;
 }) {
+  const daysLeftInWindow =
+    daysSinceLastLetter !== null ? replyWindowDays - daysSinceLastLetter : null;
+  const windowExpired = daysLeftInWindow !== null && daysLeftInWindow <= 0;
+  const escalateLabel =
+    lastLetterNumber === 1 ? "Letter 2" : lastLetterNumber === 2 ? "Letter 3" : "Small Claims filing";
   type Variant = "required" | "waiting" | "done" | "info";
   const configs: Record<string, { variant: Variant; title: string; description: string }> = {
     intake_submitted: {
@@ -390,20 +405,30 @@ function AdminActionBanner({
       description: "Letter is drafted. Click 'Send via Email' in the letter tab to dispatch it to the landlord.",
     },
     letter_sent: {
-      variant: "waiting",
-      title: "Letter sent — monitoring for landlord response",
-      description: daysOverdue > 0
-        ? `Landlord is ${daysOverdue} day${daysOverdue !== 1 ? "s" : ""} past the statutory deadline. Tenant is waiting for their reply.`
-        : "Waiting for landlord to respond. Tenant will upload the reply when received.",
+      variant: windowExpired ? "required" : "waiting",
+      title: windowExpired
+        ? `Reply window for Letter ${lastLetterNumber ?? ""} closed — escalate with ${escalateLabel}`
+        : daysLeftInWindow !== null
+          ? `Letter ${lastLetterNumber ?? ""} sent — ${daysLeftInWindow}d left in reply window`
+          : "Letter sent — monitoring for landlord response",
+      description: windowExpired
+        ? `Landlord did not respond within the ${replyWindowDays}-day window opened by Letter ${lastLetterNumber ?? ""}. Move to ${escalateLabel}.`
+        : daysSinceLastLetter !== null
+          ? `Sent ${daysSinceLastLetter} day${daysSinceLastLetter !== 1 ? "s" : ""} ago. Landlord has ${daysLeftInWindow}d to respond before Tribune escalates.`
+          : "Waiting for landlord to respond.",
     },
     awaiting_landlord: {
-      variant: daysOverdue > 0 ? "required" : "waiting",
-      title: daysOverdue > 0
-        ? `Landlord ${daysOverdue}d overdue — consider escalating`
-        : "Waiting for landlord response",
-      description: daysOverdue > 0
-        ? "Landlord has not responded past the statutory deadline. Consider posting a follow-up or preparing Letter 2."
-        : "Tenant is waiting for landlord reply.",
+      variant: windowExpired ? "required" : "waiting",
+      title: windowExpired
+        ? `Reply window for Letter ${lastLetterNumber ?? ""} closed — escalate with ${escalateLabel}`
+        : daysLeftInWindow !== null
+          ? `Letter ${lastLetterNumber ?? ""} sent — ${daysLeftInWindow}d left in reply window`
+          : "Waiting for landlord response",
+      description: windowExpired
+        ? `Landlord did not respond within the ${replyWindowDays}-day window opened by Letter ${lastLetterNumber ?? ""}. Move to ${escalateLabel}.`
+        : daysSinceLastLetter !== null
+          ? `Sent ${daysSinceLastLetter} day${daysSinceLastLetter !== 1 ? "s" : ""} ago. Landlord has ${daysLeftInWindow}d to respond before Tribune escalates.`
+          : "Tenant is waiting for landlord reply.",
     },
     landlord_responded: {
       variant: "required",
@@ -484,7 +509,7 @@ function AdminWritePanel({
 
   function buildLetterData(): LetterData | null {
     if (!profile) return null;
-    const deadline = new Date(caseData.statutory_deadline);
+    const deadline = parseDateOnly(caseData.statutory_deadline);
     const daysOverdue = Math.max(0, differenceInDays(new Date(), deadline));
     return {
       tenantName: profile.full_name,
@@ -864,10 +889,22 @@ export default function AdminCaseDetailPage() {
     );
   }
 
-  const deadline = new Date(caseData.statutory_deadline);
+  const deadline = parseDateOnly(caseData.statutory_deadline);
   const daysOverdue = differenceInDays(new Date(), deadline);
   const hasLease = documents.some((d) => d.kind === "lease");
   const hasLandlordReply = messages.some((m) => m.message_type === "landlord_reply" || m.message_type === "tenant_landlord_reply");
+
+  // Latest dispatched (sent) letter — drives the reply-window timer
+  // shown in the awaiting_landlord banner. Reply windows shrink each round:
+  // 14d after Letter 1, 7d after Letters 2 and 3.
+  const latestSentLetter = [...messages]
+    .reverse()
+    .find((m) => m.message_type === "tribune_letter" && !!m.dispatch_channel);
+  const lastLetterNumber = latestSentLetter?.letter_number ?? null;
+  const daysSinceLastLetter = latestSentLetter
+    ? differenceInDays(new Date(), new Date(latestSentLetter.created_at))
+    : null;
+  const replyWindowDays = lastLetterNumber === 1 ? 14 : 7;
 
   // Build event stream — admin sees ALL messages including admin-only
   const events = buildEventStream(messages, actions);
@@ -909,9 +946,11 @@ export default function AdminCaseDetailPage() {
       {/* Admin action banner */}
       <AdminActionBanner
         status={caseData.status}
-        daysOverdue={daysOverdue}
         hasLease={hasLease}
         hasLandlordReply={hasLandlordReply}
+        lastLetterNumber={lastLetterNumber}
+        daysSinceLastLetter={daysSinceLastLetter}
+        replyWindowDays={replyWindowDays}
       />
 
       {/* Contacts + Assessment */}
@@ -941,7 +980,10 @@ export default function AdminCaseDetailPage() {
         <Button onClick={handleChangeStatus} disabled={newStatus === caseData.status || savingStatus} size="sm">
           {savingStatus ? "Saving…" : "Update"}
         </Button>
-        {caseData.status !== "declined" && caseData.status !== "resolved" && caseData.status !== "closed" && (
+        {/* Decline is only valid before a letter has been staged or sent.
+            Once Tribune has acted on the case, the path forward is resolve
+            or close, not decline. */}
+        {(caseData.status === "intake_submitted" || caseData.status === "under_review") && (
           <Button
             variant="outline"
             size="sm"
@@ -1213,8 +1255,8 @@ function SituationDescription({ caseData }: { caseData: Case }) {
             </div>
           )}
           <div className="grid grid-cols-2 gap-3 pt-1 text-xs text-muted-foreground border-t">
-            <span>Lease: {format(new Date(caseData.lease_start_date), "MMM d, yyyy")} – {format(new Date(caseData.lease_end_date), "MMM d, yyyy")}</span>
-            <span>Move-out: {format(new Date(caseData.move_out_date), "MMM d, yyyy")}</span>
+            <span>Lease: {format(parseDateOnly(caseData.lease_start_date), "MMM d, yyyy")} – {format(parseDateOnly(caseData.lease_end_date), "MMM d, yyyy")}</span>
+            <span>Move-out: {format(parseDateOnly(caseData.move_out_date), "MMM d, yyyy")}</span>
             <span>Itemized deductions: {caseData.itemized_deductions_received ? "Yes" : "No"}</span>
           </div>
         </div>

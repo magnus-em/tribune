@@ -61,23 +61,38 @@ function DepositCalculator() {
         </div>
 
         <p className={s.calcNote}>
-          Tribune: 15% of recovery, $0 if nothing recovered. Attorney fees estimated ~$1,200 (avg. 4 hrs × $300/hr).
+          Illustration only — not an estimate of your specific recovery. Tribune: 15% of recovery, $0 if nothing recovered. Attorney fees estimated ~$1,200 (avg. 4 hrs × $300/hr).
         </p>
       </div>
     </div>
   );
 }
 
-function useCaseHref() {
-  const [href, setHref] = useState("/login?next=/dashboard/new-case");
+function useCaseCta() {
+  // Logged-out default. The hook flips these to "go to your case" once we
+  // confirm the user is authed — /dashboard auto-redirects single-case
+  // tenants to their case page, so it's the right destination either way.
+  const [cta, setCta] = useState({
+    href: "/login?next=/dashboard/new-case",
+    navLabel: "Start free review →",
+    heroLabel: "Start your free case review →",
+    footerLabel: "Open a case",
+  });
   useEffect(() => {
     createClient()
       .auth.getUser()
       .then(({ data: { user } }) => {
-        if (user) setHref("/dashboard/new-case");
+        if (user) {
+          setCta({
+            href: "/dashboard",
+            navLabel: "Go to your case →",
+            heroLabel: "Go to your case →",
+            footerLabel: "Go to your case",
+          });
+        }
       });
   }, []);
-  return href;
+  return cta;
 }
 
 const CHARGES = [
@@ -92,12 +107,12 @@ const LAW_FACTS = [
   { sym: "§ 1", title: "21-day deadline", body: "21 days to return the deposit or send an itemized list. Miss it by a day and your claim gets significantly stronger." },
   { sym: "§ 2", title: "Specific itemization required", body: "\"Cleaning — $300\" isn't compliant. Connecticut requires specific, documented deductions. Most landlords don't meet this bar." },
   { sym: "§ 3", title: "Interest & escrow", body: "Deposits must be held in interest-bearing accounts with annual statements. If they weren't, that's a separate violation." },
-  { sym: "§ 4", title: "Double damages", body: "Courts can award double the amount wrongfully withheld. That's in the statute — Tribune prepares the documentation; you assert the claim.", highlight: true },
+  { sym: "§ 4", title: "Double damages", body: "When a landlord violates § 47a-21, the statute provides for liability of up to twice the amount of the security deposit. Whether it applies depends on the facts — Tribune prepares the documentation; you assert the claim.", highlight: true },
   { sym: "§ 5", title: "Burden is on them", body: "Your landlord has to justify every dollar kept. Can't document it? Can't deduct it." },
 ];
 
 export default function LandingPage() {
-  const caseHref = useCaseHref();
+  const cta = useCaseCta();
 
   useEffect(() => {
     const els = document.querySelectorAll("[data-reveal]");
@@ -127,8 +142,8 @@ export default function LandingPage() {
             <a href="#how">How it works</a>
             <a href="#faq">FAQ</a>
           </div>
-          <Link href={caseHref} className={s.navCta}>
-            Start free review →
+          <Link href={cta.href} className={s.navCta}>
+            {cta.navLabel}
           </Link>
         </div>
       </nav>
@@ -152,8 +167,8 @@ export default function LandingPage() {
               Not a form letter you could send yourself — a system that adapts to your landlord and makes paying you back their cheapest move. You stay out of it.
             </p>
             <div className={s.heroCtas}>
-              <Link href={caseHref} className={s.btnPrimary}>
-                Start your free case review →
+              <Link href={cta.href} className={s.btnPrimary}>
+                {cta.heroLabel}
               </Link>
               <a href="#charges" className={s.btnOutline}>
                 See what they can't charge
@@ -346,8 +361,8 @@ export default function LandingPage() {
             </div>
           </div>
           <div className={s.stepsCta} data-reveal style={{ marginTop: "60px" }}>
-            <Link href={caseHref} className={s.btnDark}>
-              Start your free case review →
+            <Link href={cta.href} className={s.btnDark}>
+              {cta.heroLabel}
             </Link>
           </div>
         </div>
@@ -430,8 +445,8 @@ export default function LandingPage() {
               <em>Prove them wrong.</em>
             </h2>
             <div className={s.finalRight}>
-              <Link href={caseHref} className={s.btnPrimary}>
-                Start your free case review →
+              <Link href={cta.href} className={s.btnPrimary}>
+                {cta.heroLabel}
               </Link>
               <p className={s.finalMicro}>
                 Takes about 10 minutes · No credit card · No commitment unless we recover
@@ -452,7 +467,7 @@ export default function LandingPage() {
             <p>Security deposit recovery for Connecticut tenants.</p>
           </div>
           <div className={s.footerLinks}>
-            <Link href={caseHref}>Open a case</Link>
+            <Link href={cta.href}>{cta.footerLabel}</Link>
             <a href="#charges">What they can't charge</a>
             <a href="#how">How it works</a>
             <a href="#faq">FAQ</a>

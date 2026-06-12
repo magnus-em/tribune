@@ -1,6 +1,6 @@
 # Tribune — Tasks
 
-Tracks what's built, what's in progress, and what's next. Updated 2026-06-02.
+Tracks what's built, what's in progress, and what's next. Updated 2026-06-11.
 
 ## Done
 
@@ -175,6 +175,19 @@ key in `.env.local`. Prod "no emails sent" = `RESEND_API_KEY` missing in Vercel.
 
 ## Dead Code — Delete
 - [x] `src/app/v1/` through `src/app/v5/` — landing page design iterations, deleted
+
+## E2E Audit — 2026-06-11
+Full tenant + admin flow audit (static + live click-through + RLS simulation).
+Findings and fixes in [AUDIT_FINDINGS_2026-06-11.md](AUDIT_FINDINGS_2026-06-11.md).
+- [x] **Letter date off-by-one** (legal) — `new Date("YYYY-MM-DD")` parsed as UTC, rendered a day early in letters/UI. Added `parseDateOnly()` and applied everywhere.
+- [x] **Tenant recovery silently RLS-denied** — no tenant UPDATE policy on `cases`; recovery created an invoice but never resolved the case. Migration [20260611](supabase/migrations/20260611_tenant_recovery_and_message_guard.sql) (applied).
+- [x] **Tenant could forge tribune_letter/landlord_reply messages** — restricted tenant `case_messages` insert to `message_type='system'` (same migration).
+- [x] **Server intake validation skipped cross-field checks** — zod v4 `.merge()` dropped `superRefine`; rebuilt `intakeSchema` as one object.
+- [x] **Inbound webhook** — guarded missing Resend key (was 500ing), fail-closed signature check in prod, escaped landlord HTML in admin email.
+- [x] **Admin assessment** — exposure now `amount_withheld*2` (matches letters); photo check includes `photo_move_in`/`photo_move_out`.
+- [x] **Misc** — dropped `amount_cents` from `recovery_reported` analytics (PII), added recovery amount validation + duplicate-invoice guard, removed noisy admin-check console logs.
+- [ ] **Manual:** delete orphaned E2E storage object `case-documents/f75ab011-…/*.pdf` from Supabase dashboard.
+- [ ] **Verify:** `RESEND_WEBHOOK_SECRET` is set in Vercel prod env (webhook now fails closed without it).
 
 ## Next Up
 

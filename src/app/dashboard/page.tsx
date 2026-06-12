@@ -1,13 +1,10 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { redirect } from "next/navigation";
 import Link from "next/link";
 import { format, differenceInDays } from "date-fns";
+import { createClient } from "@/lib/supabase/server";
+import { Button } from "@/components/ui/button";
 import { type Case, STATUS_LABELS } from "@/lib/types/database";
-import { formatCents } from "@/lib/utils/case";
+import { formatCents, parseDateOnly } from "@/lib/utils/case";
 import { LegalDisclaimer } from "@/components/legal-disclaimer";
 import { CONTINGENCY_PCT } from "@/lib/constants";
 import { ArrowRight, PlusCircle, CheckCircle2 } from "lucide-react";
@@ -20,10 +17,7 @@ function statusDescription(status: string): { label: string; action: string | nu
     case "under_review":
       return { label: "Tribune is reviewing your case.", action: null };
     case "correspondence_ready":
-      return {
-        label: "Tribune is preparing to contact your landlord.",
-        action: null,
-      };
+      return { label: "Tribune is preparing to contact your landlord.", action: null };
     case "letter_sent":
     case "awaiting_landlord":
       return {
@@ -41,98 +35,7 @@ function statusDescription(status: string): { label: string; action: string | nu
   }
 }
 
-// ─── Single-case hero view ─────────────────────────────────────────────────────
-
-function SingleCaseView({ c }: { c: Case }) {
-  const deadline = new Date(c.statutory_deadline);
-  const daysUntilDeadline = differenceInDays(deadline, new Date());
-  const isOverdue = daysUntilDeadline < 0 && !["resolved", "closed"].includes(c.status);
-  const isTerminal = c.status === "resolved" || c.status === "closed";
-
-  const originalReturnedCents = c.deposit_amount_cents - c.amount_withheld_cents;
-  const actualRecoveredCents = Math.max(0, c.deposit_returned_cents - originalReturnedCents);
-  const displayCents = isTerminal ? actualRecoveredCents : c.amount_withheld_cents;
-  const tribFee = Math.round((displayCents * c.contingency_pct) / 100);
-  const netCents = displayCents - tribFee;
-
-  const { label, action } = statusDescription(c.status);
-
-  return (
-    <div className="space-y-4">
-      {/* Case identity */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className={`text-xl font-semibold ${s.serif}`}>{c.property_address}</h1>
-          <p className={`mt-1 ${s.caseVs}`}>vs. {c.landlord_name}</p>
-        </div>
-        <span className={s.statusPill} style={{ color: "var(--muted)" }}>
-          {STATUS_LABELS[c.status]}
-        </span>
-      </div>
-
-      <hr className={s.rule} />
-
-      {/* Recovery hero */}
-      <div className={s.cardBone}>
-        <div className={s.cardBrow}>
-          <span>{isTerminal ? "Amount recovered" : "Estimated recovery"}</span>
-          {!isTerminal && <span>{CONTINGENCY_PCT}% Tribune fee deducted</span>}
-        </div>
-        <div className={s.cardBody}>
-          <p className={isTerminal && netCents > 0 ? s.bigNumberGreen : s.bigNumber}>
-            {formatCents(netCents)}
-          </p>
-        </div>
-        <div className={s.metaGrid}>
-          <div className={s.metaCell}>
-            <span className={s.metaCellLabel}>{isTerminal ? "Recovered" : "Withheld"}</span>
-            <p className={s.metaCellValue}>{formatCents(displayCents)}</p>
-          </div>
-          <div className={s.metaCell}>
-            <span className={s.metaCellLabel}>Tribune ({c.contingency_pct}%)</span>
-            <p className={s.metaCellMuted}>−{formatCents(tribFee)}</p>
-          </div>
-          <div className={s.metaCell}>
-            <span className={s.metaCellLabel}>Your net</span>
-            <p className={s.metaCellValue}>{formatCents(netCents)}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Status + next action */}
-      {action ? (
-        <div className={s.notice}>
-          <p className={s.noticeLabel}>{label}</p>
-          <p className={s.noticeBody}>{action}</p>
-        </div>
-      ) : (
-        <div className={s.statusCard}>
-          <p className={s.statusCardLabel}>{label}</p>
-        </div>
-      )}
-
-      {/* Deadline */}
-      <div className={s.deadlineRow}>
-        <span className={s.deadlineLabel}>Statutory deadline</span>
-        <span className={`${s.deadlineValue} ${isOverdue ? s.deadlineUrgent : ""}`}>
-          {format(deadline, "MMMM d, yyyy")}
-          {isOverdue && <span className={`ml-2 ${s.label}`}>({Math.abs(daysUntilDeadline)}d overdue)</span>}
-          {!isOverdue && daysUntilDeadline <= 30 && (
-            <span className={`ml-2 ${s.label}`}>{daysUntilDeadline}d left</span>
-          )}
-        </span>
-      </div>
-
-      <Button size="lg" className="w-full" render={<Link href={`/dashboard/case/${c.id}`} />}>
-        Open Your Case <ArrowRight className="ml-2 size-4" />
-      </Button>
-
-      <LegalDisclaimer />
-    </div>
-  );
-}
-
-// ─── Multi-case list view ──────────────────────────────────────────────────────
+// ─── Multi-case list (fallback for the rare tenant with >1 case) ──────────────
 
 function MultiCaseView({ cases }: { cases: Case[] }) {
   return (
@@ -149,7 +52,7 @@ function MultiCaseView({ cases }: { cases: Case[] }) {
 
       <div className="space-y-2">
         {cases.map((c) => {
-          const deadline = new Date(c.statutory_deadline);
+          const deadline = parseDateOnly(c.statutory_deadline);
           const daysUntilDeadline = differenceInDays(deadline, new Date());
           const isOverdue =
             daysUntilDeadline < 0 && !["resolved", "closed"].includes(c.status);
@@ -179,9 +82,7 @@ function MultiCaseView({ cases }: { cases: Case[] }) {
                 </span>
               </div>
 
-              {action && (
-                <p className={`mb-3 ${s.notice}`}>{action}</p>
-              )}
+              {action && <p className={`mb-3 ${s.notice}`}>{action}</p>}
 
               <div className="flex items-end justify-between">
                 <div>
@@ -209,35 +110,22 @@ function MultiCaseView({ cases }: { cases: Case[] }) {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-export default function DashboardPage() {
-  const [cases, setCases] = useState<Case[]>([]);
-  const [loading, setLoading] = useState(true);
+export default async function DashboardPage() {
+  const supabase = await createClient();
+  const { data: cases } = await supabase
+    .from("cases")
+    .select("*")
+    .order("created_at", { ascending: false });
 
-  useEffect(() => {
-    async function loadCases() {
-      const supabase = createClient();
-      const { data } = await supabase
-        .from("cases")
-        .select("*")
-        .order("created_at", { ascending: false });
-      setCases(data || []);
-      setLoading(false);
-    }
-    loadCases();
-  }, []);
+  const list: Case[] = cases ?? [];
 
-  if (loading) {
-    return (
-      <div className="space-y-4">
-        <Skeleton className="h-10 rounded-none" />
-        <Skeleton className="h-40 rounded-none" />
-        <Skeleton className="h-16 rounded-none" />
-        <Skeleton className="h-10 rounded-none" />
-      </div>
-    );
+  // Single-case tenants (the 95% case) jump straight to the case page —
+  // the case page IS their dashboard.
+  if (list.length === 1) {
+    redirect(`/dashboard/case/${list[0].id}`);
   }
 
-  if (cases.length === 0) {
+  if (list.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 px-4">
         <div className={s.emptyMark}>§</div>
@@ -261,9 +149,5 @@ export default function DashboardPage() {
     );
   }
 
-  if (cases.length === 1) {
-    return <SingleCaseView c={cases[0]} />;
-  }
-
-  return <MultiCaseView cases={cases} />;
+  return <MultiCaseView cases={list} />;
 }

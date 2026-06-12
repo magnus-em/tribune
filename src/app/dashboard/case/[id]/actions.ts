@@ -115,6 +115,28 @@ export async function reportRecovery(
 
   if (!caseRow || caseRow.tenant_id !== user.id) return { error: "Not authorized" };
 
+  // Validate the reported amount: must be positive and cannot exceed what was
+  // withheld (you can't recover more than the landlord kept).
+  if (
+    !Number.isFinite(amountRecoveredCents) ||
+    amountRecoveredCents <= 0 ||
+    amountRecoveredCents > caseRow.amount_withheld_cents
+  ) {
+    return { error: "Enter a valid recovery amount (up to the amount withheld)." };
+  }
+
+  // Guard against double-reporting (double-click, or tenant + admin both filing)
+  // creating a second invoice for the same case.
+  const { data: existingInvoice } = await supabase
+    .from("invoices")
+    .select("id")
+    .eq("case_id", caseId)
+    .limit(1)
+    .maybeSingle();
+  if (existingInvoice) {
+    return { error: "A recovery has already been recorded for this case." };
+  }
+
   // deposit_returned_cents = original return + newly recovered
   const originalReturnedCents =
     caseRow.deposit_amount_cents - caseRow.amount_withheld_cents;

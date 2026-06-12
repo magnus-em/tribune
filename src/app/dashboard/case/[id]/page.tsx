@@ -17,7 +17,7 @@ import { toast } from "sonner";
 import { uploadDocument, getDocumentUrl, reportRecovery, markLandlordIntroSent } from "./actions";
 import { INTRO_SENT_TITLE } from "@/lib/constants";
 import { LegalDisclaimer } from "@/components/legal-disclaimer";
-import { statusColor } from "@/lib/utils/case";
+import { statusColor, parseDateOnly } from "@/lib/utils/case";
 import { STATUS_LABELS } from "@/lib/types/database";
 import { AlertTriangle, ArrowLeft } from "lucide-react";
 import Link from "next/link";
@@ -148,7 +148,8 @@ export default function CaseDetailPage() {
     if (result.error) {
       toast.error(result.error);
     } else {
-      trackEvent("recovery_reported", { amount_cents: amountCents });
+      // No amount in analytics — deposit amounts are PII per project policy.
+      trackEvent("recovery_reported");
       toast.success("Recovery reported. Case marked as resolved.");
       loadData();
     }
@@ -176,7 +177,7 @@ export default function CaseDetailPage() {
 
   // Derive computed state
   const hasLease = documents.some((d) => d.kind === "lease");
-  const deadline = new Date(caseData.statutory_deadline);
+  const deadline = parseDateOnly(caseData.statutory_deadline);
   const daysOverdue = differenceInDays(new Date(), deadline);
   const isTerminal = caseData.status === "resolved" || caseData.status === "closed";
   const introSent = messages.some((m) => m.title === INTRO_SENT_TITLE);
@@ -487,6 +488,13 @@ export default function CaseDetailPage() {
       </section>
 
       <LegalDisclaimer />
+
+      <p className="text-xs text-muted-foreground text-center pt-4" style={{ fontFamily: "var(--font-space-mono, monospace)" }}>
+        Different property?{" "}
+        <Link href="/dashboard/new-case" className="underline underline-offset-2 hover:text-foreground transition-colors">
+          Start another case →
+        </Link>
+      </p>
     </div>
   );
 }

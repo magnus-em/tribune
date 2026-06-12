@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
-  PlusCircle,
   Shield,
   LogOut,
   ChevronsUpDown,
@@ -113,11 +112,6 @@ function TenantCaseCard({ c }: { c: SidebarTenantCase }) {
 
 // ─── Nav items ─────────────────────────────────────────────────────────────────
 
-const tenantNav = [
-  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { label: "New Case", href: "/dashboard/new-case", icon: PlusCircle },
-];
-
 const adminNav = [
   { label: "All Cases", href: "/admin", icon: Shield },
 ];
@@ -147,10 +141,10 @@ export function AppSidebar({
           <SidebarMenuItem>
             <SidebarMenuButton
               size="lg"
-              render={<Link href="/dashboard" />}
+              render={<Link href={isAdmin ? "/admin" : "/dashboard"} />}
               tooltip="Tribune"
             >
-              <div className="flex aspect-square size-7 shrink-0 items-center justify-center bg-[#0f172a] text-[#1e40af] italic text-base leading-none select-none" style={{ fontFamily: "var(--font-fraunces, Georgia, serif)", fontWeight: 700 }}>
+              <div className="flex aspect-square size-7 shrink-0 items-center justify-center bg-white border border-border text-[#b8361f] italic text-lg leading-none select-none" style={{ fontFamily: "var(--font-fraunces, Georgia, serif)", fontWeight: 700 }}>
                 §
               </div>
               <div className="grid flex-1 text-left text-sm leading-tight">
@@ -165,46 +159,24 @@ export function AppSidebar({
       <SidebarSeparator />
 
       <SidebarContent>
-        {/* Primary nav */}
-        <SidebarGroup>
-          <SidebarGroupLabel>Menu</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {tenantNav.map((item) => (
-                <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton
-                    isActive={
-                      pathname === item.href ||
-                      (item.href !== "/dashboard" && pathname.startsWith(item.href))
-                    }
-                    tooltip={item.label}
-                    render={<Link href={item.href} />}
-                  >
-                    <item.icon className="size-4" />
-                    <span>{item.label}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        {/* Tenant case card */}
-        {loading ? (
-          <SidebarGroup>
-            <SidebarGroupLabel>Your Case</SidebarGroupLabel>
-            <div className="mx-2 mb-1 rounded-lg border bg-sidebar-accent/30 p-3 space-y-2">
-              <Skeleton className="h-3 w-24" />
-              <Skeleton className="h-3 w-16" />
-              <Skeleton className="h-3 w-20" />
-            </div>
-          </SidebarGroup>
-        ) : tenantCase ? (
-          <SidebarGroup>
-            <SidebarGroupLabel>Your Case</SidebarGroupLabel>
-            <TenantCaseCard c={tenantCase} />
-          </SidebarGroup>
-        ) : null}
+        {/* Tenant case card — tenants only. Admins use the All Cases view. */}
+        {!isAdmin && (
+          loading ? (
+            <SidebarGroup>
+              <SidebarGroupLabel>Your Case</SidebarGroupLabel>
+              <div className="mx-2 mb-1 rounded-lg border bg-sidebar-accent/30 p-3 space-y-2">
+                <Skeleton className="h-3 w-24" />
+                <Skeleton className="h-3 w-16" />
+                <Skeleton className="h-3 w-20" />
+              </div>
+            </SidebarGroup>
+          ) : tenantCase ? (
+            <SidebarGroup>
+              <SidebarGroupLabel>Your Case</SidebarGroupLabel>
+              <TenantCaseCard c={tenantCase} />
+            </SidebarGroup>
+          ) : null
+        )}
 
         {/* Admin nav */}
         {isAdmin && (
@@ -281,14 +253,15 @@ export function AppSidebar({
                 align="end"
                 sideOffset={4}
               >
-                <DropdownMenuItem render={<Link href="/dashboard" />}>
-                  <LayoutDashboard className="mr-2 size-4" />
-                  Dashboard
-                </DropdownMenuItem>
-                {isAdmin && (
+                {isAdmin ? (
                   <DropdownMenuItem render={<Link href="/admin" />}>
                     <Shield className="mr-2 size-4" />
-                    Admin Panel
+                    All Cases
+                  </DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem render={<Link href="/dashboard" />}>
+                    <LayoutDashboard className="mr-2 size-4" />
+                    Dashboard
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuSeparator />

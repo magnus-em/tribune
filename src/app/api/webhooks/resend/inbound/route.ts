@@ -6,7 +6,7 @@ import { sendEmail } from "@/lib/email/client";
 // Resend inbound email webhook.
 //
 // Flow (per Resend docs):
-//  1. Landlord replies to case+{caseId}@inbound.usetribune.org (our reply-to).
+//  1. Landlord replies to case+{caseId}@reply.usetribune.org (our reply-to).
 //  2. Resend POSTs an `email.received` event here — METADATA ONLY (no body).
 //  3. We fetch the full body via resend.emails.receiving.get(email_id).
 //  4. We log it as a landlord_reply, flip status, and notify the admin.
@@ -16,6 +16,17 @@ import { sendEmail } from "@/lib/email/client";
 // inserts a landlord_reply message and moves status to landlord_responded.
 
 const CASE_ID_RE = /case\+([0-9a-f-]{36})@/i;
+
+// The landlord-supplied subject/from/body are interpolated into the admin
+// notification email below. Escape them so a reply can't inject HTML into the
+// admin's inbox.
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
 
 function extractCaseId(to: unknown): string | null {
   const addrs: string[] = Array.isArray(to)
@@ -43,12 +54,23 @@ interface ReceivedEvent {
 export async function POST(request: NextRequest) {
   try {
     const raw = await request.text();
-    const resend = new Resend(process.env.RESEND_API_KEY);
+    // The Resend constructor throws when the key is absent — construct it
+    // lazily so a misconfigured env can't 500 the whole route before we've
+    // even parsed the event.
+    const apiKey = process.env.RESEND_API_KEY;
+    const resend = apiKey ? new Resend(apiKey) : null;
 
-    // 1. Verify signature when configured; otherwise parse directly (local/dev).
+    // 1. Verify signature when configured. In production we FAIL CLOSED: an
+    //    unsigned inbound POST could otherwise be forged to inject a fake
+    //    landlord reply and flip a case to "landlord_responded". Only allow
+    //    the unsigned path outside production (local/dev testing).
     let event: ReceivedEvent;
     const secret = process.env.RESEND_WEBHOOK_SECRET;
-    if (secret) {
+    if (!secret && process.env.NODE_ENV === "production") {
+      console.error("[inbound] RESEND_WEBHOOK_SECRET not set — rejecting unsigned webhook in production");
+      return NextResponse.json({ ok: false, error: "webhook_not_configured" }, { status: 401 });
+    }
+    if (secret && resend) {
       try {
         event = resend.webhooks.verify({
           payload: raw,
@@ -94,13 +116,15 @@ export async function POST(request: NextRequest) {
 
     // 4. Fetch the full email body (webhook payload has metadata only).
     let replyBody = "(body unavailable)";
-    try {
-      const { data: email } = await resend.emails.receiving.get(event.data.email_id);
-      if (email) {
-        replyBody = email.text?.trim() || email.html?.trim() || replyBody;
+    if (resend) {
+      try {
+        const { data: email } = await resend.emails.receiving.get(event.data.email_id);
+        if (email) {
+          replyBody = email.text?.trim() || email.html?.trim() || replyBody;
+        }
+      } catch (err) {
+        console.error("[inbound] failed to fetch email body:", err);
       }
-    } catch (err) {
-      console.error("[inbound] failed to fetch email body:", err);
     }
 
     const subject = event.data.subject || "Landlord reply";
@@ -144,9 +168,9 @@ export async function POST(request: NextRequest) {
       to: adminEmail,
       subject: `Landlord replied — ${caseRow.property_address}`,
       html: `
-        <p>A landlord replied for case <strong>${caseId}</strong> (${caseRow.property_address}).</p>
-        <p><strong>From:</strong> ${fromAddress}<br/><strong>Subject:</strong> ${subject}</p>
-        <pre style="font-family:monospace;white-space:pre-wrap;background:#f6f5f1;padding:12px;border-radius:6px">${replyBody}</pre>
+        <p>A landlord replied for case <strong>${caseId}</strong> (${escapeHtml(caseRow.property_address ?? "")}).</p>
+        <p><strong>From:</strong> ${escapeHtml(fromAddress)}<br/><strong>Subject:</strong> ${escapeHtml(subject)}</p>
+        <pre style="font-family:monospace;white-space:pre-wrap;background:#f6f5f1;padding:12px;border-radius:6px">${escapeHtml(replyBody)}</pre>
         <p><a href="${siteUrl}/admin/case/${caseId}">Open in admin →</a></p>
       `,
     });

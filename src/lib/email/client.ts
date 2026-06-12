@@ -23,7 +23,10 @@ export async function sendEmail({ to, subject, html, replyTo }: SendEmailParams)
       to,
       subject,
       html,
-      ...(replyTo ? { reply_to: replyTo } : {}),
+      // Resend v6 SDK expects camelCase `replyTo` and silently drops
+      // unknown keys — passing `reply_to` meant letters went out with NO
+      // Reply-To header, breaking the inbound reply webhook flow.
+      ...(replyTo ? { replyTo } : {}),
     });
 
     if (error) {

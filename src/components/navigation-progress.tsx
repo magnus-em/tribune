@@ -31,6 +31,11 @@ export function NavigationProgress() {
       const href = target.getAttribute("href");
       if (!href || href.startsWith("http") || href.startsWith("mailto") || href.startsWith("#")) return;
 
+      // Same-route click — pathname won't change, so the completion effect
+      // never fires. Skip showing the bar entirely.
+      const targetPath = href.split("?")[0].split("#")[0];
+      if (targetPath === window.location.pathname) return;
+
       if (animRef.current) clearTimeout(animRef.current);
       if (completeRef.current) clearTimeout(completeRef.current);
 
@@ -42,6 +47,13 @@ export function NavigationProgress() {
         animRef.current = setTimeout(() => setWidth(60), 100);
         animRef.current = setTimeout(() => setWidth(75), 600);
       });
+
+      // Safety net: if pathname never changes (same URL fallthrough, error,
+      // or anything else), force the bar to fade out after 4s.
+      completeRef.current = setTimeout(() => {
+        setVisible(false);
+        setWidth(0);
+      }, 4000);
     }
 
     window.addEventListener("click", onLinkClick, true);

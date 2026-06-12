@@ -121,6 +121,40 @@ const STEP_SCHEMAS: Partial<Record<number, StepSchema>> = {
   5: agreementStepSchema,
 };
 
+// Map every form field to the step it lives on — used to bounce the user
+// back to the right step when full-schema validation fails on submit.
+const FIELD_TO_STEP: Record<keyof IntakeFormData, number> = {
+  full_name: 1,
+  phone: 1,
+  fwd_street: 1,
+  fwd_unit: 1,
+  fwd_city: 1,
+  fwd_state: 1,
+  fwd_zip: 1,
+  property_address: 1,
+  unit_number: 1,
+  lease_start_date: 1,
+  lease_end_date: 1,
+  move_out_date: 1,
+  landlord_name: 2,
+  landlord_email: 2,
+  landlord_phone: 2,
+  landlord_address: 2,
+  deposit_amount: 3,
+  amount_withheld: 3,
+  landlord_stated_reason: 3,
+  itemized_deductions_received: 3,
+  notice_given: 3,
+  notice_given_desc: 3,
+  preexisting_damage: 3,
+  preexisting_damage_desc: 3,
+  apartment_condition: 3,
+  landlord_contact_since: 3,
+  landlord_contact_desc: 3,
+  initials_key_clause: 5,
+  signature_name: 5,
+};
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function NewCasePage() {
@@ -256,65 +290,85 @@ export default function NewCasePage() {
   async function handleSubmit() {
     if (!validateStep()) return;
 
-    // Final full-schema check
-    const values = methods.getValues();
-    const { intakeSchema } = await import("@/lib/schemas/intake");
-    const parsed = intakeSchema.safeParse(values);
-    if (!parsed.success) {
-      for (const issue of parsed.error.issues) {
-        methods.setError(issue.path[0] as keyof IntakeFormData, {
-          message: issue.message,
-        });
+    try {
+      setSubmitting(true);
+
+      // Final full-schema check
+      const values = methods.getValues();
+      const { intakeSchema } = await import("@/lib/schemas/intake");
+      const parsed = intakeSchema.safeParse(values);
+      if (!parsed.success) {
+        methods.clearErrors();
+        for (const issue of parsed.error.issues) {
+          methods.setError(issue.path[0] as keyof IntakeFormData, {
+            message: issue.message,
+          });
+        }
+        const firstField = parsed.error.issues[0]?.path[0] as
+          | keyof IntakeFormData
+          | undefined;
+        const firstMessage = parsed.error.issues[0]?.message;
+        const targetStep = firstField ? FIELD_TO_STEP[firstField] : undefined;
+        if (targetStep !== undefined && targetStep !== step) {
+          setStep(targetStep);
+          window.scrollTo({ top: 0, behavior: "smooth" });
+          toast.error(
+            firstMessage
+              ? `${firstMessage} — jumped you back to fix it.`
+              : "Some required fields are missing — jumped you back to fix them."
+          );
+        } else {
+          toast.error(firstMessage ?? "Please fix the errors above");
+        }
+        return;
       }
-      toast.error("Please fix the errors above");
-      return;
-    }
 
-    if (!leaseFile) {
-      toast.error("Lease file is required");
-      return;
-    }
-
-    setSubmitting(true);
-
-    // Build FormData — text fields + all files
-    const formData = new FormData();
-
-    // Text fields
-    const v = parsed.data;
-    (Object.keys(v) as (keyof typeof v)[]).forEach((key) => {
-      const val = v[key];
-      if (val !== undefined && val !== null) {
-        formData.append(key, String(val));
+      if (!leaseFile) {
+        toast.error("Lease file is required");
+        return;
       }
-    });
 
-    // Files
-    formData.append("lease", leaseFile);
-    if (itemizedFile) formData.append("itemized_list", itemizedFile);
-    moveInPhotos.forEach((f) => formData.append("move_in_photos", f));
-    moveOutPhotos.forEach((f) => formData.append("move_out_photos", f));
+      // Build FormData — text fields + all files
+      const formData = new FormData();
+      const v = parsed.data;
+      (Object.keys(v) as (keyof typeof v)[]).forEach((key) => {
+        const val = v[key];
+        if (val !== undefined && val !== null) {
+          formData.append(key, String(val));
+        }
+      });
+      formData.append("lease", leaseFile);
+      if (itemizedFile) formData.append("itemized_list", itemizedFile);
+      moveInPhotos.forEach((f) => formData.append("move_in_photos", f));
+      moveOutPhotos.forEach((f) => formData.append("move_out_photos", f));
 
-    const result = await createCase(formData);
+      const result = await createCase(formData);
 
-    if (result.error) {
-      toast.error(result.error);
+      if (result.error) {
+        toast.error(result.error);
+        return;
+      }
+
+      trackEvent("case_submitted", {
+        has_move_in_photos: moveInPhotos.length > 0,
+        has_move_out_photos: moveOutPhotos.length > 0,
+        has_itemized: itemizedFile !== null,
+      });
+
+      if (result.uploadWarnings && result.uploadWarnings.length > 0) {
+        result.uploadWarnings.forEach((w) => toast.warning(w));
+      } else {
+        toast.success("Case submitted!");
+      }
+      router.push(`/dashboard/case/${result.caseId}`);
+    } catch (err) {
+      console.error("Case submission failed:", err);
+      toast.error(
+        "Something went wrong submitting your case. Please try again or refresh the page."
+      );
+    } finally {
       setSubmitting(false);
-      return;
     }
-
-    trackEvent("case_submitted", {
-      has_move_in_photos: moveInPhotos.length > 0,
-      has_move_out_photos: moveOutPhotos.length > 0,
-      has_itemized: itemizedFile !== null,
-    });
-
-    if (result.uploadWarnings && result.uploadWarnings.length > 0) {
-      result.uploadWarnings.forEach((w) => toast.warning(w));
-    } else {
-      toast.success("Case submitted!");
-    }
-    router.push(`/dashboard/case/${result.caseId}`);
   }
 
   return (

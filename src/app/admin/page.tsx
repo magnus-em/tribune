@@ -16,7 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { DataTable } from "@/components/data-table";
-import { statusColor, formatCents } from "@/lib/utils/case";
+import { statusColor, formatCents, parseDateOnly } from "@/lib/utils/case";
 import { format, differenceInDays } from "date-fns";
 import { type ColumnDef } from "@tanstack/react-table";
 import {
@@ -121,7 +121,7 @@ const columns: ColumnDef<CaseWithProfile>[] = [
       </Button>
     ),
     cell: ({ row }) => {
-      const deadline = new Date(row.original.statutory_deadline);
+      const deadline = parseDateOnly(row.original.statutory_deadline);
       const daysOverdue = differenceInDays(new Date(), deadline);
       const isOverdue =
         daysOverdue > 0 &&
@@ -220,7 +220,7 @@ export default function AdminPage() {
       (c) => !["resolved", "closed"].includes(c.status)
     ).length;
     const overdue = cases.filter((c) => {
-      const deadline = new Date(c.statutory_deadline);
+      const deadline = parseDateOnly(c.statutory_deadline);
       return (
         differenceInDays(new Date(), deadline) > 0 &&
         !["resolved", "closed"].includes(c.status)

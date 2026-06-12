@@ -42,8 +42,8 @@ describe('Case Update Email Template', () => {
     const html = renderCaseUpdateEmail(mockProps);
 
     expect(html).toContain('Legal Information, Not Legal Advice');
-    expect(html).toContain('We are not a law firm');
-    expect(html).toContain('do not provide legal advice');
+    expect(html).toContain('Tribune is not a law firm');
+    expect(html).toContain('does not provide legal advice');
   });
 
   test('includes Tribune branding', () => {

@@ -44,15 +44,14 @@ export function renderLandlordLetterEmail({
   <!-- Authorization / agency notice -->
   <div style="font-size: 13px; line-height: 1.65; color: #44413a; border-top: 2px solid #0a0a08; border-bottom: 1px solid #d9d5cb; padding: 16px 0; margin-bottom: 28px;">
     <p style="margin: 0 0 10px 0;">
-      This correspondence is sent by Tribune on behalf of <strong>${tenantName}</strong>,
-      the tenant of <strong>${propertyAddress}</strong>, who has authorized Tribune to manage
-      communications regarding the return of their security deposit under
-      Connecticut General Statutes &sect; 47a-21.
+      Tribune sends this correspondence on behalf of <strong>${tenantName}</strong>,
+      tenant of <strong>${propertyAddress}</strong>, regarding the return of their
+      security deposit under Connecticut General Statutes &sect; 47a-21. Tribune
+      is authorized to manage all communications on this matter.
     </p>
     <p style="margin: 0;">
-      Please direct all further correspondence on this matter to Tribune at this email
-      address; replies are shared directly with ${tenantName}. The demand set out below is
-      made by ${tenantName}.
+      Direct your reply to this email address. The demand set out below is made
+      by ${tenantName}.
     </p>
   </div>
 

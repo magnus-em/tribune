@@ -44,9 +44,10 @@ export function renderCaseUpdateEmail({
   <div style="font-size: 13px; color: #6b7280; border-top: 1px solid #e5e7eb; padding-top: 16px;">
     <p><strong>Legal Information, Not Legal Advice</strong></p>
     <p style="margin-top: 8px;">
-      Tribune provides information about Connecticut tenant rights and helps you prepare documents.
-      We are not a law firm and do not provide legal advice. You are responsible for reviewing and
-      signing all correspondence.
+      Tribune is a tenant-advocacy and document-preparation service operating in Connecticut.
+      Tribune is not a law firm and does not provide legal advice. By signing the service
+      agreement at intake, you authorized Tribune to prepare and send correspondence to your
+      landlord on your behalf.
     </p>
     <p style="margin-top: 16px;">
       — Tribune<br>

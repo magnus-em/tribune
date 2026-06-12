@@ -33,3 +33,18 @@ export function formatCents(cents: number): string {
 export function isTerminalStatus(status: CaseStatus): boolean {
   return status === "resolved" || status === "closed" || status === "declined";
 }
+
+/**
+ * Parse a Postgres `date` column value (e.g. "2026-05-06", which Supabase
+ * returns as a plain date string) as a LOCAL calendar date.
+ *
+ * `new Date("2026-05-06")` parses as UTC midnight, which renders as the
+ * PREVIOUS day in any timezone behind UTC (e.g. America/New_York). That
+ * off-by-one silently corrupted move-out dates, lease dates, and the
+ * statutory deadline shown in demand letters. Always use this for date-only
+ * columns. (timestamptz columns like created_at/paid_at keep using `new Date`.)
+ */
+export function parseDateOnly(value: string): Date {
+  const [y, m, d] = value.slice(0, 10).split("-").map(Number);
+  return new Date(y, m - 1, d);
+}

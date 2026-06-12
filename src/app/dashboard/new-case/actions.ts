@@ -42,40 +42,50 @@ export async function extractLeaseData(formData: FormData): Promise<{
   const buffer = Buffer.from(bytes);
 
   let messages: unknown[];
+  // Vision-capable model for image / scanned-PDF path; text model for digital PDFs.
+  // grok-3 is text-only; grok-2-vision-1212 handles image_url.
+  let model = "grok-3";
 
-  if (file.type === "application/pdf") {
-    // Extract text from PDF using pdf-parse v2 class API, then use text model
-    let text: string;
+  const isPdf = file.type === "application/pdf";
+  let pdfText = "";
+
+  if (isPdf) {
     try {
       const { PDFParse } = await import("pdf-parse");
       const parser = new PDFParse({ data: buffer });
       const result = await parser.getText();
-      // v2 populates result.pages, not result.text — join pages manually
-      text = result.pages
+      pdfText = result.pages
         .map((p: { text: string }) => p.text)
         .join("\n")
-        .slice(0, 12000); // stay within token budget
-    } catch {
-      return { error: "Could not read PDF — try uploading a photo instead" };
+        .slice(0, 12000);
+      console.log(
+        `[extractLeaseData] PDF text extracted: ${pdfText.length} chars from ${file.name}`
+      );
+    } catch (err) {
+      console.error("[extractLeaseData] pdf-parse failed:", err);
+      // Fall through — we'll try the vision path below.
     }
+  }
 
+  const hasUsableText = pdfText.trim().length >= 200;
+
+  if (isPdf && hasUsableText) {
+    // Digital PDF — use text model
     messages = [
       {
         role: "user",
-        content: `Extract lease information from this document text:\n\n${text}`,
+        content: `Extract lease information from this document text:\n\n${pdfText}`,
       },
     ];
-  } else {
-    // Image: pass to vision model
+  } else if (!isPdf) {
+    // Image upload — use vision model
+    model = "grok-2-vision-1212";
     const base64 = buffer.toString("base64");
     messages = [
       {
         role: "user",
         content: [
-          {
-            type: "text",
-            text: "Extract lease information from this document image.",
-          },
+          { type: "text", text: "Extract lease information from this document." },
           {
             type: "image_url",
             image_url: { url: `data:${file.type};base64,${base64}` },
@@ -83,9 +93,16 @@ export async function extractLeaseData(formData: FormData): Promise<{
         ],
       },
     ];
+  } else {
+    // Scanned PDF with no extractable text — vision models don't accept PDFs.
+    console.error(
+      `[extractLeaseData] scanned/empty PDF (pdfTextLen=${pdfText.length}) — asking user to upload a photo`
+    );
+    return {
+      error:
+        "Your lease looks scanned — we couldn't read any text. Take a photo of the first 1–2 pages and upload that instead.",
+    };
   }
-
-  const model = "grok-3";
 
   try {
     const response = await fetch("https://api.x.ai/v1/chat/completions", {
@@ -199,8 +216,11 @@ export async function createCase(formData: FormData): Promise<{
     `Contact with landlord since moving out: ${data.landlord_contact_since === "yes" ? `Yes — ${data.landlord_contact_desc || "not described"}` : "None"}`,
   ].join("\n");
 
-  // Calculate money and deadline
-  const moveOutDate = new Date(data.move_out_date);
+  // Calculate money and deadline. Parse the move-out date as a LOCAL date so
+  // the deadline lands on the right calendar day (a bare `new Date("YYYY-MM-DD")`
+  // is UTC midnight and shifts a day in timezones behind UTC).
+  const [moy, mom, mod] = data.move_out_date.slice(0, 10).split("-").map(Number);
+  const moveOutDate = new Date(moy, mom - 1, mod);
   const statutoryDeadline = addDays(moveOutDate, STATUTE_DAYS);
   const depositAmountCents = Math.round(parseFloat(data.deposit_amount) * 100);
   const amountWithheldCents = Math.round(parseFloat(data.amount_withheld) * 100);
@@ -236,7 +256,7 @@ export async function createCase(formData: FormData): Promise<{
       contingency_pct: CONTINGENCY_PCT,
       contingency_agreed_at: new Date().toISOString(),
       contingency_signature_name: data.signature_name,
-      statutory_deadline: statutoryDeadline.toISOString().split("T")[0],
+      statutory_deadline: format(statutoryDeadline, "yyyy-MM-dd"),
     })
     .select("id")
     .single();
@@ -296,49 +316,51 @@ export async function createCase(formData: FormData): Promise<{
     }
   }
 
-  // Lease (required)
+  // Collect every upload job, then run them all in parallel — the original
+  // sequential await pattern made submit feel like a hang on photo-heavy cases.
+  const uploadJobs: Promise<void>[] = [];
+
   const leaseFile = formData.get("lease") as File | null;
   if (leaseFile && leaseFile.size > 0) {
-    await uploadFile(leaseFile, "lease");
+    uploadJobs.push(uploadFile(leaseFile, "lease"));
   }
 
-  // Itemized deductions list (optional)
   const itemizedFile = formData.get("itemized_list") as File | null;
   if (itemizedFile && itemizedFile.size > 0) {
-    await uploadFile(itemizedFile, "deduction_itemization");
+    uploadJobs.push(uploadFile(itemizedFile, "deduction_itemization"));
   }
 
-  // Move-in photos (optional, multiple)
-  const moveInPhotos = formData.getAll("move_in_photos") as File[];
-  for (const photo of moveInPhotos) {
-    if (photo.size > 0) await uploadFile(photo, "photo_move_in");
+  for (const photo of formData.getAll("move_in_photos") as File[]) {
+    if (photo.size > 0) uploadJobs.push(uploadFile(photo, "photo_move_in"));
+  }
+  for (const photo of formData.getAll("move_out_photos") as File[]) {
+    if (photo.size > 0) uploadJobs.push(uploadFile(photo, "photo_move_out"));
   }
 
-  // Move-out photos (optional, multiple)
-  const moveOutPhotos = formData.getAll("move_out_photos") as File[];
-  for (const photo of moveOutPhotos) {
-    if (photo.size > 0) await uploadFile(photo, "photo_move_out");
-  }
+  // Confirmation email runs in parallel with uploads — they're independent
+  // and both can be slow. Email is best-effort; never block on failure.
+  const emailJob = user.email
+    ? (async () => {
+        try {
+          const siteUrl =
+            process.env.NEXT_PUBLIC_SITE_URL || "https://usetribune.org";
+          await sendEmail({
+            to: user.email!,
+            subject: "Tribune received your case",
+            html: renderCaseSubmittedEmail({
+              tenantName: data.full_name,
+              caseId,
+              statutoryDeadline: format(statutoryDeadline, "MMM d, yyyy"),
+              siteUrl,
+            }),
+          });
+        } catch (err) {
+          console.error("[createCase] confirmation email failed:", err);
+        }
+      })()
+    : Promise.resolve();
 
-  // Confirmation email — best-effort, never block on failure
-  if (user.email) {
-    try {
-      const siteUrl =
-        process.env.NEXT_PUBLIC_SITE_URL || "https://usetribune.org";
-      await sendEmail({
-        to: user.email,
-        subject: "Tribune received your case",
-        html: renderCaseSubmittedEmail({
-          tenantName: data.full_name,
-          caseId,
-          statutoryDeadline: format(statutoryDeadline, "MMM d, yyyy"),
-          siteUrl,
-        }),
-      });
-    } catch (err) {
-      console.error("[createCase] confirmation email failed:", err);
-    }
-  }
+  await Promise.all([...uploadJobs, emailJob]);
 
   if (uploadErrors.length > 0) {
     console.error("[createCase] upload errors:", uploadErrors);

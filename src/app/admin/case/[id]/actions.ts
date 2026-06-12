@@ -199,7 +199,11 @@ export async function dispatchLetter(
         to: caseData.landlord_email,
         subject: `${caseData.tenant_name} via Tribune — Security Deposit Demand Letter`,
         html,
-        replyTo: `case+${caseId}@usetribune.org`,
+        // Landlords reply to this address; the case id is embedded so the
+        // inbound webhook can route the reply. The subdomain reply.usetribune.org
+        // is the one whose MX points to Resend (keeps the root domain's mail
+        // intact). See EMAIL_SETUP.md.
+        replyTo: `case+${caseId}@reply.usetribune.org`,
       });
 
       // Record dispatch metadata on the message
@@ -374,6 +378,24 @@ export async function adminReportRecovery(
 
   const caseData = await getCaseWithTenant(supabase, caseId);
   if (!caseData) return { error: "Case not found" };
+
+  if (
+    !Number.isFinite(amountRecoveredCents) ||
+    amountRecoveredCents <= 0 ||
+    amountRecoveredCents > caseData.amount_withheld_cents
+  ) {
+    return { error: "Enter a valid recovery amount (up to the amount withheld)." };
+  }
+
+  const { data: existingInvoice } = await supabase
+    .from("invoices")
+    .select("id")
+    .eq("case_id", caseId)
+    .limit(1)
+    .maybeSingle();
+  if (existingInvoice) {
+    return { error: "A recovery has already been recorded for this case." };
+  }
 
   const originalReturnedCents = caseData.deposit_amount_cents - caseData.amount_withheld_cents;
   const newReturnedCents = originalReturnedCents + amountRecoveredCents;

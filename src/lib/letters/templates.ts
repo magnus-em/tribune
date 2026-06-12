@@ -9,6 +9,7 @@
  */
 
 import { format } from "date-fns";
+import { parseDateOnly } from "@/lib/utils/case";
 
 export interface LetterData {
   // Tenant info
@@ -51,7 +52,9 @@ function formatMoney(cents: number): string {
 }
 
 function formatDate(dateString: string): string {
-  return format(new Date(dateString), "MMMM d, yyyy");
+  // Date-only columns must be parsed as local dates, or every date in the
+  // letter (move-out, lease term, statutory deadline) renders a day early.
+  return format(parseDateOnly(dateString), "MMMM d, yyyy");
 }
 
 /**
@@ -77,39 +80,30 @@ export function generateLetter1(data: LetterData): string {
 
 ${data.landlordName}
 ${landlordAddressLine}
-RE: Security Deposit Return — ${fullPropertyAddress}
+RE: Security Deposit Demand — ${fullPropertyAddress}
 
 Dear ${data.landlordName}:
 
-I am writing regarding the security deposit for the property located at ${fullPropertyAddress}, which I rented under a lease agreement from ${formatDate(data.leaseStartDate)} to ${formatDate(data.leaseEndDate)}. I vacated the premises on ${formatDate(data.moveOutDate)}.
+I rented ${fullPropertyAddress} under a lease from ${formatDate(data.leaseStartDate)} to ${formatDate(data.leaseEndDate)} and vacated on ${formatDate(data.moveOutDate)}. Under Connecticut General Statutes § 47a-21(d), you were required, not later than twenty-one (21) days after the termination of the tenancy (or fifteen (15) days after receiving written notice of my forwarding address, whichever is later), to deliver either the full security deposit with accrued interest, or the balance with a written statement itemizing the nature and amount of any damages. That deadline was ${statutoryDeadlineFormatted}, and it has passed.
 
-SECURITY DEPOSIT FACTS:
+THE FACTS:
 • Deposit paid: ${depositAmount}
 • Amount returned: ${amountReturned}
-• Amount withheld: ${amountWithheld}
-• Statutory deadline for return: ${statutoryDeadlineFormatted}
-• Days overdue: ${data.daysOverdue}
+• Amount still withheld: ${amountWithheld}
+• Statutory deadline: ${statutoryDeadlineFormatted}
 
-Under Connecticut General Statutes § 47a-21(d), a landlord must return a tenant's security deposit within thirty (30) days of lease termination, or provide a written itemized statement of deductions. ${data.itemizedDeductionsReceived ? "While I received a deduction statement, the charges listed do not comply with Connecticut law." : "I have not received any itemized statement explaining the withholding."}
+${data.itemizedDeductionsReceived ? "You provided a deduction statement, but it does not comply with the itemization requirements of § 47a-21(d). General categories such as “cleaning” or “damages,” without the specific nature and amount of each charge, do not satisfy the statute." : "You did not deliver a written statement itemizing the nature and amount of any damages, as § 47a-21(d) requires. Failing to do so within the statutory period is itself a violation of the subsection."}
 
-The statute is clear. If you fail to return the deposit within the statutory period, you may be liable for:
-1. Return of the full security deposit, AND
-2. Double the amount of the security deposit as damages, AND
-3. Reasonable attorney's fees and court costs.
+STATUTORY DAMAGES
+Section 47a-21(d) provides that a landlord who violates the subsection “shall be liable for twice the amount of any security deposit paid by such tenant.” The deposit on this tenancy was ${depositAmount}, so the statute exposes you to liability of up to ${formatMoney(data.depositAmountCents * 2)}, together with accrued interest and court costs. That exposure does not decrease by waiting.
 
-Based on the amount withheld (${amountWithheld}), your potential liability under Connecticut law is ${formatMoney(data.depositAmountCents * 2)} plus costs.
+DEMAND
+Remit ${amountWithheld} within ten (10) business days of this letter to resolve this matter. If full payment is not received in that window, I may file a Small Claims action in Connecticut Superior Court seeking statutory damages of up to ${formatMoney(data.depositAmountCents * 2)}, plus filing fees, service costs, and statutory interest. I will not send a further demand before filing.
 
-I am providing you an opportunity to resolve this matter before I pursue formal legal action. I request that you return the withheld amount of ${amountWithheld} within ten (10) business days of the date of this letter.
-
-If I do not receive payment within ten (10) business days, I will proceed with filing a claim in small claims court and will seek the full remedies available under Connecticut law, including double damages and costs.
-
-Please remit payment to:
-${data.tenantName}
+Payment must be made out to ${data.tenantName} and sent to:
 ${data.tenantAddress}
 
-You may contact me at ${data.tenantPhone || data.tenantEmail || "the address above"} if you wish to discuss this matter.
-
-This letter is not intended as legal advice. It describes my understanding of Connecticut law as it applies to this situation.
+Direct any correspondence about this matter to Tribune at the email address from which this letter was sent. Tribune is authorized to receive replies on my behalf.
 
 Sincerely,
 
@@ -139,37 +133,26 @@ export function generateLetter2(data: LetterData, firstLetterDate: string): stri
 
 ${data.landlordName}
 ${landlordAddressLine}
-RE: SECOND DEMAND — Security Deposit Return — ${fullPropertyAddress}
+RE: SECOND DEMAND — Security Deposit — ${fullPropertyAddress}
 
 Dear ${data.landlordName}:
 
-This is my second demand for return of my security deposit. I sent my first demand letter on ${firstLetterFormatted}, to which you have not responded.
+I delivered a demand for the return of my security deposit on ${firstLetterFormatted}. You did not respond. I am writing once more before filing.
 
-As stated in my previous letter, Connecticut General Statutes § 47a-21(d) required you to return my security deposit of ${depositAmount} within thirty (30) days of my move-out date (${formatDate(data.moveOutDate)}). That deadline was ${formatDate(data.statutoryDeadline)} — now ${data.daysOverdue} days overdue.
+The statutory period under Connecticut General Statutes § 47a-21(d) closed on ${formatDate(data.statutoryDeadline)}. You did not return the withheld amount of ${amountWithheld}, and you did not deliver a written statement itemizing the nature and amount of any damages as the statute requires. Each omission is a violation of the subsection.
 
-Your failure to comply with Connecticut law means you are currently liable for:
-• Double damages: ${potentialDamages}
-• Court costs and filing fees
-• Interest on the withheld amount
-• Reasonable attorney's fees if I must retain counsel
+WHAT THE STATUTE PROVIDES
+• Security deposit withheld: ${amountWithheld}
+• Statutory damages under § 47a-21(d) — twice the ${depositAmount} deposit: up to ${potentialDamages}
+• Accrued interest and court costs
 
-The longer this matter remains unresolved, the greater your liability becomes.
+THIS IS THE LAST LETTER BEFORE I FILE.
+Remit ${amountWithheld} within seven (7) business days of this letter. If full payment is not received in that window, I may file in Connecticut Small Claims Court and seek statutory damages of up to ${potentialDamages}, plus costs and statutory interest. I will not send another demand.
 
-FINAL OPPORTUNITY TO RESOLVE:
-I am providing you one final opportunity to return the withheld amount of ${amountWithheld} before I file a claim in small claims court. If I receive payment within seven (7) business days of the date of this letter, I will consider this matter closed.
-
-If I do not receive payment within seven (7) business days, I will:
-1. File a complaint in Connecticut small claims court,
-2. Seek the maximum damages available under § 47a-21 (double the deposit amount),
-3. Request court costs, filing fees, and any other remedies available under Connecticut law.
-
-I strongly encourage you to resolve this matter now to avoid further liability.
-
-Payment should be sent to:
-${data.tenantName}
+Payment must be made out to ${data.tenantName} and sent to:
 ${data.tenantAddress}
 
-You may contact me at ${data.tenantPhone || data.tenantEmail || "the address above"}.
+Direct any correspondence to Tribune at the email address from which this letter was sent. Tribune is authorized to receive replies on my behalf.
 
 Sincerely,
 
@@ -204,41 +187,32 @@ export function generateLetter3(
 
 ${data.landlordName}
 ${landlordAddressLine}
-RE: FINAL NOTICE — Intent to File Legal Action — ${fullPropertyAddress}
+RE: FINAL NOTICE — Intent to File — ${fullPropertyAddress}
 
 Dear ${data.landlordName}:
 
-This is my final notice before filing a legal claim against you.
+This is my final notice before filing.
 
-I have now sent you two demand letters (dated ${firstLetterFormatted} and ${secondLetterFormatted}) requesting the return of my security deposit. You have not returned the withheld amount of ${amountWithheld}, nor have you responded to my demands.
+I sent demand letters on ${firstLetterFormatted} and ${secondLetterFormatted}. You have not returned ${amountWithheld}. You have not responded.
 
-SUMMARY OF VIOLATION:
-You have violated Connecticut General Statutes § 47a-21(d) by failing to:
-1. Return my security deposit of ${depositAmount} within 30 days of my move-out (${formatDate(data.moveOutDate)}), AND
-2. Provide a legally compliant itemized statement of deductions.
+VIOLATION
+Under Connecticut General Statutes § 47a-21(d), you were required to return my deposit or deliver a written statement itemizing the nature and amount of any damages within the statutory period. That deadline — ${formatDate(data.statutoryDeadline)} — has passed. You did neither.
 
-The statutory deadline was ${formatDate(data.statutoryDeadline)}. It is now ${data.daysOverdue} days overdue.
-
-NOTICE OF INTENT TO FILE LEGAL ACTION:
-Unless I receive payment of ${amountWithheld} within five (5) business days of the date of this letter, I will file a complaint in Connecticut small claims court. I will seek:
-
-1. Return of the full security deposit: ${depositAmount}
-2. Double damages as provided by § 47a-21: ${doubleDamages}
-3. Court costs and filing fees
-4. Interest on the withheld amount
+NOTICE OF INTENT TO FILE
+Unless ${amountWithheld} is received within five (5) business days of the date of this letter, I intend to file in Connecticut Small Claims Court and seek:
+1. Return of the security deposit withheld: ${amountWithheld}
+2. Statutory damages under § 47a-21(d) — twice the ${depositAmount} deposit: up to ${doubleDamages}
+3. Court filing and service fees
+4. Statutory interest
 5. Any other remedies available under Connecticut law
 
-I am prepared to file this claim immediately upon expiration of the five-day period.
+NO FURTHER CORRESPONDENCE
+After the five-day period, I will not write again. The next document you receive from this matter will be a summons.
 
-FINAL PAYMENT INSTRUCTIONS:
-If you wish to avoid court proceedings, send a check or money order for ${amountWithheld} to:
-
-${data.tenantName}
+If you intend to settle, payment must be made out to ${data.tenantName} and sent to:
 ${data.tenantAddress}
 
-Payment must be received within five (5) business days. After that, I will proceed with filing a legal claim without further notice to you.
-
-You may contact me at ${data.tenantPhone || data.tenantEmail || "the address above"} if you intend to remit payment.
+Direct any reply to Tribune at the email address from which this letter was sent.
 
 Sincerely,
 

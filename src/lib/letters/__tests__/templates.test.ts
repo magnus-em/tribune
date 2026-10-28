@@ -1,6 +1,11 @@
 import { generateLetter1, generateLetter2, generateLetter3, generateDemandLetter } from '../templates';
 import type { LetterData } from '../templates';
 
+// These tests pin the legally load-bearing invariants of the demand letters
+// (see LEGAL_REVIEW_47a-21.md). If one fails after a template edit, that edit
+// changed legal content and needs explicit human sign-off — do not just update
+// the assertion.
+
 const mockLetterData: LetterData = {
   tenantName: 'Jane Doe',
   tenantAddress: '123 Oak St, New Haven, CT 06511',
@@ -22,135 +27,156 @@ const mockLetterData: LetterData = {
   situationDescription: 'Landlord withheld deposit without justification',
 };
 
+const firstLetterDate = '2025-02-01';
+const secondLetterDate = '2025-02-15';
+
+const allLetters = () => [
+  generateLetter1(mockLetterData),
+  generateLetter2(mockLetterData, firstLetterDate),
+  generateLetter3(mockLetterData, firstLetterDate, secondLetterDate),
+];
+
 describe('Letter Templates', () => {
+  describe('invariants shared by every letter', () => {
+    test('cites CGS § 47a-21(d)', () => {
+      for (const letter of allLetters()) {
+        expect(letter).toContain('Connecticut General Statutes § 47a-21(d)');
+      }
+    });
+
+    test('statutory damages are twice the FULL deposit, not twice the withheld amount', () => {
+      for (const letter of allLetters()) {
+        expect(letter).toContain('up to $3,000.00'); // 2 × $1,500 deposit
+        expect(letter).not.toContain('up to $1,000.00'); // 2 × $500 withheld
+        expect(letter).not.toMatch(/twice the amount (wrongfully )?withheld/i);
+      }
+    });
+
+    test('renders the statutory deadline on the exact date (no UTC off-by-one)', () => {
+      for (const letter of allLetters()) {
+        expect(letter).toContain('January 30, 2025');
+        expect(letter).not.toContain('January 29, 2025');
+      }
+    });
+
+    test('makes no attorney-fee claims and no attorney framing (pro se model)', () => {
+      for (const letter of allLetters()) {
+        expect(letter).not.toMatch(/attorney/i);
+        expect(letter).not.toMatch(/our client/i);
+      }
+    });
+
+    test('directs payment to the tenant, never to Tribune', () => {
+      for (const letter of allLetters()) {
+        expect(letter).toMatch(/[Pp]ayment must be made out to Jane Doe and sent to:\n123 Oak St/);
+        expect(letter).not.toMatch(/made out to Tribune/i);
+      }
+    });
+
+    test('is signed by the tenant in the first person', () => {
+      for (const letter of allLetters()) {
+        expect(letter.trimEnd()).toMatch(/Sincerely,\s+Jane Doe$/);
+      }
+    });
+
+    test('routes replies to Tribune as the authorized agent', () => {
+      for (const letter of allLetters()) {
+        expect(letter).toMatch(/Direct any (correspondence|reply).* to Tribune/);
+      }
+    });
+  });
+
   describe('generateLetter1', () => {
-    test('generates valid Letter 1 with all required elements', () => {
+    test('includes parties, property, and amounts', () => {
       const letter = generateLetter1(mockLetterData);
 
-      expect(letter).toContain('Jane Doe');
-      expect(letter).toContain('John Smith');
+      expect(letter).toContain('Dear John Smith:');
       expect(letter).toContain('789 Elm Ave, Unit 2B');
-      expect(letter).toContain('$1,500.00');
-      expect(letter).toContain('$500.00');
-      expect(letter).toContain('Connecticut General Statutes § 47a-21');
-      expect(letter).toMatch(/double the amount of the security deposit/i); // Case-insensitive
+      expect(letter).toContain('Deposit paid: $1,500.00');
+      expect(letter).toContain('Amount returned: $1,000.00');
+      expect(letter).toContain('Amount still withheld: $500.00');
     });
 
-    test('includes statutory deadline information', () => {
+    test('recites both deadline branches (21 days / 15 days after forwarding address)', () => {
       const letter = generateLetter1(mockLetterData);
 
-      expect(letter).toMatch(/January 29, 2025|January 30, 2025/); // Account for timezone
-      expect(letter).toContain('15'); // days overdue
+      expect(letter).toContain('twenty-one (21) days after the termination of the tenancy');
+      expect(letter).toContain('fifteen (15) days after receiving written notice of my forwarding address, whichever is later');
     });
 
-    test('mentions itemized deductions when not received', () => {
+    test('renders lease and move-out dates on the exact date', () => {
       const letter = generateLetter1(mockLetterData);
 
-      expect(letter).toContain('I have not received any itemized statement');
+      expect(letter).toContain('from January 1, 2024 to December 31, 2024');
+      expect(letter).toContain('vacated on December 31, 2024');
     });
 
-    test('mentions itemized deductions when received', () => {
-      const dataWithItemization = {
-        ...mockLetterData,
-        itemizedDeductionsReceived: true,
-      };
-
-      const letter = generateLetter1(dataWithItemization);
-
-      expect(letter).toContain('While I received a deduction statement');
-      expect(letter).toContain('do not comply with Connecticut law');
-    });
-
-    test('calculates double damages correctly', () => {
+    test('states no itemized statement was delivered when none was received', () => {
       const letter = generateLetter1(mockLetterData);
 
-      // $1,500 * 2 = $3,000
-      expect(letter).toContain('$3,000.00');
+      expect(letter).toContain('You did not deliver a written statement itemizing');
+      expect(letter).not.toContain('You provided a deduction statement');
+    });
+
+    test('challenges the itemization when a statement was received', () => {
+      const letter = generateLetter1({ ...mockLetterData, itemizedDeductionsReceived: true });
+
+      expect(letter).toContain('You provided a deduction statement, but it does not comply');
+      expect(letter).not.toContain('You did not deliver a written statement itemizing');
+    });
+
+    test('demands the withheld amount within ten business days', () => {
+      const letter = generateLetter1(mockLetterData);
+
+      expect(letter).toContain('Remit $500.00 within ten (10) business days');
     });
 
     test('handles property without unit number', () => {
-      const dataWithoutUnit = {
-        ...mockLetterData,
-        unitNumber: undefined,
-      };
-
-      const letter = generateLetter1(dataWithoutUnit);
+      const letter = generateLetter1({ ...mockLetterData, unitNumber: undefined });
 
       expect(letter).toContain('789 Elm Ave');
       expect(letter).not.toContain('Unit');
     });
+
+    test('omits the landlord address line when unknown', () => {
+      const letter = generateLetter1({ ...mockLetterData, landlordAddress: undefined });
+
+      expect(letter).not.toContain('456 Main St');
+      expect(letter).toContain('Dear John Smith:');
+    });
   });
 
   describe('generateLetter2', () => {
-    const firstLetterDate = '2025-02-01';
-
-    test('generates valid Letter 2 with reference to Letter 1', () => {
+    test('is marked as the second demand and references Letter 1 by exact date', () => {
       const letter = generateLetter2(mockLetterData, firstLetterDate);
 
       expect(letter).toContain('SECOND DEMAND');
-      expect(letter).toMatch(/January 31, 2025|February 1, 2025/); // Account for timezone
-      expect(letter).toContain('I sent my first demand letter');
-      expect(letter).toContain('to which you have not responded');
+      expect(letter).toContain('on February 1, 2025');
     });
 
-    test('emphasizes escalating liability', () => {
+    test('demands the withheld amount within seven business days', () => {
       const letter = generateLetter2(mockLetterData, firstLetterDate);
 
-      expect(letter).toContain('currently liable for');
-      expect(letter).toContain('Double damages');
-      expect(letter).toContain('Court costs');
-      expect(letter).toContain('attorney\'s fees');
-    });
-
-    test('sets shorter deadline than Letter 1', () => {
-      const letter = generateLetter2(mockLetterData, firstLetterDate);
-
-      expect(letter).toContain('seven (7) business days');
-    });
-
-    test('states intent to file in court', () => {
-      const letter = generateLetter2(mockLetterData, firstLetterDate);
-
-      expect(letter).toContain('file a claim in small claims court');
-      expect(letter).toContain('maximum damages available');
+      expect(letter).toContain('Remit $500.00 within seven (7) business days');
+      expect(letter).toContain('Connecticut Small Claims Court');
     });
   });
 
   describe('generateLetter3', () => {
-    const firstLetterDate = '2025-02-01';
-    const secondLetterDate = '2025-02-15';
-
-    test('generates valid Letter 3 with references to previous letters', () => {
+    test('is marked as final notice and references both prior letters by exact date', () => {
       const letter = generateLetter3(mockLetterData, firstLetterDate, secondLetterDate);
 
       expect(letter).toContain('FINAL NOTICE');
-      expect(letter).toContain('Intent to File Legal Action');
-      expect(letter).toMatch(/January 31, 2025|February 1, 2025/); // Account for timezone
-      expect(letter).toMatch(/February 14, 2025|February 15, 2025/); // Account for timezone
-      expect(letter).toContain('two demand letters');
+      expect(letter).toContain('on February 1, 2025 and February 15, 2025');
     });
 
-    test('emphasizes immediate legal action', () => {
+    test('sets a five business day deadline and lists the relief sought', () => {
       const letter = generateLetter3(mockLetterData, firstLetterDate, secondLetterDate);
 
-      expect(letter).toContain('final notice before filing a legal claim');
-      expect(letter).toContain('I am prepared to file this claim immediately');
-      expect(letter).toContain('without further notice to you');
-    });
-
-    test('sets shortest deadline', () => {
-      const letter = generateLetter3(mockLetterData, firstLetterDate, secondLetterDate);
-
-      expect(letter).toContain('five (5) business days');
-    });
-
-    test('lists specific damages sought', () => {
-      const letter = generateLetter3(mockLetterData, firstLetterDate, secondLetterDate);
-
-      expect(letter).toContain('Return of the full security deposit');
-      expect(letter).toContain('Double damages');
-      expect(letter).toContain('Court costs and filing fees');
-      expect(letter).toContain('Interest on the withheld amount');
+      expect(letter).toContain('within five (5) business days');
+      expect(letter).toContain('Return of the security deposit withheld: $500.00');
+      expect(letter).toContain('twice the $1,500.00 deposit: up to $3,000.00');
+      expect(letter).toContain('Statutory interest');
     });
   });
 
@@ -158,72 +184,53 @@ describe('Letter Templates', () => {
     test('generates Letter 1 when letterNumber is 1', () => {
       const letter = generateDemandLetter(1, mockLetterData);
 
-      expect(letter).toContain('Jane Doe');
-      expect(letter).toContain('Connecticut General Statutes § 47a-21');
+      expect(letter).toContain('RE: Security Deposit Demand');
       expect(letter).not.toContain('SECOND DEMAND');
       expect(letter).not.toContain('FINAL NOTICE');
     });
 
     test('generates Letter 2 when letterNumber is 2 with previous date', () => {
-      const letter = generateDemandLetter(2, mockLetterData, {
-        letter1: '2025-02-01',
-      });
+      const letter = generateDemandLetter(2, mockLetterData, { letter1: firstLetterDate });
 
       expect(letter).toContain('SECOND DEMAND');
-      expect(letter).toMatch(/January 31, 2025|February 1, 2025/); // Account for timezone
     });
 
     test('generates Letter 3 when letterNumber is 3 with previous dates', () => {
       const letter = generateDemandLetter(3, mockLetterData, {
-        letter1: '2025-02-01',
-        letter2: '2025-02-15',
+        letter1: firstLetterDate,
+        letter2: secondLetterDate,
       });
 
       expect(letter).toContain('FINAL NOTICE');
-      expect(letter).toMatch(/January 31, 2025|February 1, 2025/); // Account for timezone
-      expect(letter).toMatch(/February 14, 2025|February 15, 2025/); // Account for timezone
     });
 
-    test('throws error for Letter 2 without Letter 1 date', () => {
-      expect(() => {
-        generateDemandLetter(2, mockLetterData);
-      }).toThrow('Letter 1 date is required');
+    test('throws for Letter 2 without Letter 1 date', () => {
+      expect(() => generateDemandLetter(2, mockLetterData)).toThrow('Letter 1 date is required');
     });
 
-    test('throws error for Letter 3 without previous dates', () => {
-      expect(() => {
-        generateDemandLetter(3, mockLetterData, { letter1: '2025-02-01' });
-      }).toThrow('Letter 1 and 2 dates are required');
+    test('throws for Letter 3 without both previous dates', () => {
+      expect(() => generateDemandLetter(3, mockLetterData, { letter1: firstLetterDate })).toThrow(
+        'Letter 1 and 2 dates are required'
+      );
     });
 
-    test('throws error for invalid letter number', () => {
-      expect(() => {
-        generateDemandLetter(4, mockLetterData);
-      }).toThrow('Invalid letter number: 4');
+    test('throws for an invalid letter number', () => {
+      expect(() => generateDemandLetter(4, mockLetterData)).toThrow('Invalid letter number: 4');
     });
   });
 
   describe('Money formatting', () => {
     test('formats cents correctly', () => {
-      const dataWithOddAmount = {
-        ...mockLetterData,
-        depositAmountCents: 123456, // $1,234.56
-      };
-
-      const letter = generateLetter1(dataWithOddAmount);
+      const letter = generateLetter1({ ...mockLetterData, depositAmountCents: 123456 });
 
       expect(letter).toContain('$1,234.56');
+      expect(letter).toContain('$2,469.12'); // doubled
     });
 
     test('handles zero amounts', () => {
-      const dataWithZero = {
-        ...mockLetterData,
-        depositReturnedCents: 0,
-      };
+      const letter = generateLetter1({ ...mockLetterData, depositReturnedCents: 0 });
 
-      const letter = generateLetter1(dataWithZero);
-
-      expect(letter).toContain('$0.00');
+      expect(letter).toContain('Amount returned: $0.00');
     });
   });
 });

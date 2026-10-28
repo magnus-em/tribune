@@ -63,3 +63,25 @@ Only meaningful once there are real cases and read access to prod (SETUP.md).
   BACKLOG.md, escalate, and move on.
 - Anything that looks like a security, data, or legal incident → stop, write an
   ESCALATIONS entry marked URGENT, and send a push notification if available.
+
+## Routines (proposed 2026-10-28, not yet created)
+
+Cloud routines on `magnus-em/tribune`, Default environment, model `claude-opus-5-5`.
+
+| Routine | Schedule (America/New_York) | Status |
+|---|---|---|
+| Tribune build tick | 9am, 3pm, 9pm daily | Waiting for Magnus's go-ahead |
+| Tribune review tick | Mondays 8am | Waiting for Magnus's go-ahead |
+| Tribune ops tick | Daily 8am | Not until real cases exist and the read-only role is in the cloud env (SETUP §4, §7) |
+
+Prompt (build; the review prompt is the same with "review tick"):
+
+> You are Tribune's operating agent, running a scheduled **build tick** with no
+> memory of earlier runs. Follow `ops/LOOP.md` exactly: "Every tick starts the same
+> way", then "Build tick". Your authority is `ops/CHARTER.md`; CLAUDE.md conventions
+> apply. Do one backlog item as one PR. Merge only 🟢 PRs, and only after the `check`
+> CI job has passed on that PR. If you can't verify CI or can't merge, leave the PR
+> open and say so in the JOURNAL entry. Never read or write production data, never
+> commit secrets, and never change letter templates, statute citations, or
+> deadline/damages math without an answered 🔴 escalation. Put the JOURNAL and
+> BACKLOG updates in the same PR.

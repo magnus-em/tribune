@@ -8,7 +8,7 @@ the case automatically.
 
 - **Sender:** `RESEND_FROM_EMAIL` (default `hello@usetribune.org`), shown as
   `Tribune <…>`. — [src/lib/email/client.ts](src/lib/email/client.ts)
-- **Reply-To on landlord letters:** `case+{caseId}@usetribune.org`. This is the
+- **Reply-To on landlord letters:** `case+{caseId}@reply.usetribune.org`. This is the
   address landlords reply to, and the case id is embedded in it.
   — [dispatchLetter, actions.ts](src/app/admin/case/[id]/actions.ts)
 - **Inbound webhook:** `POST /api/webhooks/resend/inbound` parses
@@ -17,18 +17,13 @@ the case automatically.
   `RESEND_WEBHOOK_SECRET` in production** (fails closed without it).
   — [route.ts](src/app/api/webhooks/resend/inbound/route.ts)
 
-## ⚠️ Decision that affects a code change: which domain receives replies
+## Inbound domain (decided)
 
-The reply-to is currently on the **root** domain `usetribune.org`. To receive
-inbound email, that domain needs **MX records pointing to Resend** — but if
-`hello@usetribune.org` is a real mailbox (Google Workspace, etc.), pointing the
-root MX at Resend would **break your normal mail**.
-
-Standard fix: use a **subdomain** for inbound, e.g. `reply.usetribune.org`, so
-the reply-to becomes `case+{caseId}@reply.usetribune.org`. Then only that
-subdomain's MX points to Resend and your main mail is untouched. If you go this
-route, the reply-to in `dispatchLetter` must be updated to the subdomain (one-line
-change — I can do it once you pick the subdomain).
+Replies go to the **subdomain** `reply.usetribune.org`, so root-domain mail
+(Cloudflare Email Routing → Gmail) is untouched. Verified 2026-10-28:
+`reply.usetribune.org` MX → `inbound-smtp.us-east-1.amazonaws.com` (Resend inbound);
+root MX → `route{1,2,3}.mx.cloudflare.net`. Still to confirm: the Resend inbound
+route → webhook and `RESEND_WEBHOOK_SECRET` in Vercel (ops/SETUP.md §5).
 
 ## Steps
 

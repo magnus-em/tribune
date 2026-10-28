@@ -87,20 +87,20 @@ The collections language must be literally true — it's a real consequence, not
 
 ## Legal Posture (UPL)
 
-- Tribune writes letters on the tenant's behalf as their authorized non-attorney representative, in the "our client, [Tenant Name]" voice. The tenant signs the service agreement at intake granting Tribune authority to communicate with the landlord on their behalf. Tribune does not present itself as a law firm and does not give advice on case strategy in a specific situation.
+- Letters are written in the tenant's first-person voice and signed by the tenant (pro se). Tribune transmits them as the tenant's authorized communications agent, inside a short cover note — never "our client" (attorney language). The tenant grants that authority in the service agreement at intake and confirms it in an intro email from their own inbox. Tribune does not present itself as a law firm and does not give advice on case strategy in a specific situation.
 - Tenant-facing copy presents **information**, not **advice** — what the statute says, what typical next steps look like, what the deadlines are. It does not tell a specific tenant what they should do in their specific situation.
 - "Information, not legal advice" disclaimers appear on intake, dashboard, case detail, letter previews, and in every outbound email.
-- Every outbound letter is drafted and dispatched by the admin. The admin write panel is the review surface — there is no automated send.
-- Letter template voice ("our client" framing) requires attorney review before any real-world dispatch.
+- Today every outbound letter is drafted and dispatched by the admin; there is no automated send. Planned (ops/PLAN.md §4.4): the tenant reviews and approves each letter in-app before the system sends it.
+- Letter bodies and the agent-framing cover note require CT attorney review before any real-world dispatch (`ops/legal-packet.md`).
 
 ## Voice & Brand
 
 Tribune is the actor in every tenant-facing surface. Tenants should perceive Tribune as a service that reviews, decides, drafts, and corresponds — not as an individual operator working their case manually.
 
 - **Attribute every action to Tribune.** "Tribune is reviewing your case." "Tribune sent your demand letter." "Tribune is unable to take this case." Never "Magnus is reviewing," "I'll review," "our admin," "our team," "the reviewer."
-- **No first-person plural that implies a small group.** Avoid "we" when it leaks operator-scale ("we'll get back to you within a few hours"). Prefer "Tribune will respond within a few hours."
+- **No first-person plural that implies a small group.** Avoid "we" when it leaks operator-scale ("we'll get back to you within a few hours"). Prefer "Tribune will respond within two business days."
 - **No personal names in tenant-facing copy.** Email signatures, case timeline entries, and decline messages sign off as "Tribune" or "The Tribune Team" — never with an individual.
-- **Timelines and SLAs are committed by Tribune, not by a person.** "Tribune responds to new cases within a few hours" is correct; "Magnus will look at this when he gets a chance" is not.
+- **Timelines and SLAs are committed by Tribune, not by a person.** "Tribune responds to new cases within two business days" is correct (SLAs must be literally deliverable — use `REVIEW_SLA`); "Magnus will look at this when he gets a chance" is not.
 - **Internal admin surfaces (`/admin/*`) can use whatever voice is useful.** This rule applies only to what a tenant sees: dashboard, case page, intake, outbound emails, error pages, decline messages.
 
 The MVP runs with a human in the loop. That is an implementation detail. The product is positioned as an autonomous workflow, and the voice must hold up that frame consistently.

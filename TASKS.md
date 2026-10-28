@@ -143,8 +143,9 @@ Tribune handles all landlord negotiation directly. Tenants no longer send letter
 
 **Inbound landlord replies (decided):** DNS is on Cloudflare; MX = Cloudflare Email Routing
 (`route1/2/3.mx.cloudflare.net`) already forwards `*@usetribune.org` → Magnus's Gmail.
-- For launch: reply-to = `case+{id}@usetribune.org` (code updated) → replies land in Gmail →
-  Magnus logs them manually via admin "Log Reply" tab. $0, no new infra, Gmail untouched.
+- ~~For launch: reply-to = `case+{id}@usetribune.org` → Gmail, logged manually.~~ Superseded
+  2026-06-11: code uses `case+{id}@reply.usetribune.org`, and that subdomain's MX points at
+  Resend inbound (verified 2026-10-28). Webhook + secret still to confirm (ops/SETUP.md §5).
 - Auto-logging webhook (`/api/webhooks/resend/inbound`) is BUILT but parked as a fast-follow.
   To activate later, pick ONE: (a) Cloudflare Email Worker → POST our endpoint (free), or
   (b) Resend Pro upgrade + `inbound.usetribune.org` subdomain (~$20/mo, uses webhook as-is +

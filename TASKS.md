@@ -2,6 +2,8 @@
 
 Tracks what's built, what's in progress, and what's next. Updated 2026-06-11.
 
+> **2026-10-28:** Big-picture autonomous operating plan approved in [ops/PLAN.md](ops/PLAN.md). The live backlog is `ops/BACKLOG.md`; this file is the historical record of what shipped.
+
 ## Done
 
 **Auth & Onboarding**

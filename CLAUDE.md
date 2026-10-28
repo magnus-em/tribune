@@ -2,7 +2,7 @@
 
 Connecticut security deposit recovery service. Helps residential tenants recover wrongfully withheld deposits using CT § 47a-21 on a 15% contingency. No attorney is in the loop — the product is a legal-information and document-preparation service, not a law firm. Tenants sign all correspondence (pro se); Tribune prepares and mails on their behalf.
 
-**See PRODUCT_BRIEF.md, SPEC.md, ARCHITECTURE.md, TASKS.md for detail. Do not duplicate that content here.**
+**See PRODUCT_BRIEF.md, SPEC.md, ARCHITECTURE.md, TASKS.md, ops/PLAN.md for detail. Do not duplicate that content here.**
 
 ## Stack
 - Next.js 15 (App Router), React 19, TypeScript

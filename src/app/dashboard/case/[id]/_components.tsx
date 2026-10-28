@@ -37,7 +37,7 @@ import {
 import { toast } from "sonner";
 import { formatCents, parseDateOnly } from "@/lib/utils/case";
 import type { Case, CaseMessage, CaseAction } from "@/lib/types/database";
-import { CONTINGENCY_PCT } from "@/lib/constants";
+import { CONTINGENCY_PCT, REVIEW_SLA } from "@/lib/constants";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -316,7 +316,7 @@ export function getStatusHeadline(status: string, hasLease: boolean): string {
   if (status === "intake_submitted" && !hasLease)
     return "Action needed — upload your lease to begin";
   if (status === "intake_submitted")
-    return "Case submitted — Tribune will review within a few hours";
+    return `Case submitted — Tribune will review ${REVIEW_SLA}`;
   if (status === "under_review") return "Tribune is reviewing your case";
   if (status === "correspondence_ready") return "Tribune is preparing to contact your landlord";
   if (status === "letter_sent" || status === "awaiting_landlord")

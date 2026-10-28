@@ -1,5 +1,6 @@
 // Auto-generated types from Supabase
 import { Database } from './supabase';
+import { REVIEW_SLA } from '@/lib/constants';
 
 // Type aliases for convenience (maps generated types to old interface names)
 export type CaseStatus = Database['public']['Enums']['case_status'];
@@ -25,7 +26,7 @@ export const STATUS_LABELS: Record<CaseStatus, string> = {
 };
 
 export const STATUS_DESCRIPTIONS: Record<CaseStatus, string> = {
-  intake_submitted: "Tribune has received your case and will review it within a few hours.",
+  intake_submitted: `Tribune has received your case and will review it ${REVIEW_SLA}.`,
   under_review: "Tribune is reviewing your case details.",
   correspondence_ready: "Tribune is preparing to send a letter to your landlord.",
   letter_sent: "Tribune has sent correspondence to your landlord.",

@@ -1,3 +1,5 @@
+import { REVIEW_SLA } from "@/lib/constants";
+
 export interface CaseSubmittedEmailProps {
   tenantName: string;
   caseId: string;
@@ -27,7 +29,7 @@ export function renderCaseSubmittedEmail({
     <p>Hi ${tenantName},</p>
     <p>
       Thanks for submitting your security deposit case. Tribune is reviewing the
-      details you provided and will respond <strong>within a few hours</strong>
+      details you provided and will respond <strong>${REVIEW_SLA}</strong>
       with next steps.
     </p>
 

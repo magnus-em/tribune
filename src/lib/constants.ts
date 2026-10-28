@@ -38,6 +38,10 @@ export const ALLOWED_FILE_TYPES = [
 // Pending case expiration
 export const PENDING_CASE_TTL_HOURS = 24;
 
+// Response-time commitment shown to tenants. Must be literally deliverable by
+// the operating loop (see ops/PLAN.md) — do not shorten without changing ops.
+export const REVIEW_SLA = "within two business days";
+
 // Payment
 export const PAYMENT_DUE_DAYS = 7; // days after recovery report to pay Tribune fee
 

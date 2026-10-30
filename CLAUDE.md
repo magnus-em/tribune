@@ -2,7 +2,7 @@
 
 Connecticut security deposit recovery service. Helps residential tenants recover wrongfully withheld deposits using CT § 47a-21 on a 15% contingency. No attorney is in the loop — the product is a legal-information and document-preparation service, not a law firm. Tenants sign all correspondence (pro se); Tribune prepares and mails on their behalf.
 
-**See PRODUCT_BRIEF.md, SPEC.md, ARCHITECTURE.md, TASKS.md for detail. Do not duplicate that content here.**
+**See PRODUCT_BRIEF.md, SPEC.md, ARCHITECTURE.md, TASKS.md, ops/PLAN.md for detail. Do not duplicate that content here.**
 
 ## Stack
 - Next.js 15 (App Router), React 19, TypeScript
@@ -47,14 +47,12 @@ The product drafts legal correspondence. **Citations, deadlines, and damages cal
 - Do not invent CT case law or subsection numbers from training data.
 - Flag any ambiguity rather than guessing.
 
-## Before Acting — Ask First
+## Before Acting — Delegation Charter
 
-- Any schema migration (new tables, new columns, RLS changes).
-- Adding or removing npm dependencies.
-- Integrating a new external service (email, payments, file storage, cron).
-- Changing auth or RLS behavior.
-- Editing letter templates, statute citations, or damages calculations.
-- Reshaping the intake → auth callback flow.
+Tribune is run by an autonomous operating loop (`ops/PLAN.md`, `ops/LOOP.md`).
+What may be done without asking is defined in **`ops/CHARTER.md`** (🟢 do / 🟡 PR +
+72 h veto window / 🔴 explicit yes). Letter templates, statute citations, deadline
+and damages math, RLS/auth, spend, and new external services are always 🔴.
 
 ## PII & Security
 

@@ -1,173 +1,179 @@
 import {
-  tenantInfoSchema,
-  propertySchema,
-  depositSchema,
+  detailsStepSchema,
+  landlordStepSchema,
+  depositStepSchema,
+  agreementStepSchema,
+  intakeSchema,
 } from '../intake';
 
+function isoDaysAgo(days: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() - days);
+  return d.toISOString().split('T')[0];
+}
+
+const validDetails = {
+  full_name: 'Jane Doe',
+  phone: '2035551234',
+  fwd_street: '123 Oak St',
+  fwd_unit: '',
+  fwd_city: 'New Haven',
+  fwd_state: 'CT',
+  fwd_zip: '06511',
+  property_address: '789 Elm Ave, New Haven, CT',
+  unit_number: '2B',
+  lease_start_date: isoDaysAgo(330),
+  lease_end_date: isoDaysAgo(60),
+  move_out_date: isoDaysAgo(60),
+};
+
+const validLandlord = {
+  landlord_name: 'John Smith',
+  landlord_email: 'landlord@example.com',
+  landlord_phone: '',
+  landlord_address: '',
+};
+
+const validDeposit = {
+  deposit_amount: '1500',
+  amount_withheld: '500',
+  landlord_stated_reason: 'Cleaning',
+  itemized_deductions_received: false,
+  notice_given: 'yes' as const,
+  notice_given_desc: '',
+  preexisting_damage: 'no' as const,
+  preexisting_damage_desc: '',
+  apartment_condition: 'Left broom-clean, no damage beyond normal wear.',
+  landlord_contact_since: 'no' as const,
+  landlord_contact_desc: '',
+};
+
+const validAgreement = {
+  initials_key_clause: 'JD',
+  signature_name: 'Jane Doe',
+};
+
+const validIntake = { ...validDetails, ...validLandlord, ...validDeposit, ...validAgreement };
+
+function issuePaths(result: { success: boolean; error?: { issues: { path: PropertyKey[] }[] } }) {
+  return result.error?.issues.map((i) => i.path.join('.')) ?? [];
+}
+
 describe('Intake Schemas', () => {
-  describe('tenantInfoSchema', () => {
-    test('validates correct tenant info', () => {
-      const validData = {
-        full_name: 'John Doe',
-        email: 'john@example.com',
-        phone: '2035551234',
-        forwarding_address: '123 Main St, New Haven, CT',
-      };
-
-      const result = tenantInfoSchema.safeParse(validData);
-      expect(result.success).toBe(true);
-    });
-
-    test('normalizes email to lowercase', () => {
-      const data = {
-        full_name: 'John Doe',
-        email: 'JOHN@EXAMPLE.COM',
-        forwarding_address: '123 Main St',
-      };
-
-      const result = tenantInfoSchema.safeParse(data);
-      if (result.success) {
-        expect(result.data.email).toBe('john@example.com');
-      }
-    });
-
-    test('rejects invalid phone numbers', () => {
-      const data = {
-        full_name: 'John Doe',
-        email: 'john@example.com',
-        phone: '123', // Too short
-        forwarding_address: '123 Main St',
-      };
-
-      const result = tenantInfoSchema.safeParse(data);
-      expect(result.success).toBe(false);
-    });
-
-    test('accepts optional phone number', () => {
-      const data = {
-        full_name: 'John Doe',
-        email: 'john@example.com',
-        forwarding_address: '123 Main St',
-      };
-
-      const result = tenantInfoSchema.safeParse(data);
-      expect(result.success).toBe(true);
-    });
-  });
-
-  describe('propertySchema', () => {
-    test('validates correct property data', () => {
-      // Use a recent date within the past year
-      const threeMonthsAgo = new Date();
-      threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
-      const moveOutDate = threeMonthsAgo.toISOString().split('T')[0];
-
-      const oneYearAgo = new Date();
-      oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
-      const leaseStartDate = oneYearAgo.toISOString().split('T')[0];
-
-      const validData = {
-        property_address: '456 Oak Ave, New Haven, CT',
-        unit_number: '2B',
-        lease_start_date: leaseStartDate,
-        lease_end_date: moveOutDate,
-        move_out_date: moveOutDate,
-      };
-
-      const result = propertySchema.safeParse(validData);
-      expect(result.success).toBe(true);
+  describe('detailsStepSchema', () => {
+    test('accepts valid details', () => {
+      expect(detailsStepSchema.safeParse(validDetails).success).toBe(true);
     });
 
     test('rejects lease end before lease start', () => {
-      const data = {
-        property_address: '456 Oak Ave',
-        lease_start_date: '2024-12-31',
-        lease_end_date: '2024-01-01', // Before start
-        move_out_date: '2024-12-31',
-      };
-
-      const result = propertySchema.safeParse(data);
+      const result = detailsStepSchema.safeParse({
+        ...validDetails,
+        lease_start_date: isoDaysAgo(60),
+        lease_end_date: isoDaysAgo(300),
+      });
       expect(result.success).toBe(false);
+      expect(issuePaths(result)).toContain('lease_end_date');
     });
 
-    test('rejects move-out date too far in the past', () => {
-      const data = {
-        property_address: '456 Oak Ave',
-        lease_start_date: '2020-01-01',
-        lease_end_date: '2020-12-31',
-        move_out_date: '2020-12-31', // More than a year ago
-      };
+    test('rejects move-out more than a year ago', () => {
+      const result = detailsStepSchema.safeParse({ ...validDetails, move_out_date: isoDaysAgo(400) });
+      expect(issuePaths(result)).toContain('move_out_date');
+    });
 
-      const result = propertySchema.safeParse(data);
-      expect(result.success).toBe(false);
+    test('rejects move-out in the future', () => {
+      const result = detailsStepSchema.safeParse({ ...validDetails, move_out_date: isoDaysAgo(-10) });
+      expect(issuePaths(result)).toContain('move_out_date');
+    });
+
+    test('rejects an invalid ZIP', () => {
+      const result = detailsStepSchema.safeParse({ ...validDetails, fwd_zip: '651' });
+      expect(issuePaths(result)).toContain('fwd_zip');
+    });
+
+    test('accepts ZIP+4', () => {
+      expect(detailsStepSchema.safeParse({ ...validDetails, fwd_zip: '06511-1234' }).success).toBe(true);
     });
   });
 
-  describe('depositSchema', () => {
-    test('validates correct deposit data', () => {
-      const validData = {
-        deposit_amount: '1500',
-        amount_withheld: '500',
-        withholding_reason: 'Cleaning and repairs',
-        itemized_deductions_received: true,
-        situation_description: 'My landlord withheld $500 from my $1500 deposit for cleaning charges that seem excessive.',
-        contingency_agreed: true,
-      };
+  describe('landlordStepSchema', () => {
+    test('accepts email only', () => {
+      expect(landlordStepSchema.safeParse(validLandlord).success).toBe(true);
+    });
 
-      const result = depositSchema.safeParse(validData);
+    test('accepts phone only', () => {
+      const result = landlordStepSchema.safeParse({ ...validLandlord, landlord_email: '', landlord_phone: '2035550000' });
       expect(result.success).toBe(true);
     });
 
+    test('requires at least one contact method', () => {
+      const result = landlordStepSchema.safeParse({ ...validLandlord, landlord_email: '  ', landlord_phone: '' });
+      expect(issuePaths(result)).toContain('landlord_email');
+    });
+  });
+
+  describe('depositStepSchema', () => {
+    test('accepts valid deposit data', () => {
+      expect(depositStepSchema.safeParse(validDeposit).success).toBe(true);
+    });
+
     test('rejects withheld amount exceeding deposit', () => {
-      const data = {
-        deposit_amount: '1000',
-        amount_withheld: '1500', // More than deposit
-        itemized_deductions_received: false,
-        situation_description: 'Landlord withheld more than the deposit.',
-        contingency_agreed: true,
-      };
-
-      const result = depositSchema.safeParse(data);
-      expect(result.success).toBe(false);
+      const result = depositStepSchema.safeParse({ ...validDeposit, deposit_amount: '1000', amount_withheld: '1500' });
+      expect(issuePaths(result)).toContain('amount_withheld');
     });
 
-    test('rejects negative amounts', () => {
-      const data = {
-        deposit_amount: '-100',
-        amount_withheld: '50',
-        itemized_deductions_received: false,
-        situation_description: 'Valid description of the situation.',
-        contingency_agreed: true,
-      };
-
-      const result = depositSchema.safeParse(data);
-      expect(result.success).toBe(false);
+    test('rejects non-positive deposit', () => {
+      const result = depositStepSchema.safeParse({ ...validDeposit, deposit_amount: '-100' });
+      expect(issuePaths(result)).toContain('deposit_amount');
     });
 
-    test('requires contingency agreement', () => {
-      const data = {
-        deposit_amount: '1000',
-        amount_withheld: '500',
-        itemized_deductions_received: false,
-        situation_description: 'Valid description of the situation.',
-        contingency_agreed: false, // Not agreed
-      };
-
-      const result = depositSchema.safeParse(data);
-      expect(result.success).toBe(false);
+    test('rejects negative withheld amount', () => {
+      const result = depositStepSchema.safeParse({ ...validDeposit, amount_withheld: '-1' });
+      expect(issuePaths(result)).toContain('amount_withheld');
     });
 
-    test('requires minimum description length', () => {
-      const data = {
-        deposit_amount: '1000',
-        amount_withheld: '500',
-        itemized_deductions_received: false,
-        situation_description: 'Too short', // Less than 20 chars
-        contingency_agreed: true,
-      };
+    test('requires every yes/no question to be answered', () => {
+      const result = depositStepSchema.safeParse({
+        ...validDeposit,
+        notice_given: '',
+        preexisting_damage: '',
+        landlord_contact_since: '',
+      });
+      expect(issuePaths(result)).toEqual(
+        expect.arrayContaining(['notice_given', 'preexisting_damage', 'landlord_contact_since'])
+      );
+    });
 
-      const result = depositSchema.safeParse(data);
+    test('requires a minimum apartment condition description', () => {
+      const result = depositStepSchema.safeParse({ ...validDeposit, apartment_condition: 'fine' });
+      expect(issuePaths(result)).toContain('apartment_condition');
+    });
+  });
+
+  describe('agreementStepSchema', () => {
+    test('requires initials and signature', () => {
+      const result = agreementStepSchema.safeParse({ initials_key_clause: '', signature_name: '' });
+      expect(issuePaths(result)).toEqual(expect.arrayContaining(['initials_key_clause', 'signature_name']));
+    });
+  });
+
+  // Regression: in zod v4, `.merge()` of the step schemas silently dropped their
+  // superRefine checks, so the server-side parse in createCase skipped every
+  // cross-field rule. The full schema must enforce all of them itself.
+  describe('intakeSchema (server-side authority)', () => {
+    test('accepts a complete valid intake', () => {
+      expect(intakeSchema.safeParse(validIntake).success).toBe(true);
+    });
+
+    test.each([
+      ['landlord contact', { landlord_email: '', landlord_phone: '' }, 'landlord_email'],
+      ['withheld ≤ deposit', { deposit_amount: '1000', amount_withheld: '1500' }, 'amount_withheld'],
+      ['deposit > 0', { deposit_amount: '0' }, 'deposit_amount'],
+      ['lease order', { lease_start_date: isoDaysAgo(10), lease_end_date: isoDaysAgo(100) }, 'lease_end_date'],
+      ['yes/no answered', { notice_given: '' as const }, 'notice_given'],
+    ])('enforces cross-field rule: %s', (_name, override, path) => {
+      const result = intakeSchema.safeParse({ ...validIntake, ...override });
       expect(result.success).toBe(false);
+      expect(issuePaths(result)).toContain(path);
     });
   });
 });

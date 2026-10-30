@@ -15,7 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { uploadDocument, getDocumentUrl, reportRecovery, markLandlordIntroSent } from "./actions";
-import { INTRO_SENT_TITLE } from "@/lib/constants";
+import { INTRO_SENT_TITLE, REVIEW_SLA } from "@/lib/constants";
 import { LegalDisclaimer } from "@/components/legal-disclaimer";
 import { statusColor, parseDateOnly } from "@/lib/utils/case";
 import { STATUS_LABELS } from "@/lib/types/database";
@@ -209,7 +209,7 @@ export default function CaseDetailPage() {
         variant: "waiting" as const,
         title: "Tribune is reviewing your case",
         description:
-          "Tribune typically responds to new cases within a few hours. You'll receive an email when your demand letter is ready or if Tribune needs anything else from you. No action needed right now.",
+          `Tribune responds to new cases ${REVIEW_SLA}. You'll receive an email when your demand letter is ready or if Tribune needs anything else from you. No action needed right now.`,
       };
     }
     if (caseData!.status === "correspondence_ready") {
@@ -237,7 +237,7 @@ export default function CaseDetailPage() {
         variant: "info" as const,
         title: "Landlord has responded — Tribune is preparing next steps",
         description:
-          "Your landlord replied to Tribune. We're reviewing their position and will update you shortly.",
+          `Your landlord replied to Tribune. Tribune is reviewing their position and will update you ${REVIEW_SLA}.`,
       };
     }
     if (caseData!.status === "resolved") {

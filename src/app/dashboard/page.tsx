@@ -6,14 +6,14 @@ import { Button } from "@/components/ui/button";
 import { type Case, STATUS_LABELS } from "@/lib/types/database";
 import { formatCents, parseDateOnly } from "@/lib/utils/case";
 import { LegalDisclaimer } from "@/components/legal-disclaimer";
-import { CONTINGENCY_PCT } from "@/lib/constants";
+import { CONTINGENCY_PCT, REVIEW_SLA } from "@/lib/constants";
 import { ArrowRight, PlusCircle, CheckCircle2 } from "lucide-react";
 import s from "./dashboard.module.css";
 
 function statusDescription(status: string): { label: string; action: string | null } {
   switch (status) {
     case "intake_submitted":
-      return { label: "Case submitted — Tribune will review shortly.", action: null };
+      return { label: `Case submitted — Tribune will review ${REVIEW_SLA}.`, action: null };
     case "under_review":
       return { label: "Tribune is reviewing your case.", action: null };
     case "correspondence_ready":

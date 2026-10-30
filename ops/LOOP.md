@@ -64,24 +64,24 @@ Only meaningful once there are real cases and read access to prod (SETUP.md).
 - Anything that looks like a security, data, or legal incident → stop, write an
   ESCALATIONS entry marked URGENT, and send a push notification if available.
 
-## Routines (proposed 2026-10-28, not yet created)
+## Routines (created 2026-10-30)
 
-Cloud routines on `magnus-em/tribune`, Default environment, model `claude-opus-5-5`.
+Cloud routines on `magnus-em/tribune`, Default environment, model `claude-opus-5-5`,
+no MCP connectors (they auto-attach Gmail/Calendar/Docs on create; cleared on purpose).
+Manage at https://claude.ai/code/routines.
 
-| Routine | Schedule (America/New_York) | Status |
+| Routine | ID | Schedule (America/New_York) |
 |---|---|---|
-| Tribune build tick | 9am, 3pm, 9pm daily | Waiting for Magnus's go-ahead |
-| Tribune review tick | Mondays 8am | Waiting for Magnus's go-ahead |
-| Tribune ops tick | Daily 8am | Not until real cases exist and the read-only role is in the cloud env (SETUP §4, §7) |
+| Tribune build tick | `trig_01ANWqJmaX6zX8ThUzf13cvQ` | 9am, 3pm, 9pm daily |
+| Tribune review tick | `trig_01XatdEWsrUsbUg2gxmHV5F3` | Mondays 8am |
+| Tribune ops tick | not created | when real cases exist and the read-only role is in the cloud env |
 
-Prompt (build; the review prompt is the same with "review tick"):
+## Open PRs are claimed work
 
-> You are Tribune's operating agent, running a scheduled **build tick** with no
-> memory of earlier runs. Follow `ops/LOOP.md` exactly: "Every tick starts the same
-> way", then "Build tick". Your authority is `ops/CHARTER.md`; CLAUDE.md conventions
-> apply. Do one backlog item as one PR. Merge only 🟢 PRs, and only after the `check`
-> CI job has passed on that PR. If you can't verify CI or can't merge, leave the PR
-> open and say so in the JOURNAL entry. Never read or write production data, never
-> commit secrets, and never change letter templates, statute citations, or
-> deadline/damages math without an answered 🔴 escalation. Put the JOURNAL and
-> BACKLOG updates in the same PR.
+Self-merge can be blocked (the permission classifier refused `gh pr merge` on
+2026-10-30). When PRs pile up unmerged, a fresh tick would otherwise see the same
+backlog and redo the same item. So before choosing an item:
+- `gh pr list --state open --json number,title,headRefName`.
+- An item that already has an open `loop/` or `ops/` PR is taken. Skip it.
+- If 3 or more loop PRs are open and unmerged, start nothing new. Add one line to
+  the newest open PR asking Magnus to merge, and stop.

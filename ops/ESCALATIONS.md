@@ -32,6 +32,18 @@ notifications, and invoices all depend on it. Checklist: `ops/SETUP.md` Part A.
 **Default:** none.
 **Answer:**
 
+### E-005 🔴 Let PRs merge without you clicking
+**Context:** The permission classifier now blocks the agent from running
+`gh pr merge` without a human review. It refused #3 on 2026-10-30. Until that
+changes, every PR waits for you, including the 🟢 ones, and the loop stalls at
+3 open PRs.
+**Recommendation:** pick one. (a) Add a Claude Code allow rule for
+`Bash(gh pr merge:*)` in this project's settings. (b) Turn on GitHub branch
+protection with the required `check` status, and let the agent use
+`gh pr merge --auto`, so GitHub merges only after CI passes. (b) is safer.
+**Default:** none. Until then, merge the open PRs when you check in.
+**Answer:**
+
 ### E-004 🔴 Loosen the charter so the loop doesn't wait on you
 **Context:** Under the current charter, letter content, RLS, and any service-role
 use need your explicit yes. The approve-and-send flow (the feature that removes you

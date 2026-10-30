@@ -12,6 +12,7 @@ import {
   type Profile,
   STATUS_LABELS,
 } from "@/lib/types/database";
+import { triageCase, type TriageVerdict } from "@/lib/triage";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -359,6 +360,46 @@ function CaseAssessmentPanel({
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+// ─── Triage Panel ─────────────────────────────────────────────────────────────
+
+const TRIAGE_VERDICT_STYLES: Record<TriageVerdict, string> = {
+  accept: "bg-green-100 text-green-800 border-green-200",
+  review: "bg-yellow-100 text-yellow-800 border-yellow-200",
+  decline: "bg-red-50 text-red-800 border-red-200",
+};
+
+function TriagePanel({ caseData, hasLease }: { caseData: Case; hasLease: boolean }) {
+  const { verdict, checks } = triageCase({ ...caseData, has_lease: hasLease });
+
+  return (
+    <div className="rounded-xl border bg-card p-4 space-y-3 text-sm">
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Triage</p>
+        <Badge variant="outline" className={`capitalize ${TRIAGE_VERDICT_STYLES[verdict]}`}>
+          {verdict}
+        </Badge>
+      </div>
+      <div className="space-y-1.5">
+        {checks.map((check) => (
+          <div key={check.id} className="flex items-start gap-2">
+            {check.status === "pass" ? (
+              <CheckCheck className="size-3.5 text-primary shrink-0 mt-0.5" />
+            ) : check.status === "fail" ? (
+              <X className="size-3.5 text-destructive shrink-0 mt-0.5" />
+            ) : (
+              <Circle className="size-3.5 text-muted-foreground/40 shrink-0 mt-0.5" />
+            )}
+            <span className={`text-xs ${check.status === "fail" ? "text-destructive font-medium" : check.status === "unknown" ? "text-muted-foreground" : ""}`}>
+              {check.detail}
+            </span>
+          </div>
+        ))}
+      </div>
+      <p className="text-xs text-muted-foreground">Display only. Nothing acts on this verdict yet.</p>
     </div>
   );
 }
@@ -957,6 +998,7 @@ export default function AdminCaseDetailPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <ContactsPanel caseData={caseData} profile={profile} />
         <CaseAssessmentPanel caseData={caseData} documents={documents} daysOverdue={daysOverdue} />
+        <TriagePanel caseData={caseData} hasLease={hasLease} />
       </div>
 
       {/* Situation description */}

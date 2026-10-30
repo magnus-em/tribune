@@ -42,6 +42,9 @@ export interface LetterData {
 
   // Case context
   itemizedDeductionsReceived: boolean;
+  // True once the landlord has replied in any form. Follow-up letters must not
+  // claim "you did not respond" when they did.
+  landlordResponded?: boolean;
   situationDescription: string;
   withholding_reason?: string;
 }
@@ -98,7 +101,7 @@ STATUTORY DAMAGES
 Section 47a-21(d) provides that a landlord who violates the subsection “shall be liable for twice the amount of any security deposit paid by such tenant.” The deposit on this tenancy was ${depositAmount}, so the statute exposes you to liability of up to ${formatMoney(data.depositAmountCents * 2)}, together with accrued interest and court costs. That exposure does not decrease by waiting.
 
 DEMAND
-Remit ${amountWithheld} within ten (10) business days of this letter to resolve this matter. If full payment is not received in that window, I may file a Small Claims action in Connecticut Superior Court seeking statutory damages of up to ${formatMoney(data.depositAmountCents * 2)}, plus filing fees, service costs, and statutory interest. I will not send a further demand before filing.
+Remit ${amountWithheld} within ten (10) business days of this letter to resolve this matter. If full payment is not received in that window, I may file a Small Claims action in Connecticut Superior Court seeking statutory damages of up to ${formatMoney(data.depositAmountCents * 2)}, plus filing fees, service costs, and statutory interest.
 
 Payment must be made out to ${data.tenantName} and sent to:
 ${data.tenantAddress}
@@ -137,17 +140,19 @@ RE: SECOND DEMAND — Security Deposit — ${fullPropertyAddress}
 
 Dear ${data.landlordName}:
 
-I delivered a demand for the return of my security deposit on ${firstLetterFormatted}. You did not respond. I am writing once more before filing.
+I delivered a demand for the return of my security deposit on ${firstLetterFormatted}. ${data.landlordResponded ? "Your response did not resolve the matter, and the withheld amount remains unpaid." : "You did not respond."} I am writing again before filing.
 
-The statutory period under Connecticut General Statutes § 47a-21(d) closed on ${formatDate(data.statutoryDeadline)}. You did not return the withheld amount of ${amountWithheld}, and you did not deliver a written statement itemizing the nature and amount of any damages as the statute requires. Each omission is a violation of the subsection.
+${data.itemizedDeductionsReceived
+  ? `The statutory period under Connecticut General Statutes § 47a-21(d) closed on ${formatDate(data.statutoryDeadline)}. You did not return the withheld amount of ${amountWithheld}, and the deduction statement you provided does not meet the itemization requirements of § 47a-21(d).`
+  : `The statutory period under Connecticut General Statutes § 47a-21(d) closed on ${formatDate(data.statutoryDeadline)}. You did not return the withheld amount of ${amountWithheld}, and you did not deliver a written statement itemizing the nature and amount of any damages as the statute requires. Each omission is a violation of the subsection.`}
 
 WHAT THE STATUTE PROVIDES
 • Security deposit withheld: ${amountWithheld}
 • Statutory damages under § 47a-21(d) — twice the ${depositAmount} deposit: up to ${potentialDamages}
 • Accrued interest and court costs
 
-THIS IS THE LAST LETTER BEFORE I FILE.
-Remit ${amountWithheld} within seven (7) business days of this letter. If full payment is not received in that window, I may file in Connecticut Small Claims Court and seek statutory damages of up to ${potentialDamages}, plus costs and statutory interest. I will not send another demand.
+DEMAND
+Remit ${amountWithheld} within seven (7) business days of this letter. If full payment is not received in that window, I may file in Connecticut Small Claims Court and seek statutory damages of up to ${potentialDamages}, plus costs and statutory interest.
 
 Payment must be made out to ${data.tenantName} and sent to:
 ${data.tenantAddress}
@@ -193,10 +198,10 @@ Dear ${data.landlordName}:
 
 This is my final notice before filing.
 
-I sent demand letters on ${firstLetterFormatted} and ${secondLetterFormatted}. You have not returned ${amountWithheld}. You have not responded.
+I sent demand letters on ${firstLetterFormatted} and ${secondLetterFormatted}. You have not returned ${amountWithheld}.${data.landlordResponded ? "" : " You have not responded."}
 
 VIOLATION
-Under Connecticut General Statutes § 47a-21(d), you were required to return my deposit or deliver a written statement itemizing the nature and amount of any damages within the statutory period. That deadline — ${formatDate(data.statutoryDeadline)} — has passed. You did neither.
+Under Connecticut General Statutes § 47a-21(d), you were required to return my deposit or deliver a written statement itemizing the nature and amount of any damages within the statutory period. That deadline — ${formatDate(data.statutoryDeadline)} — has passed. ${data.itemizedDeductionsReceived ? "You did not return the withheld amount, and the deduction statement you provided does not meet the itemization requirements of the statute." : "You did neither."}
 
 NOTICE OF INTENT TO FILE
 Unless ${amountWithheld} is received within five (5) business days of the date of this letter, I intend to file in Connecticut Small Claims Court and seek:

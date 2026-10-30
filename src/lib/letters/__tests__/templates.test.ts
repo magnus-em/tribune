@@ -86,6 +86,55 @@ describe('Letter Templates', () => {
     });
   });
 
+  describe('escalation consistency', () => {
+    test('Letters 1 and 2 never promise there will be no further demand', () => {
+      const early = [generateLetter1(mockLetterData), generateLetter2(mockLetterData, firstLetterDate)];
+      for (const letter of early) {
+        expect(letter).not.toMatch(/not send (a further|another) demand/i);
+        expect(letter).not.toMatch(/last letter/i);
+      }
+    });
+
+    test('only Letter 3 is styled as the final notice', () => {
+      expect(generateLetter1(mockLetterData)).not.toMatch(/final notice/i);
+      expect(generateLetter2(mockLetterData, firstLetterDate)).not.toMatch(/final notice/i);
+      expect(generateLetter3(mockLetterData, firstLetterDate, secondLetterDate)).toContain('FINAL NOTICE');
+    });
+  });
+
+  describe('facts stated in follow-up letters match the case', () => {
+    const itemized = { ...mockLetterData, itemizedDeductionsReceived: true };
+    const responded = { ...mockLetterData, landlordResponded: true };
+
+    test('Letters 2 and 3 never deny an itemized statement the tenant reported receiving', () => {
+      const letters = [generateLetter2(itemized, firstLetterDate), generateLetter3(itemized, firstLetterDate, secondLetterDate)];
+      for (const letter of letters) {
+        expect(letter).not.toMatch(/you did not deliver a written statement/i);
+        expect(letter).not.toContain('You did neither.');
+        expect(letter).toContain('deduction statement you provided does not meet the itemization requirements');
+      }
+    });
+
+    test('Letters 2 and 3 state no itemized statement was delivered when none was', () => {
+      expect(generateLetter2(mockLetterData, firstLetterDate)).toContain('you did not deliver a written statement itemizing');
+      expect(generateLetter3(mockLetterData, firstLetterDate, secondLetterDate)).toContain('You did neither.');
+    });
+
+    test('Letters 2 and 3 never claim silence when the landlord responded', () => {
+      const letter2 = generateLetter2(responded, firstLetterDate);
+      const letter3 = generateLetter3(responded, firstLetterDate, secondLetterDate);
+      for (const letter of [letter2, letter3]) {
+        expect(letter).not.toMatch(/You did not respond|You have not responded/);
+      }
+      expect(letter2).toContain('Your response did not resolve the matter');
+    });
+
+    test('Letters 2 and 3 note the lack of response when there was none', () => {
+      expect(generateLetter2(mockLetterData, firstLetterDate)).toContain('You did not respond.');
+      expect(generateLetter3(mockLetterData, firstLetterDate, secondLetterDate)).toContain('You have not responded.');
+    });
+  });
+
   describe('generateLetter1', () => {
     test('includes parties, property, and amounts', () => {
       const letter = generateLetter1(mockLetterData);

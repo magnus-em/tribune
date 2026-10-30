@@ -6,47 +6,39 @@ unanswered; 🔴 items never do.
 
 ---
 
-## Digest — 2026-10-28
+## Digest — 2026-10-30
 
-Phase 0 is mostly done. Tests are green (64/64) and now guard the legal invariants
-of the letters. CI runs on every PR. The "within a few hours" promise is now
-"within two business days", which the loop can keep. The `ops/` operating system
-is in place. What's left of Phase 0 (staging, E2E, metrics) waits on your setup
-session. Three decisions:
+Your direction: no attorney, zero cash, get revenue flowing. Recorded in PLAN.md
+§0 and §4.1. Everything is now ordered around the first paid recovery. The
+fastest free path: the summer-2026 move-outs who never got their deposits back
+(still inside the intake's one-year window), reached through your network and a
+dedicated page, and served by a flow where the tenant approves and sends each
+letter without you.
+
+Closed:
+- **E-002 (attorney)** — declined by Magnus 2026-10-30. Risk accepted; the packet is parked.
+- **E-003 (letter defects)** — taken as approved under "keep moving ahead"; fixed in
+  its own PR. Shout if you disagree.
+
+Open:
 
 ---
 
-### E-001 🔴 Do the one-time setup session
-**Context:** Staging, E2E tests, metrics, the ops tick, and the cloud routines
-all need credentials only you can create. Checklist: `ops/SETUP.md` (~1.5–2 hrs).
-**Recommendation:** do sections 1–4 first; they unblock the most.
-**Default:** none. Until then the loop works only on items that need no access
-(SEO pages, triage logic, admin queue, docs).
+### E-001 🔴 Setup Part A (~20 min, free)
+**Context:** Prod may not be able to send email at all: `RESEND_API_KEY` in Vercel
+is unverified, and that was the cause of "no emails sent" before. Letters,
+notifications, and invoices all depend on it. Checklist: `ops/SETUP.md` Part A.
+**Recommendation:** do it before anyone signs up from outreach.
+**Default:** none.
 **Answer:**
 
-### E-002 🔴 Legal gate — book the attorney
-**Context:** No real letter or fee until a CT attorney answers whether the 15%
-contingency is lawful and whether this is document preparation or UPL. The packet
-with the exact questions and the rendered letters is `ops/legal-packet.md`.
-**Recommendation:** book this week. The answer decides whether we launch as-is,
-adjust, or pivot to the attorney-software model (PLAN.md §4.1).
-**Default:** none. The loop keeps building everything that doesn't touch a real landlord.
-**Answer:**
-
-### E-003 🔴 Letter defects found while rewriting tests
-**Context:** Three factual problems in the letter templates (they're also in the
-attorney packet):
-  a. Letters 2 and 3 always say the landlord delivered no itemized statement, even
-     when the tenant reported receiving one. Letter 1 handles both cases. A real
-     letter could state something false.
-  b. Letter 1 says "I will not send a further demand before filing", and Letter 2
-     says "I will not send another demand", yet Letters 2 and 3 follow. That
-     undercuts credibility.
-  c. Letter 2 opens "You did not respond", which is false if the landlord replied
-     with a dispute.
-**Recommendation:** let the agent fix (a)–(c) now, as a PR you approve: branch 2
-and 3 on itemization like Letter 1, drop the "no further demand" lines from
-Letters 1–2, and make Letter 2's opening conditional on whether a reply exists.
-The attorney then reviews the corrected version.
-**Default:** none (letter content is 🔴).
+### E-004 🔴 Loosen the charter so the loop doesn't wait on you
+**Context:** Under the current charter, letter content, RLS, and any service-role
+use need your explicit yes. The approve-and-send flow (the feature that removes you
+from each case) needs one narrowly scoped service-role write, so it would wait on you.
+**Recommendation:** move letter content, RLS/service-role changes, and new kinds
+of outbound messages from 🔴 to 🟡 (PR + 72 h veto, flagged in the digest). Keep 🔴
+for spending money, posting as you, deleting or rewriting prod data, and pricing.
+The tests guarding the letter invariants still have to pass.
+**Default:** none (it's a charter change).
 **Answer:**

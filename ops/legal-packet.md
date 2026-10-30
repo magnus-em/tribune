@@ -1,5 +1,9 @@
 # Tribune — Questions for Connecticut Counsel
 
+> **Parked 2026-10-30.** Magnus decided not to get attorney review until revenue
+> allows it, and accepts these questions as open business risk. Kept as the
+> record of what's unresolved. The letter defects in Q3 were fixed separately.
+
 **Prepared:** 2026-10-28 by Tribune (for Magnus Melbourne, founder).
 **Purpose:** a short, specific consult. We are not yet serving tenants. We need a
 written answer to three questions before sending any letter to a real landlord or

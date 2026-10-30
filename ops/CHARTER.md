@@ -34,13 +34,13 @@ Prod dependency allowlist (pre-approved): none yet. Magnus adds packages here.
 - Letter templates, statute citations, damages math, deadline math
 - RLS policies, auth behavior, the service-role key's usage
 - Destructive migrations; deleting or rewriting any production data
-- New external services, anything that costs money, and spending caps
+- New external services, anything that costs money, and spending caps. **Budget is
+  $0 until revenue (2026-10-30)** — prefer free tiers and existing tools.
 - Pricing, fee terms, the service agreement, collections
 - The first time any new kind of message goes to real third parties (landlords,
   partners, the public)
 - Anything posted publicly under Magnus's identity
 - Changes to the legal posture (UPL framing, disclaimers, agent framing)
-- Sending any real letter to a real landlord before the legal gate in PLAN.md §4.1 clears
 
 ## Standing rules for every tier
 

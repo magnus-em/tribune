@@ -29,6 +29,7 @@ import {
   type ApprovalPanelState,
   type ContactDetailField,
 } from "@/lib/letters/approve-and-send";
+import { latestLandlordReply } from "@/lib/letters/follow-up";
 import { INTRO_SENT_TITLE, REVIEW_SLA } from "@/lib/constants";
 import { LegalDisclaimer } from "@/components/legal-disclaimer";
 import { statusColor, parseDateOnly } from "@/lib/utils/case";
@@ -51,6 +52,8 @@ import {
   ActionBanner,
   LandlordIntroStep,
   LetterApprovalStep,
+  LandlordReplyStep,
+  type LandlordReplyNextLetter,
   RecoveryStep,
   RecoveryForm,
   InvoicePanel,
@@ -69,6 +72,8 @@ export default function CaseDetailPage() {
   const [letterPlan, setLetterPlan] = useState<Awaited<ReturnType<typeof getLetterForApproval>> | null>(null);
   const [letterNumber, setLetterNumber] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  // After a landlord reply, the next letter opens only when the tenant asks.
+  const [reviewNextLetter, setReviewNextLetter] = useState(false);
   const evidenceRef = useRef<HTMLDivElement>(null);
 
   async function handleUploadLease(file: File) {
@@ -238,8 +243,22 @@ export default function CaseDetailPage() {
   const approval: ApprovalPanelState = letterPlan
     ? approvalPanelState(letterPlan, hasLease)
     : { kind: "hidden" };
-  const letterReady = approval.kind === "ready";
-  const letterNeedsDetail = approval.kind === "needs" && approval.need !== "lease";
+  // After a landlord reply the tenant sees the reply and the options first; the
+  // next letter's approval panel opens only when they choose to review it.
+  const afterReply = caseData.status === "landlord_responded";
+  const letterPanelOpen = !afterReply || reviewNextLetter;
+  const letterReady = letterPanelOpen && approval.kind === "ready";
+  const letterNeedsDetail =
+    letterPanelOpen && approval.kind === "needs" && approval.need !== "lease";
+  const landlordReply = afterReply ? latestLandlordReply(messages) : null;
+  const replyNextLetter: LandlordReplyNextLetter =
+    letterNumber === null
+      ? { kind: "none" }
+      : approval.kind === "ready" || (approval.kind === "needs" && approval.need !== "lease")
+        ? { kind: "offered", letterNumber }
+        : approval.kind === "waiting"
+          ? { kind: "waiting", letterNumber, message: approval.message }
+          : { kind: "none" };
 
   const headline = letterReady
     ? "Your demand letter is ready for your approval"
@@ -309,6 +328,14 @@ export default function CaseDetailPage() {
           : `Tribune sent your letter — ${Math.abs(daysOverdue)} day${Math.abs(daysOverdue) !== 1 ? "s" : ""} left on deadline`,
         description:
           "Tribune has contacted your landlord on your behalf. If they return your deposit, report it below.",
+      };
+    }
+    if (caseData!.status === "landlord_responded" && replyNextLetter.kind !== "none") {
+      return {
+        variant: "info" as const,
+        title: "Your landlord replied to Tribune",
+        description:
+          "Read the reply below and choose a next step. Nothing is sent to your landlord unless you approve it.",
       };
     }
     if (caseData!.status === "landlord_responded") {
@@ -482,7 +509,20 @@ export default function CaseDetailPage() {
 
       {/* Tenant approves the next letter (1 in setup, 2 or 3 later), adds a
           detail it needs, or sees when the next one becomes available */}
-      {letterNumber !== null && (
+      {/* Landlord replied: show the reply and the options */}
+      {landlordReply && (
+        <LandlordReplyStep
+          reply={landlordReply}
+          nextLetter={replyNextLetter}
+          reviewing={reviewNextLetter}
+          onReviewLetter={() => {
+            trackEvent("next_letter_reviewed_after_reply", { letter_number: letterNumber });
+            setReviewNextLetter(true);
+          }}
+        />
+      )}
+
+      {letterNumber !== null && letterPanelOpen && (
         <LetterApprovalStep
           key={letterNumber}
           letterNumber={letterNumber}

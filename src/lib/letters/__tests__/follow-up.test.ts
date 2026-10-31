@@ -2,6 +2,8 @@ import {
   followUpOffer,
   followUpBlockMessage,
   letterDispatchDates,
+  replyFollowUpOffer,
+  latestLandlordReply,
   FOLLOW_UP_WAIT_BUSINESS_DAYS,
   type FollowUpInput,
 } from '../follow-up';
@@ -143,4 +145,66 @@ describe('followUpBlockMessage — Tribune voice', () => {
       expect(msg).not.toMatch(/\b(we|we're|us|our|I|admin|team)\b/i);
     }
   );
+});
+
+describe('replyFollowUpOffer', () => {
+  const reply = (created_at: string, message_type: 'landlord_reply' | 'tenant_landlord_reply' = 'landlord_reply') => ({ message_type, created_at });
+  const responded: FollowUpInput = {
+    ...base,
+    caseRow: { status: 'landlord_responded', current_letter_number: 1 },
+    messages: [reply('2026-10-05T12:00:00.000Z')],
+  };
+
+  test('offers the next letter once the landlord has replied since the last letter', () => {
+    const offer = replyFollowUpOffer({ ...responded, now: new Date('2026-10-06T12:00:00.000Z') });
+    expect(offer).toMatchObject({ due: true, letterNumber: 2 });
+    if (offer.due) {
+      expect(offer.letterDates[1].toISOString()).toBe(L1);
+      expect(offer.dueOn.toISOString()).toBe('2026-10-05T12:00:00.000Z');
+    }
+  });
+
+  test('a reply the tenant forwarded counts too', () => {
+    expect(replyFollowUpOffer({ ...responded, messages: [reply('2026-10-05T12:00:00.000Z', 'tenant_landlord_reply')] })).toMatchObject({ due: true });
+  });
+
+  test('a reply from before the last letter does not count', () => {
+    expect(replyFollowUpOffer({ ...responded, messages: [reply('2026-09-30T12:00:00.000Z')] })).toMatchObject({ due: false, reason: 'status' });
+  });
+
+  test.each(['awaiting_landlord', 'resolved', 'closed', 'declined', 'under_review'] as const)('only applies in landlord_responded, not %s', (status) => {
+    expect(replyFollowUpOffer({ ...responded, caseRow: { status, current_letter_number: 1 } })).toMatchObject({ due: false, reason: 'status' });
+  });
+
+  test('stops after Letter 3', () => {
+    expect(replyFollowUpOffer({ ...responded, caseRow: { status: 'landlord_responded', current_letter_number: 3 } })).toMatchObject({ due: false, reason: 'no_more_letters', letterNumber: null });
+  });
+
+  test('a reported recovery stops it', () => {
+    const recovered = { action_type: 'resolution_reported' as const, metadata: null, created_at: '2026-10-06T12:00:00.000Z' };
+    expect(replyFollowUpOffer({ ...responded, actions: [dispatched(1, L1), recovered] })).toMatchObject({ due: false, reason: 'recovery_reported' });
+  });
+
+  test('every earlier letter needs a dispatch record', () => {
+    expect(replyFollowUpOffer({ ...responded, actions: [] })).toMatchObject({ due: false, reason: 'no_dispatch_record' });
+  });
+
+  test('the scheduled offer still stops at a reply (the cron path is unchanged)', () => {
+    expect(followUpOffer({ ...base, messages: [reply('2026-10-05T12:00:00.000Z')] })).toMatchObject({ due: false, reason: 'landlord_replied' });
+  });
+});
+
+describe('latestLandlordReply', () => {
+  test('returns the newest landlord reply and ignores other messages', () => {
+    const messages = [
+      { message_type: 'landlord_reply' as const, created_at: '2026-10-05T12:00:00.000Z', id: 'a' },
+      { message_type: 'tribune_letter' as const, created_at: '2026-10-09T12:00:00.000Z', id: 'b' },
+      { message_type: 'tenant_landlord_reply' as const, created_at: '2026-10-07T12:00:00.000Z', id: 'c' },
+    ];
+    expect(latestLandlordReply(messages)?.id).toBe('c');
+  });
+
+  test('null when there is no reply', () => {
+    expect(latestLandlordReply([{ message_type: 'system' as const, created_at: '2026-10-05T12:00:00.000Z' }])).toBeNull();
+  });
 });

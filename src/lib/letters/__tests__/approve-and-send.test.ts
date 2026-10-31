@@ -284,3 +284,80 @@ describe('prepareLetterDispatch — Letters 2 and 3 follow the follow-up schedul
     expect(reason(awaiting(1, 3))).toBe('wrong_letter_number');
   });
 });
+
+describe('prepareLetterDispatch — the next letter after a landlord reply', () => {
+  beforeAll(() => {
+    jest.useFakeTimers();
+    jest.setSystemTime(now);
+  });
+  afterAll(() => jest.useRealTimers());
+
+  const letter1 = { action_type: 'letter_dispatched' as const, metadata: { letter_number: 1, sent_at: '2026-10-20T15:00:00.000Z' }, created_at: '2026-10-20T15:00:00.000Z' };
+  const letter2 = { action_type: 'letter_dispatched' as const, metadata: { letter_number: 2, sent_at: '2026-10-22T15:00:00.000Z' }, created_at: '2026-10-22T15:00:00.000Z' };
+  const reply = (created_at: string) => ({ message_type: 'landlord_reply' as const, dispatch_metadata: null, created_at });
+
+  const responded = (
+    current_letter_number: number,
+    letterNumber: number,
+    actions: DispatchInput['actions'],
+    messages: DispatchInput['messages']
+  ): DispatchInput => ({
+    ...withCase({ status: 'landlord_responded', current_letter_number }),
+    letterNumber,
+    actions,
+    messages,
+  });
+
+  test('Letter 2 is offered after a reply, without the 10-business-day wait', () => {
+    // Letter 1 went out Oct 20; the follow-up schedule alone would wait until Nov 3.
+    const plan = prepareLetterDispatch(responded(1, 2, [letter1], [reply('2026-10-23T12:00:00.000Z')]));
+    if (!plan.ok) throw new Error(plan.reason);
+    expect(plan.body).toContain('SECOND DEMAND');
+    expect(plan.body).toContain('on October 20, 2026');
+    // The letter must not claim the landlord didn't respond.
+    expect(plan.body).toContain('Your response did not resolve the matter');
+    expect(plan.body).not.toContain('You did not respond');
+    expect(plan.body).toContain('$4,000.00'); // twice the full deposit, unchanged
+  });
+
+  test('Letter 3 after a reply cites both letter dates and makes no "not responded" claim', () => {
+    const late2 = { ...letter2, metadata: { letter_number: 2, sent_at: '2026-10-24T15:00:00.000Z' }, created_at: '2026-10-24T15:00:00.000Z' };
+    const plan = prepareLetterDispatch(responded(2, 3, [letter1, late2], [reply('2026-10-25T12:00:00.000Z')]));
+    if (!plan.ok) throw new Error(plan.reason);
+    expect(plan.body).toContain('FINAL NOTICE');
+    expect(plan.body).toContain('October 20, 2026 and October 24, 2026');
+    expect(plan.body).not.toContain('You have not responded');
+  });
+
+  test('a reply from before the last letter does not open the next one', () => {
+    expect(reason(responded(1, 2, [letter1], [reply('2026-10-19T12:00:00.000Z')]))).toBe('status');
+  });
+
+  test('a reported recovery still stops the offer', () => {
+    const recovered = { action_type: 'resolution_reported' as const, metadata: null, created_at: '2026-10-24T12:00:00.000Z' };
+    expect(reason(responded(1, 2, [letter1, recovered], [reply('2026-10-23T12:00:00.000Z')]))).toBe('letter_not_offered');
+  });
+
+  test('the 5-day cooldown still applies, and says when the letter becomes available', () => {
+    const recent = { ...letter1, metadata: { letter_number: 1, sent_at: '2026-10-29T15:00:00.000Z' }, created_at: '2026-10-29T15:00:00.000Z' };
+    const plan = prepareLetterDispatch(responded(1, 2, [recent], [reply('2026-10-30T12:00:00.000Z')]));
+    expect(plan.ok ? 'ok' : plan.reason).toBe('cooldown');
+    if (!plan.ok) {
+      expect(plan.availableOn).toBe('2026-11-03');
+      expect(plan.message).toContain('Letter 2 becomes available on November 3, 2026');
+    }
+  });
+
+  test('the kill switch, triage, contact details, and sequence still apply', () => {
+    const replied = responded(1, 2, [letter1], [reply('2026-10-23T12:00:00.000Z')]);
+    expect(reason({ ...replied, dispatchPaused: 'true' })).toBe('dispatch_paused');
+    expect(reason({ ...replied, hasLease: false })).toBe('triage');
+    expect(reason({ ...replied, caseRow: { ...replied.caseRow, landlord_email: null } })).toBe('no_landlord_email');
+    expect(reason({ ...replied, letterNumber: 3 })).toBe('wrong_letter_number');
+    expect(reason(responded(3, 4, [letter1, letter2], [reply('2026-10-23T12:00:00.000Z')]))).toBe('letter_not_offered');
+  });
+
+  test('a missing dispatch record for an earlier letter blocks it', () => {
+    expect(reason(responded(2, 3, [letter2], [reply('2026-10-25T12:00:00.000Z')]))).toBe('letter_not_offered');
+  });
+});

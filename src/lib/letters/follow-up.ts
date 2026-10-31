@@ -140,3 +140,65 @@ export function followUpBlockMessage(offer: Extract<FollowUpOffer, { due: false 
         : `Letter ${n} isn't available yet.`;
   }
 }
+
+/**
+ * The next letter after a landlord reply (status `landlord_responded`).
+ *
+ * The landlord answered, so Tribune doesn't offer the next letter on its own
+ * schedule (`followUpOffer` stops at `landlord_replied`, and the daily cron only
+ * looks at `awaiting_landlord`). Instead the tenant page shows the reply with
+ * the options, and the tenant may choose to review the next letter. This says
+ * whether that letter can be offered: same sequence, same dispatch-record and
+ * recovery rules, and the reply must have come after the last letter. There is
+ * no business-day wait; the 5-day cooldown in `prepareLetterDispatch` still
+ * applies, and so does the tenant's approval.
+ */
+export function replyFollowUpOffer(input: FollowUpInput): FollowUpOffer {
+  const { caseRow } = input;
+  const next = caseRow.current_letter_number + 1;
+
+  if (!(next in FOLLOW_UP_WAIT_BUSINESS_DAYS)) {
+    return { due: false, reason: "no_more_letters", letterNumber: null };
+  }
+  if (caseRow.status !== "landlord_responded") {
+    return { due: false, reason: "status", letterNumber: next };
+  }
+  if (input.actions.some((a) => a.action_type === "resolution_reported")) {
+    return { due: false, reason: "recovery_reported", letterNumber: next };
+  }
+
+  const letterDates = letterDispatchDates(input.actions);
+  for (let n = 1; n < next; n++) {
+    if (!letterDates[n]) return { due: false, reason: "no_dispatch_record", letterNumber: next };
+  }
+  const previous = letterDates[next - 1];
+
+  const replyTimes = input.messages
+    .filter((m) => LANDLORD_REPLY_TYPES.has(m.message_type))
+    .map((m) => parseTime(m.created_at))
+    .filter((at): at is Date => at !== null && at >= previous);
+  // A `landlord_responded` case with no reply since the last letter is out of
+  // step; leave it to Tribune's review.
+  if (replyTimes.length === 0) return { due: false, reason: "status", letterNumber: next };
+
+  const dueOn = new Date(Math.min(...replyTimes.map((t) => t.getTime())));
+  return { due: true, letterNumber: next, dueOn, letterDates };
+}
+
+/** The most recent landlord reply on the case, or null. For the tenant page. */
+export function latestLandlordReply<T extends Pick<CaseMessage, "message_type" | "created_at">>(
+  messages: T[]
+): T | null {
+  let latest: T | null = null;
+  let latestAt = -Infinity;
+  for (const m of messages) {
+    if (!LANDLORD_REPLY_TYPES.has(m.message_type)) continue;
+    const at = parseTime(m.created_at);
+    if (!at) continue;
+    if (at.getTime() >= latestAt) {
+      latest = m;
+      latestAt = at.getTime();
+    }
+  }
+  return latest;
+}

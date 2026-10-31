@@ -1297,6 +1297,87 @@ export function LetterApprovalStep({
   );
 }
 
+// ─── Landlord Reply Step ──────────────────────────────────────────────────────
+// Shown when the landlord has replied (status `landlord_responded`). Shows the
+// latest reply and the options. The tenant picks; Tribune doesn't advise which.
+// Reviewing the next letter only opens it: nothing is sent without approval.
+
+export type LandlordReplyNextLetter =
+  | { kind: "offered"; letterNumber: number }
+  | { kind: "waiting"; letterNumber: number; message: string }
+  | { kind: "none" };
+
+export function LandlordReplyStep({
+  reply,
+  nextLetter,
+  reviewing,
+  onReviewLetter,
+}: {
+  reply: { title: string; body: string; created_at: string };
+  nextLetter: LandlordReplyNextLetter;
+  reviewing: boolean;
+  onReviewLetter: () => void;
+}) {
+  return (
+    <div className="border bg-card overflow-hidden">
+      <div
+        style={{
+          padding: "8px 16px",
+          borderBottom: "1px solid hsl(var(--border))",
+          background: "#fffbeb",
+          fontFamily: "var(--font-space-mono, monospace)",
+          fontSize: "10px",
+          letterSpacing: "0.12em",
+          textTransform: "uppercase",
+          color: "#78350f",
+        }}
+      >
+        Your landlord replied
+      </div>
+      <div className="p-4 space-y-4">
+        <p className="text-sm text-muted-foreground">
+          Tribune received this reply on {format(new Date(reply.created_at), "MMMM d, yyyy")}. Read
+          it in full.
+        </p>
+        <div className="rounded-lg border bg-muted/30 p-3 max-h-80 overflow-y-auto">
+          <p className="text-xs font-semibold mb-2">{reply.title}</p>
+          <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground/90">{reply.body}</p>
+        </div>
+        <div className="space-y-2">
+          <p className="text-sm font-semibold">Your options</p>
+          <ul className="list-disc pl-5 space-y-1.5 text-sm text-muted-foreground">
+            <li>
+              If your landlord has returned money to you, report it in &ldquo;Did your landlord
+              return your deposit?&rdquo; below.
+            </li>
+            {nextLetter.kind === "offered" && (
+              <li>
+                If the matter isn&apos;t resolved, you can review Letter {nextLetter.letterNumber}.
+                Reviewing it sends nothing. It goes to your landlord only if you approve it.
+              </li>
+            )}
+            {nextLetter.kind === "waiting" && <li>{nextLetter.message}</li>}
+            {nextLetter.kind === "none" && (
+              <li>
+                Tribune is reviewing the reply and will update you on this page {REVIEW_SLA}.
+              </li>
+            )}
+          </ul>
+          <p className="text-xs text-muted-foreground">
+            Which option to take is your decision. Tribune provides information, not legal advice.
+          </p>
+        </div>
+        {nextLetter.kind === "offered" && !reviewing && (
+          <Button variant="outline" className="w-full" onClick={onReviewLetter}>
+            <FileText className="size-3.5 mr-1.5" />
+            Review Letter {nextLetter.letterNumber}
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Recovery Step ────────────────────────────────────────────────────────────
 // Shown when Tribune has sent a letter. Tenant reports if the landlord returned
 // the deposit. Tribune handles all correspondence — no reply submission here.

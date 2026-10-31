@@ -4,7 +4,7 @@ import { triageCase } from "@/lib/triage";
 import { parseDateOnly } from "@/lib/utils/case";
 import { MAX_LETTER_NUMBER, MIN_LETTER_NUMBER } from "@/lib/constants";
 import { generateDemandLetter, type LetterData } from "./templates";
-import { followUpBlockMessage, followUpOffer } from "./follow-up";
+import { followUpBlockMessage, followUpOffer, replyFollowUpOffer } from "./follow-up";
 
 /**
  * Tenant approve-and-send — the pure half.
@@ -81,8 +81,9 @@ export type DispatchPlan =
       ok: false;
       reason: DispatchBlockReason;
       message: string;
-      // Set only when the follow-up schedule's wait is the one thing missing
-      // (yyyy-MM-dd). The case page shows "Letter N becomes available on …".
+      // Set only when a wait (the follow-up schedule's, or the cooldown between
+      // letters) is what's missing (yyyy-MM-dd). The case page shows when the
+      // letter becomes available.
       availableOn?: string;
     };
 
@@ -181,15 +182,20 @@ export function prepareLetterDispatch(input: DispatchInput): DispatchPlan {
     return block("wrong_letter_number", `Letter ${letterNumber} isn't the next letter on this case.`);
   }
 
-  // Letters 2 and 3 are offered only by the follow-up schedule, and cite the
-  // send dates of the earlier letters.
+  // Letters 2 and 3 are offered only by the follow-up schedule, or after a
+  // landlord reply when the tenant chooses to review the next letter. Both cite
+  // the send dates of the earlier letters.
   let previousLetterDates: { letter1?: string; letter2?: string } | undefined;
   if (letterNumber === 1) {
     if (!LETTER_1_STATUSES.has(caseRow.status)) {
       return block("status", "This case isn't at a stage where Letter 1 can be sent.");
     }
   } else {
-    const offer = followUpOffer({ caseRow, messages: input.messages, actions: input.actions, now });
+    const followUpInput = { caseRow, messages: input.messages, actions: input.actions, now };
+    const offer =
+      caseRow.status === "landlord_responded"
+        ? replyFollowUpOffer(followUpInput)
+        : followUpOffer(followUpInput);
     if (!offer.due) {
       const plan = block(offer.reason === "status" ? "status" : "letter_not_offered", followUpBlockMessage(offer));
       if (!plan.ok && offer.reason === "not_yet" && offer.dueOn) {
@@ -223,11 +229,15 @@ export function prepareLetterDispatch(input: DispatchInput): DispatchPlan {
   }
 
   const last = lastDispatchAt(input.messages, input.actions);
-  if (last && now.getTime() - last.getTime() < DISPATCH_COOLDOWN_DAYS * 24 * 60 * 60 * 1000) {
-    return block(
+  const cooldownMs = DISPATCH_COOLDOWN_DAYS * 24 * 60 * 60 * 1000;
+  if (last && now.getTime() - last.getTime() < cooldownMs) {
+    const availableAt = new Date(last.getTime() + cooldownMs);
+    const plan = block(
       "cooldown",
-      `A letter was sent on ${format(last, "MMMM d, yyyy")}. Tribune waits ${DISPATCH_COOLDOWN_DAYS} days between letters.`
+      `A letter was sent on ${format(last, "MMMM d, yyyy")}. Tribune waits ${DISPATCH_COOLDOWN_DAYS} days between letters, so Letter ${letterNumber} becomes available on ${format(availableAt, "MMMM d, yyyy")}.`
     );
+    if (!plan.ok) plan.availableOn = format(availableAt, "yyyy-MM-dd");
+    return plan;
   }
 
   const landlordResponded = input.messages.some(
@@ -255,7 +265,8 @@ export type ApprovalPanelState =
 
 /**
  * Which letter the tenant case page asks the server about, or null for none.
- * Letter 1 during setup; Letters 2 and 3 while Tribune waits on the landlord.
+ * Letter 1 during setup; Letters 2 and 3 while Tribune waits on the landlord,
+ * or after the landlord replies (the page offers it only if the tenant asks).
  * The server still decides whether that letter is offered (prepareLetterDispatch).
  */
 export function nextLetterToOffer(
@@ -265,7 +276,7 @@ export function nextLetterToOffer(
   if (caseRow.current_letter_number === 0) {
     return LETTER_1_STATUSES.has(caseRow.status) ? 1 : null;
   }
-  if (caseRow.status !== "awaiting_landlord") return null;
+  if (caseRow.status !== "awaiting_landlord" && caseRow.status !== "landlord_responded") return null;
   return next >= MIN_LETTER_NUMBER + 1 && next <= MAX_LETTER_NUMBER ? next : null;
 }
 
@@ -278,7 +289,11 @@ export function approvalPanelState(
   hasLease: boolean
 ): ApprovalPanelState {
   if (plan.ok) return { kind: "ready", title: plan.title, body: plan.body };
-  if (plan.reason === "letter_not_offered" && "availableOn" in plan && plan.availableOn) {
+  if (
+    (plan.reason === "letter_not_offered" || plan.reason === "cooldown") &&
+    "availableOn" in plan &&
+    plan.availableOn
+  ) {
     return { kind: "waiting", message: plan.message };
   }
   switch (plan.reason) {

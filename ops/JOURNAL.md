@@ -3,6 +3,24 @@
 Newest first. One entry per tick. Counts only — no names, emails, addresses, or
 per-case amounts.
 
+## 2026-10-31 — build — landlord-reply handling on the tenant page (⚖️)
+- Did: Took the top of Next (Now was empty). After a landlord reply the tenant
+  case page shows the reply and the options: report a recovery, or review the
+  next letter, which opens the existing approve panel. Nothing goes out without
+  the approval checkbox. New `replyFollowUpOffer()` in `src/lib/letters/follow-up.ts`
+  offers Letter 2/3 after a reply since the last letter, with no business-day wait.
+  The cooldown, kill switch, triage, and recovery checks are unchanged. The cooldown
+  block now carries `availableOn`, so the page says when the letter becomes
+  available. 30 new tests (343 total). `nextLetterToOffer` now returns 2/3 for
+  `landlord_responded`; that test table changed rows, and the server still decides.
+  The "Letter 2 is blocked in landlord_responded" test (no reply on record) is
+  unchanged and passes. No open PRs at start; main CI green; prod returned 200.
+- Learned: the templates already handle `landlordResponded`, so Letters 2/3 don't
+  claim "you did not respond" after a reply (now tested on the reply path). The
+  daily cron only reads `awaiting_landlord` cases, so it never nudges after a
+  reply. Not browser-verified: there's no staging and no tenant login.
+- Next: residential-vs-commercial intake question, or the email-template tests.
+
 ## 2026-10-31 — build — follow-up slice 4: one reminder while a letter waits for approval
 - Did: `followUpNoticeDecision()` now returns `kind: available | reminder`. If
   Letter 2 or 3 is still unapproved 5 calendar days after the first notice, the

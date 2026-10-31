@@ -42,8 +42,6 @@ _Empty. The build tick takes the top of **Next**._
 
 ## Next
 
-- Landlord-reply handling on the tenant page: show the reply and the next-step
-  options (report recovery, send the next letter).
 - Triage follow-up: a residential-vs-commercial question at intake, so that check
   stops being informational.
 - Unit tests for email templates (disclaimer present, Tribune voice, no PII leaks).
@@ -78,6 +76,17 @@ _Empty. The build tick takes the top of **Next**._
 
 ## Done
 
+- 2026-10-31 — ⚖️ Landlord-reply handling on the tenant page: when the case is
+  `landlord_responded`, a "Your landlord replied" panel shows the latest reply
+  and the options (report a recovery; review the next letter; or, with no letter
+  left, Tribune reviews within the SLA). Copy says the choice is the tenant's and
+  is information, not advice. New pure `replyFollowUpOffer()`: after a reply
+  since the last letter, Letter 2 or 3 can be offered without the business-day
+  wait; the 5-day cooldown, kill switch, triage, recovery stop, and tenant
+  approval all still apply, and the letter uses the existing "your response did
+  not resolve the matter" wording. The cron path (`followUpOffer`,
+  `awaiting_landlord` only) is unchanged. The cooldown block now says when the
+  letter becomes available. Letter templates unchanged.
 - 2026-10-31 — Follow-up, slice 4 of 4 — one reminder nudge: the daily cron
   emails the tenant once more if Letter 2 or 3 is still waiting for approval 5
   calendar days after the "ready" notice (`follow_up_reminder` marker, never more

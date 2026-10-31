@@ -91,12 +91,27 @@ describe('nextLetterToOffer', () => {
     ['awaiting_landlord', 3, null],
     ['awaiting_landlord', 0, null],
     ['correspondence_ready', 0, null],
-    ['landlord_responded', 1, null],
+    ['landlord_responded', 1, 2],
+    ['landlord_responded', 2, 3],
+    ['landlord_responded', 3, null],
+    ['landlord_responded', 0, null],
     ['letter_sent', 1, null],
     ['resolved', 1, null],
     ['closed', 2, null],
     ['under_review', 1, null],
   ] as const)('%s with letter %i sent → %p', (status, current, expected) => {
     expect(nextLetterToOffer({ status, current_letter_number: current })).toBe(expected);
+  });
+});
+
+describe('approvalPanelState — cooldown wait', () => {
+  it('shows when the next letter becomes available after the cooldown', () => {
+    const plan = {
+      ok: false,
+      reason: 'cooldown',
+      message: 'A letter was sent on October 28, 2026. Tribune waits 5 days between letters, so Letter 2 becomes available on November 2, 2026.',
+      availableOn: '2026-11-02',
+    } as DispatchPlan;
+    expect(approvalPanelState(plan, true)).toEqual({ kind: 'waiting', message: plan.ok ? '' : plan.message });
   });
 });

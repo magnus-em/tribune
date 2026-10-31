@@ -22,6 +22,7 @@ import {
   getLetterForApproval,
   approveAndSendLetter,
   updateLetterContactDetail,
+  confirmResidentialTenancy,
 } from "./actions";
 import {
   approvalPanelState,
@@ -30,6 +31,7 @@ import {
   type ContactDetailField,
 } from "@/lib/letters/approve-and-send";
 import { latestLandlordReply } from "@/lib/letters/follow-up";
+import { residentialAnswer } from "@/lib/triage";
 import { INTRO_SENT_TITLE, REVIEW_SLA } from "@/lib/constants";
 import { LegalDisclaimer } from "@/components/legal-disclaimer";
 import { statusColor, parseDateOnly } from "@/lib/utils/case";
@@ -194,6 +196,17 @@ export default function CaseDetailPage() {
     }
   }
 
+  async function handleConfirmResidential() {
+    const result = await confirmResidentialTenancy(caseId);
+    if (result.error) {
+      toast.error(result.error);
+    } else {
+      trackEvent("residential_confirmed");
+      toast.success("Saved.");
+      loadData();
+    }
+  }
+
   async function handleRecovery(amountCents: number, notes: string) {
     const result = await reportRecovery(caseId, amountCents, notes);
     if (result.error) {
@@ -241,7 +254,7 @@ export default function CaseDetailPage() {
   const activeRoundIdx = 0; // rounds are newest-first, so active round is at index 0
 
   const approval: ApprovalPanelState = letterPlan
-    ? approvalPanelState(letterPlan, hasLease)
+    ? approvalPanelState(letterPlan, hasLease, residentialAnswer(messages))
     : { kind: "hidden" };
   // After a landlord reply the tenant sees the reply and the options first; the
   // next letter's approval panel opens only when they choose to review it.
@@ -529,6 +542,7 @@ export default function CaseDetailPage() {
           state={approval}
           onApprove={handleApproveLetter}
           onSaveDetail={handleSaveDetail}
+          onConfirmResidential={handleConfirmResidential}
         />
       )}
 

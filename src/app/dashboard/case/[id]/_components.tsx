@@ -41,6 +41,7 @@ import { CONTINGENCY_PCT, REVIEW_SLA } from "@/lib/constants";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   APPROVAL_STATEMENT,
+  RESIDENTIAL_STATEMENT,
   type ApprovalPanelState,
   type ContactDetailField,
 } from "@/lib/letters/approve-and-send";
@@ -1210,16 +1211,58 @@ function ContactDetailForm({
   );
 }
 
+function ResidentialConfirmForm({
+  message,
+  onConfirm,
+}: {
+  message: string;
+  onConfirm: () => Promise<void>;
+}) {
+  const [checked, setChecked] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  async function handleConfirm() {
+    setSaving(true);
+    await onConfirm();
+    setSaving(false);
+  }
+
+  return (
+    <div className="space-y-3">
+      <p className="text-sm text-muted-foreground">{message}</p>
+      <div className="flex items-start gap-2">
+        <Checkbox
+          id="confirm_residential"
+          checked={checked}
+          onCheckedChange={(value) => setChecked(value === true)}
+          className="mt-0.5"
+        />
+        <Label htmlFor="confirm_residential" className="text-sm font-normal leading-snug">
+          {RESIDENTIAL_STATEMENT}
+        </Label>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Tribune doesn&apos;t take cases for business or commercial rentals.
+      </p>
+      <Button size="sm" onClick={handleConfirm} disabled={!checked || saving}>
+        {saving ? "Saving…" : "Confirm"}
+      </Button>
+    </div>
+  );
+}
+
 export function LetterApprovalStep({
   letterNumber,
   state,
   onApprove,
   onSaveDetail,
+  onConfirmResidential,
 }: {
   letterNumber: number;
   state: ApprovalPanelState;
   onApprove: () => Promise<void>;
   onSaveDetail: (field: ContactDetailField, value: string) => Promise<void>;
+  onConfirmResidential: () => Promise<void>;
 }) {
   const [approved, setApproved] = useState(false);
   const [sending, setSending] = useState(false);
@@ -1256,8 +1299,12 @@ export function LetterApprovalStep({
             sent to your landlord until you approve it.
           </p>
         ) : state.kind === "needs" ? (
-          state.need !== "lease" && (
-            <ContactDetailForm field={state.need} message={state.message} onSave={onSaveDetail} />
+          state.need === "residential" ? (
+            <ResidentialConfirmForm message={state.message} onConfirm={onConfirmResidential} />
+          ) : (
+            state.need !== "lease" && (
+              <ContactDetailForm field={state.need} message={state.message} onSave={onSaveDetail} />
+            )
           )
         ) : (
           <>

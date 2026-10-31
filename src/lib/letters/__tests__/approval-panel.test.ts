@@ -2,6 +2,7 @@ import {
   approvalPanelState,
   nextLetterToOffer,
   parseContactDetail,
+  RESIDENTIAL_NEED_MESSAGE,
   type DispatchPlan,
 } from '../approve-and-send';
 
@@ -10,32 +11,53 @@ const blocked = (reason: string): DispatchPlan =>
 
 describe('approvalPanelState', () => {
   it('shows the exact server-generated letter when the plan is ok', () => {
-    const state = approvalPanelState({ ok: true, title: 'Demand Letter 1 — X', body: 'LETTER' }, true);
+    const state = approvalPanelState({ ok: true, title: 'Demand Letter 1 — X', body: 'LETTER' }, true, true);
     expect(state).toEqual({ kind: 'ready', title: 'Demand Letter 1 — X', body: 'LETTER' });
   });
 
   it('asks for the landlord email when it is missing', () => {
-    const state = approvalPanelState(blocked('no_landlord_email'), true);
+    const state = approvalPanelState(blocked('no_landlord_email'), true, true);
     expect(state).toMatchObject({ kind: 'needs', need: 'landlord_email' });
   });
 
   it('asks for the forwarding address when it is missing', () => {
-    const state = approvalPanelState(blocked('no_forwarding_address'), true);
+    const state = approvalPanelState(blocked('no_forwarding_address'), true, true);
     expect(state).toMatchObject({ kind: 'needs', need: 'forwarding_address' });
   });
 
   it('asks for the lease when triage blocks and no lease is on file', () => {
-    expect(approvalPanelState(blocked('triage'), false)).toMatchObject({ kind: 'needs', need: 'lease' });
+    expect(approvalPanelState(blocked('triage'), false, true)).toMatchObject({ kind: 'needs', need: 'lease' });
   });
 
   it('hides when triage blocks for a reason the tenant cannot fix', () => {
-    expect(approvalPanelState(blocked('triage'), true)).toEqual({ kind: 'hidden' });
+    expect(approvalPanelState(blocked('triage'), true, true)).toEqual({ kind: 'hidden' });
+  });
+
+  it('asks the tenant to confirm a residential tenancy when no answer is on record', () => {
+    expect(approvalPanelState(blocked('triage'), true, null)).toEqual({
+      kind: 'needs',
+      need: 'residential',
+      message: RESIDENTIAL_NEED_MESSAGE,
+    });
+  });
+
+  it('asks for the lease before the residential answer', () => {
+    expect(approvalPanelState(blocked('triage'), false, null)).toMatchObject({ kind: 'needs', need: 'lease' });
+  });
+
+  it('hides after a "not residential" answer: the tenant cannot undo it here', () => {
+    expect(approvalPanelState(blocked('triage'), true, false)).toEqual({ kind: 'hidden' });
+  });
+
+  it('the residential message speaks as Tribune and gives no advice', () => {
+    expect(RESIDENTIAL_NEED_MESSAGE).toMatch(/^Tribune /);
+    expect(RESIDENTIAL_NEED_MESSAGE).not.toMatch(/\b(we|us|our|I)\b/);
   });
 
   it.each(['dispatch_paused', 'status', 'wrong_letter_number', 'letter_not_offered', 'cooldown', 'not_authorized'])(
     'hides for %s',
     (reason) => {
-      expect(approvalPanelState(blocked(reason), false)).toEqual({ kind: 'hidden' });
+      expect(approvalPanelState(blocked(reason), false, null)).toEqual({ kind: 'hidden' });
     }
   );
 });
@@ -69,16 +91,16 @@ describe('approvalPanelState — follow-up wait', () => {
       message: 'Letter 2 becomes available on November 3, 2026.',
       availableOn: '2026-11-03',
     } as DispatchPlan;
-    expect(approvalPanelState(plan, true)).toEqual({
+    expect(approvalPanelState(plan, true, true)).toEqual({
       kind: 'waiting',
       message: 'Letter 2 becomes available on November 3, 2026.',
     });
   });
 
   it('stays hidden for a block that is not a wait', () => {
-    expect(approvalPanelState(blocked('letter_not_offered'), true)).toEqual({ kind: 'hidden' });
+    expect(approvalPanelState(blocked('letter_not_offered'), true, true)).toEqual({ kind: 'hidden' });
     const paused = { ok: false, reason: 'dispatch_paused', message: 'x', availableOn: '2026-11-03' } as DispatchPlan;
-    expect(approvalPanelState(paused, true)).toEqual({ kind: 'hidden' });
+    expect(approvalPanelState(paused, true, true)).toEqual({ kind: 'hidden' });
   });
 });
 
@@ -112,6 +134,6 @@ describe('approvalPanelState — cooldown wait', () => {
       message: 'A letter was sent on October 28, 2026. Tribune waits 5 days between letters, so Letter 2 becomes available on November 2, 2026.',
       availableOn: '2026-11-02',
     } as DispatchPlan;
-    expect(approvalPanelState(plan, true)).toEqual({ kind: 'waiting', message: plan.ok ? '' : plan.message });
+    expect(approvalPanelState(plan, true, true)).toEqual({ kind: 'waiting', message: plan.ok ? '' : plan.message });
   });
 });

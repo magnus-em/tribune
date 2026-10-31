@@ -8,6 +8,7 @@ import { sendEmail } from "@/lib/email/client";
 import { renderInvoiceEmail } from "@/lib/email/templates/invoice";
 import { renderCaseUpdateEmail } from "@/lib/email/templates/case-update";
 import { renderLandlordLetterEmail } from "@/lib/email/templates/landlord-letter";
+import { residentialAnswer, residentialAttestationMetadata } from "@/lib/triage";
 import {
   APPROVAL_STATEMENT,
   parseContactDetail,
@@ -527,6 +528,41 @@ export async function updateLetterContactDetail(
     body: `You added ${CONTACT_DETAIL_LABELS[field]} so Tribune can send your demand letter.`,
     created_by: user.id,
   });
+
+  revalidatePath(`/admin/case/${caseId}`);
+  revalidatePath(`/dashboard/case/${caseId}`);
+  return { success: true };
+}
+
+/**
+ * Record the tenant's residential answer for a case created before intake asked
+ * for it. Runs under the tenant session: RLS proves ownership and allows
+ * `system` message inserts. Refuses if an answer is already on record, so a
+ * "not residential" answer can't be overwritten here.
+ */
+export async function confirmResidentialTenancy(caseId: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const [{ data: caseRow }, { data: messages }] = await Promise.all([
+    supabase.from("cases").select("id, tenant_id").eq("id", caseId).single(),
+    supabase.from("case_messages").select("message_type, dispatch_metadata, created_at").eq("case_id", caseId),
+  ]);
+  if (!caseRow || caseRow.tenant_id !== user.id) return { error: "Not authorized" };
+  if (residentialAnswer(messages ?? []) !== null) {
+    return { error: "Tribune already has your answer for this case." };
+  }
+
+  const { error } = await supabase.from("case_messages").insert({
+    case_id: caseId,
+    message_type: "system",
+    title: "Residential tenancy confirmed",
+    body: "You confirmed that you rented this property as your home.",
+    created_by: user.id,
+    dispatch_metadata: residentialAttestationMetadata(true, new Date().toISOString()),
+  });
+  if (error) return { error: "Tribune couldn't save that. Try again." };
 
   revalidatePath(`/admin/case/${caseId}`);
   revalidatePath(`/dashboard/case/${caseId}`);

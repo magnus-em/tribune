@@ -91,6 +91,7 @@ import {
   generateDemandLetter,
   type LetterData,
 } from "@/lib/letters/templates";
+import { buildLetterData as buildCaseLetterData } from "@/lib/letters/approve-and-send";
 
 // ─── Admin Event Card ─────────────────────────────────────────────────────────
 
@@ -550,30 +551,11 @@ function AdminWritePanel({
 
   function buildLetterData(): LetterData | null {
     if (!profile) return null;
-    const deadline = parseDateOnly(caseData.statutory_deadline);
-    const daysOverdue = Math.max(0, differenceInDays(new Date(), deadline));
-    return {
-      tenantName: profile.full_name,
-      tenantAddress: caseData.forwarding_address ?? "",
-      tenantPhone: profile.phone ?? undefined,
-      tenantEmail: profile.email,
-      landlordName: caseData.landlord_name,
-      landlordAddress: caseData.landlord_address ?? undefined,
-      propertyAddress: caseData.property_address,
-      unitNumber: caseData.unit_number ?? undefined,
-      leaseStartDate: caseData.lease_start_date,
-      leaseEndDate: caseData.lease_end_date,
-      moveOutDate: caseData.move_out_date,
-      depositAmountCents: caseData.deposit_amount_cents,
-      amountWithheldCents: caseData.amount_withheld_cents,
-      depositReturnedCents: caseData.deposit_returned_cents,
-      statutoryDeadline: caseData.statutory_deadline,
-      daysOverdue,
-      itemizedDeductionsReceived: caseData.itemized_deductions_received,
-      landlordResponded: messages.some((m) => m.message_type === "landlord_reply" || m.message_type === "tenant_landlord_reply"),
-      situationDescription: caseData.situation_description,
-      withholding_reason: caseData.withholding_reason ?? undefined,
-    };
+    return buildCaseLetterData(
+      caseData,
+      profile,
+      messages.some((m) => m.message_type === "landlord_reply" || m.message_type === "tenant_landlord_reply")
+    );
   }
 
   function handleGenerateTemplate() {

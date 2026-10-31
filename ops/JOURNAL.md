@@ -3,6 +3,29 @@
 Newest first. One entry per tick. Counts only — no names, emails, addresses, or
 per-case amounts.
 
+## 2026-10-31 — build — approve-and-send, server side (slice 1 of 2)
+- Did: Split approve-and-send into server side + tenant UI and shipped the server
+  side. `prepareLetterDispatch()` is pure: kill switch (`DISPATCH_PAUSED`), Letter 1
+  only, next-in-sequence, status `intake_submitted`/`under_review`, landlord email,
+  forwarding address, triage `accept`, no dispatch in 5 days, then the letter text
+  regenerated from the case row. `approveAndSendLetter(caseId, letterNumber)` takes
+  no letter text, checks ownership under the tenant session, then uses the service
+  role only for the writes: a conditional update on `current_letter_number` as a
+  lock against double sends, the letter message, the send, dispatch metadata, status
+  `awaiting_landlord`, a `letter_dispatched` audit row with the tenant's approval
+  and time, a tenant-visible timeline entry, a tenant confirmation, and an FYI to
+  `ADMIN_EMAIL` with the case id only. A failed or skipped send rolls back the lock
+  and the letter row. The admin page now builds LetterData through the same helper.
+  No open PRs at start; main CI green; prod up.
+- Learned: Letter 1 tells the landlord to send payment to the forwarding address, so
+  the send now requires one (the admin flow would have rendered a blank). The
+  `action_type` enum has no "approved" value, so approval lives in the
+  `letter_dispatched` metadata (no migration, per spec). Letters 2/3 are blocked
+  until the follow-up schedule exists. `sendEmail` reports success when Resend
+  isn't configured; the new action treats that as not sent. Prod needs
+  `SUPABASE_SERVICE_ROLE_KEY` in Vercel (SETUP Part A already asks for it).
+- Next: slice 2, the tenant UI (BACKLOG Now #1).
+
 ## 2026-10-31 — build — timeline deadline label says 21 days
 - Did: The tenant case timeline labeled the statutory deadline "(30 days)". It now
   renders `STATUTE_DAYS` (21, per § 47a-21). Added a render test that pins

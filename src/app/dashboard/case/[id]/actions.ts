@@ -1,10 +1,19 @@
 "use server";
 
 import { addDays, format } from "date-fns";
-import { createClient } from "@/lib/supabase/server";
+import { revalidatePath } from "next/cache";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { MAX_FILE_SIZE_BYTES, ALLOWED_FILE_TYPES, PAYMENT_DUE_DAYS, INTRO_SENT_TITLE } from "@/lib/constants";
 import { sendEmail } from "@/lib/email/client";
 import { renderInvoiceEmail } from "@/lib/email/templates/invoice";
+import { renderCaseUpdateEmail } from "@/lib/email/templates/case-update";
+import { renderLandlordLetterEmail } from "@/lib/email/templates/landlord-letter";
+import {
+  APPROVAL_STATEMENT,
+  prepareLetterDispatch,
+  type DispatchInput,
+  type DispatchPlan,
+} from "@/lib/letters/approve-and-send";
 
 export async function uploadDocument(
   caseId: string,
@@ -257,4 +266,221 @@ export async function getDocumentUrl(storagePath: string) {
   }
 
   return { url: data.signedUrl };
+}
+
+// ── Tenant approve-and-send ──────────────────────────────────────────────────
+// The tenant reads Letter N, ticks the approval box, and Tribune sends it to the
+// landlord in the tenant's name. Rules and letter text live in
+// src/lib/letters/approve-and-send.ts; these actions only load and write.
+
+type SessionClient = Awaited<ReturnType<typeof createClient>>;
+
+// Everything the rules need, read under the tenant's session. RLS proves the
+// tenant can see the case; the tenant_id check proves it's theirs (an admin
+// session can read every case but must not approve on a tenant's behalf).
+async function loadDispatchInput(
+  supabase: SessionClient,
+  caseId: string,
+  userId: string,
+  letterNumber: number
+): Promise<{ input: DispatchInput; landlordEmail: string; tenantEmail: string } | null> {
+  const [{ data: caseRow }, { data: profile }, { data: messages }, { data: actions }, { data: lease }] =
+    await Promise.all([
+      supabase.from("cases").select("*").eq("id", caseId).single(),
+      supabase.from("profiles").select("full_name, email, phone").eq("id", userId).single(),
+      supabase.from("case_messages").select("message_type, dispatch_metadata, created_at").eq("case_id", caseId),
+      supabase.from("case_actions").select("action_type, metadata, created_at").eq("case_id", caseId),
+      supabase.from("case_documents").select("id").eq("case_id", caseId).eq("kind", "lease").limit(1).maybeSingle(),
+    ]);
+
+  if (!caseRow || caseRow.tenant_id !== userId || !profile) return null;
+
+  return {
+    input: {
+      caseRow,
+      profile,
+      messages: messages ?? [],
+      actions: actions ?? [],
+      hasLease: !!lease,
+      letterNumber,
+      dispatchPaused: process.env.DISPATCH_PAUSED,
+    },
+    landlordEmail: caseRow.landlord_email ?? "",
+    tenantEmail: profile.email,
+  };
+}
+
+// Read-only preview: the exact letter that Approve & send would send, or why it can't.
+export async function getLetterForApproval(
+  caseId: string,
+  letterNumber: number
+): Promise<DispatchPlan | { ok: false; reason: "not_authorized"; message: string }> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { ok: false, reason: "not_authorized", message: "Not authenticated" };
+
+  const loaded = await loadDispatchInput(supabase, caseId, user.id, letterNumber);
+  if (!loaded) return { ok: false, reason: "not_authorized", message: "Not authorized" };
+  return prepareLetterDispatch(loaded.input);
+}
+
+// Takes no letter text: the letter is regenerated here from the case row.
+export async function approveAndSendLetter(caseId: string, letterNumber: number) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const loaded = await loadDispatchInput(supabase, caseId, user.id, letterNumber);
+  if (!loaded) return { error: "Not authorized" };
+
+  const plan = prepareLetterDispatch(loaded.input);
+  if (!plan.ok) return { error: plan.message };
+
+  const { input, landlordEmail, tenantEmail } = loaded;
+  const approvedAt = new Date().toISOString();
+
+  // Scoped privileged writes. Tenants can't insert tribune_letter messages under
+  // RLS, so this one function uses the service role, after the session checks above.
+  let admin: ReturnType<typeof createServiceClient>;
+  try {
+    admin = createServiceClient();
+  } catch (err) {
+    console.error("[approveAndSendLetter] service client unavailable:", err);
+    return { error: "Tribune can't send letters right now. Try again later." };
+  }
+
+  // Claim the letter number first. The conditional update is the lock: a double
+  // click or a second tab finds current_letter_number already advanced.
+  const { data: claimed, error: claimError } = await admin
+    .from("cases")
+    .update({ current_letter_number: letterNumber })
+    .eq("id", caseId)
+    .eq("current_letter_number", letterNumber - 1)
+    .eq("status", input.caseRow.status)
+    .select("id");
+  if (claimError || !claimed?.length) {
+    return { error: "This letter has already been sent or the case changed. Refresh the page." };
+  }
+
+  const { data: letterMsg, error: letterError } = await admin
+    .from("case_messages")
+    .insert({
+      case_id: caseId,
+      message_type: "tribune_letter",
+      title: plan.title,
+      body: plan.body,
+      letter_number: letterNumber,
+      created_by: user.id,
+    })
+    .select("id")
+    .single();
+
+  const release = async () => {
+    if (letterMsg) await admin.from("case_messages").delete().eq("id", letterMsg.id);
+    await admin
+      .from("cases")
+      .update({ current_letter_number: letterNumber - 1 })
+      .eq("id", caseId)
+      .eq("current_letter_number", letterNumber);
+  };
+
+  if (letterError || !letterMsg) {
+    await release();
+    return { error: "Tribune couldn't save the letter. Nothing was sent." };
+  }
+
+  const tenantName = input.profile.full_name;
+  const sent = await sendEmail({
+    to: landlordEmail,
+    subject: `${tenantName} via Tribune — Security Deposit Demand Letter`,
+    html: renderLandlordLetterEmail({
+      caseId,
+      letterNumber,
+      letterBody: plan.body,
+      tenantName,
+      landlordName: input.caseRow.landlord_name,
+      propertyAddress: input.caseRow.property_address,
+    }),
+    // Landlord replies route back to this case through the inbound webhook.
+    replyTo: `case+${caseId}@reply.usetribune.org`,
+  });
+
+  // A skipped send (no RESEND_API_KEY) delivered nothing, so it isn't a dispatch.
+  if ("error" in sent || ("skipped" in sent && sent.skipped)) {
+    await release();
+    return { error: "Tribune couldn't send the letter. Nothing was sent; try again later." };
+  }
+
+  const sentAt = new Date().toISOString();
+  await admin
+    .from("case_messages")
+    .update({
+      dispatch_channel: "email",
+      dispatch_metadata: {
+        to: landlordEmail,
+        sent_at: sentAt,
+        email_id: "id" in sent ? sent.id ?? null : null,
+        approved_by_tenant: true,
+        approved_at: approvedAt,
+      },
+    })
+    .eq("id", letterMsg.id);
+
+  await admin.from("cases").update({ status: "awaiting_landlord" }).eq("id", caseId);
+
+  await admin.from("case_actions").insert({
+    case_id: caseId,
+    action_type: "letter_dispatched",
+    metadata: {
+      letter_number: letterNumber,
+      channel: "email",
+      sent_at: sentAt,
+      approved_by: "tenant",
+      approved_by_user_id: user.id,
+      approved_at: approvedAt,
+      approval_statement: APPROVAL_STATEMENT,
+    },
+  });
+
+  await admin.from("case_messages").insert({
+    case_id: caseId,
+    message_type: "system",
+    title: `You approved Letter ${letterNumber}; Tribune sent it`,
+    body: `Tribune emailed Letter ${letterNumber} to your landlord on ${format(new Date(sentAt), "MMMM d, yyyy 'at' h:mm a")}. Replies come to Tribune and appear here.`,
+    created_by: user.id,
+  });
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://usetribune.org";
+
+  // Tenant confirmation and the operator FYI are best-effort: the letter is sent.
+  try {
+    await sendEmail({
+      to: tenantEmail,
+      subject: `Tribune sent Letter ${letterNumber} to your landlord — ${input.caseRow.property_address}`,
+      html: renderCaseUpdateEmail({
+        tenantName: tenantName.split(" ")[0],
+        caseId,
+        messageTitle: `Letter ${letterNumber} sent to your landlord`,
+        messagePreview: `You approved Letter ${letterNumber} and Tribune sent it to ${input.caseRow.landlord_name} in your name. Tribune will notify you when they respond.`,
+        siteUrl,
+      }),
+    });
+  } catch (err) {
+    console.error("[approveAndSendLetter] tenant confirmation failed:", err);
+  }
+
+  try {
+    // Case id and link only: no names, addresses, or amounts.
+    await sendEmail({
+      to: process.env.ADMIN_EMAIL || "hello@usetribune.org",
+      subject: `Tenant approved and sent Letter ${letterNumber} (case ${caseId.slice(0, 8)})`,
+      html: `<p>A tenant approved Letter ${letterNumber} and Tribune sent it.</p><p><a href="${siteUrl}/admin/case/${caseId}">Open the case</a></p>`,
+    });
+  } catch (err) {
+    console.error("[approveAndSendLetter] admin FYI failed:", err);
+  }
+
+  revalidatePath(`/admin/case/${caseId}`);
+  revalidatePath(`/dashboard/case/${caseId}`);
+  return { success: true };
 }

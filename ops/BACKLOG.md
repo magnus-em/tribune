@@ -12,8 +12,13 @@ move a real case toward a paid invoice waits.
 
 ## Now
 
-1. ⚖️ **Tenant approve-and-send (Letter 1)** — the feature that removes Magnus from
-   each case. Spec below. Uses `triageCase()` (shipped in #5).
+1. ⚖️ **Tenant approve-and-send (Letter 1) — slice 2: tenant UI.** On the tenant
+   case page, when `getLetterForApproval(caseId, 1)` returns `ok`, show the letter,
+   the required checkbox (`APPROVAL_STATEMENT`), and **Approve & send** calling
+   `approveAndSendLetter`. When it's blocked for a reason the tenant can fix
+   (`no_forwarding_address`, `no_landlord_email`, lease missing), say what's needed.
+   Also update the "Tribune is reviewing" banner/`STATUS_DESCRIPTIONS` copy so it
+   doesn't contradict the button. Slice 1 (server side) is done.
 2. **Summer-cohort page + outreach drafts** — `/moved-out` landing page: "Moved
    out this summer and never got your deposit back?" Restates only verified
    § 47a-21 text, carries the disclaimer, CTA to intake. Plus
@@ -84,6 +89,11 @@ move a real case toward a paid invoice waits.
   classification (🔴 if it needs a paid API)
 
 ## Done
+
+- 2026-10-31 — ⚖️ Approve-and-send slice 1 (server side): `prepareLetterDispatch()`
+  in `src/lib/letters/approve-and-send.ts` (eligibility, kill switch, 5-day rate
+  limit, server-side regeneration; 40 tests), plus `getLetterForApproval` and
+  `approveAndSendLetter` server actions. No UI yet, so nothing calls them.
 
 - 2026-10-31 — Timeline deadline label: "(30 days)" → "(21 days)" from `STATUTE_DAYS`,
   with a test.

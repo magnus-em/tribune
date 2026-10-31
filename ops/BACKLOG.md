@@ -42,9 +42,6 @@ _Empty. The build tick takes the top of **Next**._
 
 ## Next
 
-- Follow-up, slice 3 — cron (Vercel Cron, free tier): a daily route that emails
-  the tenant when Letter 2 or 3 becomes available (transactional, about their own
-  case). Respects `DISPATCH_PAUSED`. Never sends to a landlord.
 - Follow-up, slice 4 — deadline-risk nudges to the tenant.
 - Landlord-reply handling on the tenant page: show the reply and the next-step
   options (report recovery, send the next letter).
@@ -82,6 +79,14 @@ _Empty. The build tick takes the top of **Next**._
 
 ## Done
 
+- 2026-10-31 — Follow-up, slice 3 of 4 — daily cron `/api/cron/follow-up-notices`
+  (Vercel Cron, `vercel.json`, 14:00 UTC). Pure `planFollowUpNotices()` /
+  `followUpNoticeDecision()` in `src/lib/letters/follow-up-notice.ts`: notifies the
+  tenant once per letter when `followUpOffer()` says Letter 2 or 3 is due. Writes a
+  tenant-visible system message (the dedupe marker, `dispatch_metadata.notice`)
+  and emails the tenant. Never contacts a landlord, sends no letter. Stopped by
+  `DISPATCH_PAUSED`; refuses every request until `CRON_SECRET` is set (SETUP Part A).
+  Also: `sendEmail` no longer logs the recipient when Resend is unconfigured.
 - 2026-10-31 — Follow-up, slice 2 of 4 — tenant UI: `nextLetterToOffer()` picks
   the letter the case page asks about (1 in setup, 2 or 3 while
   `awaiting_landlord`). The approval panel shows Letter N for approval, or

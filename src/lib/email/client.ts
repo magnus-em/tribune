@@ -10,7 +10,8 @@ export interface SendEmailParams {
 export async function sendEmail({ to, subject, html, replyTo }: SendEmailParams) {
   // Skip email if Resend not configured
   if (!process.env.RESEND_API_KEY) {
-    console.log("[Email skipped - Resend not configured]", { to, subject });
+    // No recipient in the log: it is PII.
+    console.log("[Email skipped - Resend not configured]", { subject });
     return { success: true, skipped: true };
   }
 

@@ -15,6 +15,8 @@ Without these, letters and notifications don't send in production.
   - `NEXT_PUBLIC_SITE_URL` = `https://usetribune.org`
   - `NEXT_PUBLIC_TRIBUNE_PAYMENT_PHONE` (for the Venmo/Zelle invoice instructions)
   - `ADMIN_EMAIL` (where new-case and landlord-reply alerts go)
+  - `CRON_SECRET` = any long random string (e.g. `openssl rand -hex 32`). Vercel
+    sends it to the daily follow-up-notice cron; without it the cron refuses to run.
   - Then redeploy (Deployments → ⋯ → Redeploy).
 - [ ] Resend → Inbound: confirm `reply.usetribune.org` forwards to
       `https://usetribune.org/api/webhooks/resend/inbound`. Copy the signing secret

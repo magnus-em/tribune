@@ -141,6 +141,7 @@ export default function LandingPage() {
             <a href="#law">Your rights</a>
             <a href="#how">How it works</a>
             <a href="#faq">FAQ</a>
+            <Link href="/guides/connecticut-security-deposit-law">CT deposit law guide</Link>
           </div>
           <Link href={cta.href} className={s.navCta}>
             {cta.navLabel}

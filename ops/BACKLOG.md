@@ -12,9 +12,7 @@ move a real case toward a paid invoice waits.
 
 ## Now
 
-1. **SEO foundation** — `sitemap.ts`, `robots.ts`, per-page metadata, Open Graph,
-   `LegalService`/`FAQPage` structured data. No new deps.
-2. ⚖️ **CT deposit law guide** — `/guides/connecticut-security-deposit-law`,
+1. ⚖️ **CT deposit law guide** — `/guides/connecticut-security-deposit-law`,
    restating only verified statute text, with sources and the disclaimer.
 
 ## Spec — tenant approve-and-send
@@ -61,6 +59,9 @@ move a real case toward a paid invoice waits.
   `current_letter_number`, amounts). Narrow it — a column-limited policy or a
   trigger — so tenant writes go only through the server actions. Needs a
   migration (see the migration note below).
+- Voice and accuracy: the landing page (`src/app/page.tsx`) FAQ and about copy
+  say "we"/"us", and state unverified figures ("4–8 weeks", "filing fees under
+  $75"). Make Tribune the actor and drop or source the figures.
 - Voice: `LandlordIntroStep` says "our messages" / "authorizes us"; and the
   `RecoveryStep` says "so we can close your case". Tribune is the actor.
 - ⚖️ Capture the forwarding-address date and correct the deadline math. Needs an
@@ -80,6 +81,13 @@ move a real case toward a paid invoice waits.
   classification (🔴 if it needs a paid API)
 
 ## Done
+
+- 2026-10-31 — SEO foundation: `sitemap.ts` (/, /moved-out), `robots.ts`
+  (disallows admin, dashboard, api, auth, login, demo), `metadataBase`, Open
+  Graph and Twitter metadata, a canonical on /moved-out, `FAQPage` JSON-LD from
+  the /moved-out FAQ, and site-wide `Organization`/`ProfessionalService` JSON-LD.
+  Deliberately not `LegalService`: schema.org defines it as advice and
+  representation. Root description no longer says "unless we recover".
 
 - 2026-10-31 — Admin exception queue on `/admin`: pure `buildExceptionQueue()`
   in `src/lib/exceptions.ts` (25 tests) sorts cases into new intakes, landlord

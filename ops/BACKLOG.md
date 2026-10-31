@@ -1,64 +1,97 @@
 # Backlog
 
-The build tick takes the top unblocked item in **Now**. Tiers follow
-`ops/CHARTER.md`. `blocked:` means don't start it; the reason says what unblocks it.
-Keep items PR-sized. Split anything bigger before starting.
+The build tick takes the top unblocked item in **Now**. Since 2026-10-30 everything
+is 🟢 (do it, merge on green) unless marked 🔴 (spends money or contacts people).
+See `ops/CHARTER.md`. ⚖️ marks legal content: the charter's legal rules apply, and
+the item goes in the digest's "Legal changes" list. `blocked:` means don't start it;
+the reason says what unblocks it. Keep items PR-sized. Split anything bigger before
+starting.
+
+**Priority: the first paid recovery.** Zero cash. No attorney. Anything that doesn't
+move a real case toward a paid invoice waits.
 
 ## Now
 
-1. 🟢 **Doc drift** — ARCHITECTURE.md and SPEC.md: reconcile with the code (reply-to
-   subdomain, agent framing, `declined` status, statuses in use). Label anything
-   uncertain `[uncertain]`.
-2. 🟢 **Admin exception queue** — a `/admin` view listing what needs a decision: new
-   intakes, landlord replies with no follow-up, cases within 3 days of the
-   deadline, overdue invoices. Read-only. This becomes the ops tick's worklist.
-3. 🟢 **SEO foundation** — `sitemap.ts`, `robots.ts`, per-page metadata, Open Graph,
-   and `LegalService`/`FAQPage` structured data on the landing page. No new deps.
-4. 🟢 **CT deposit law guide page** — `/guides/connecticut-security-deposit-law`.
-   Restates only the verified statute text in LEGAL_REVIEW_47a-21.md, cites
-   sources, carries the disclaimer, and links to intake.
-5. 🔴 **Deadline calculator** — public tool at `/tools/deposit-deadline`. Implements
-   the 21-day / 15-days-after-forwarding-address rule. Build it, open the PR, and
-   escalate; it involves deadline math.
-6. 🟢 **Migrate `next lint` → ESLint CLI** (deprecated in Next 16).
+1. ⚖️ **Timeline deadline label** — the tenant case timeline labels the statutory
+   deadline "(30 days)" (`src/components/case-timeline.tsx`). The statute and
+   `STATUTE_DAYS` say 21. Fix the label and add a test.
+2. ⚖️ **Tenant approve-and-send (Letter 1)** — the feature that removes Magnus from
+   each case. Spec below. Uses `triageCase()` (shipped in #5).
+3. **Summer-cohort page + outreach drafts** — `/moved-out` landing page: "Moved
+   out this summer and never got your deposit back?" Restates only verified
+   § 47a-21 text, carries the disclaimer, CTA to intake. Plus
+   `ops/outreach/posts.md`: 3 ready-to-paste posts (Yale grad lists, r/newhaven,
+   New Haven housing groups) with each venue's self-promotion rules noted.
+   Drafts only. Magnus posts them (contacting people is 🔴).
+4. **Admin exception queue** — read-only `/admin` view: new intakes, landlord
+   replies with no follow-up, cases within 3 days of a deadline, overdue invoices.
+5. **SEO foundation** — `sitemap.ts`, `robots.ts`, per-page metadata, Open Graph,
+   `LegalService`/`FAQPage` structured data. No new deps.
+6. ⚖️ **CT deposit law guide** — `/guides/connecticut-security-deposit-law`,
+   restating only verified statute text, with sources and the disclaimer.
+
+## Spec — tenant approve-and-send
+
+- **Where:** the tenant case page. When Letter N is due, show the letter
+  generated server-side from the template and the case data, a required checkbox
+  ("I've read this letter, it's accurate, and I authorize Tribune to send it to
+  my landlord in my name"), and an **Approve & send** button.
+- **When due:** Letter 1 once intake is complete, the lease is uploaded, and
+  `triageCase()` says `accept`. Letters 2 and 3 come later via the follow-up cron.
+- **Server action `approveAndSendLetter(caseId, letterNumber)`:**
+  1. Under the tenant's session: load the case (RLS proves ownership). Check the
+     status allows it, `letterNumber === current_letter_number + 1`, a landlord
+     email exists, `DISPATCH_PAUSED` isn't `true`, and there's been no dispatch on
+     this case in the last 5 days.
+  2. Regenerate the letter server-side. Never accept letter text from the client.
+  3. Scoped privileged write (service-role client, used only in this function):
+     insert the `tribune_letter` message, send it through the existing
+     landlord-letter wrapper and reply-to, record the dispatch metadata, set status
+     `awaiting_landlord`, increment `current_letter_number`, add a `case_actions`
+     audit row noting tenant approval and time, and add a tenant-visible system
+     message ("You approved Letter N; Tribune sent it").
+  4. Send an FYI email to `ADMIN_EMAIL`.
+- **No migration.** Approval is recorded in `case_actions` and `case_messages`.
+- **Kill switch:** the `DISPATCH_PAUSED` env var stops every automated dispatch.
+- **Tests:** eligibility rules, the server-side regeneration (client text
+  ignored), the kill switch, the rate limit.
 
 ## Next
 
-- 🟢 More guide pages: "landlord didn't return deposit CT", "how long does a CT
-  landlord have", deduction topics (normal wear and tear, cleaning, painting,
-  carpet), then city pages. Each one only restates verified text.
-- 🟢 Unit tests for email templates (disclaimer present, Tribune voice, no PII leakage).
-- 🟢 Weekly metrics via `ops/sql/metrics.sql` — blocked: read-only role (SETUP §4).
-- 🟡 Staging: apply migrations, seed script, wire Vercel preview to staging —
-  blocked: staging project (SETUP §4).
-- 🟡 Playwright E2E golden path against preview — blocked: staging.
-- 🟡 Verify the inbound webhook end to end on staging, then prod — blocked: staging + SETUP §5.
-- 🔴 Fix the letter defects in ESCALATIONS E-003 — blocked: Magnus/attorney.
-- 🔴 Tenant case timeline labels the statutory deadline "(30 days)"
-  (`src/components/case-timeline.tsx`); the statute and `STATUTE_DAYS` say 21.
-  Deadline copy, so it needs Magnus's yes.
-- 🟢 Triage follow-ups: a per-case residential field at intake (🟡, tenant flow),
-  and a minimum withheld amount if Magnus wants one (business decision).
+- Follow-up cron (Vercel Cron, free tier): after 10 business days with no reply
+  and no recovery, offer the tenant Letter 2; after 7 more, Letter 3. Also
+  deadline-risk nudges to the tenant. Never sends to a landlord without approval.
+- Landlord-reply handling on the tenant page: show the reply and the next-step
+  options (report recovery, send the next letter).
+- Triage follow-up: a residential-vs-commercial question at intake, so that check
+  stops being informational.
+- Unit tests for email templates (disclaimer present, Tribune voice, no PII leaks).
+- Doc drift: ARCHITECTURE.md and SPEC.md vs. the code.
+- ⚖️ Deadline calculator tool at `/tools/deposit-deadline`.
+- ⚖️ More guide pages, then city pages (only verified statute text).
+- Migrate `next lint` → ESLint CLI.
+- ⚖️ Capture the forwarding-address date and correct the deadline math. Needs an
+  additive migration — blocked: cloud ticks can't apply migrations. Write it, and an
+  interactive session applies it.
+- Weekly metrics — blocked: read-only role (SETUP Part B).
+- Staging + Playwright E2E — blocked: staging project (SETUP Part B).
 
-## Later — Phase 1 (system as operator; mostly blocked on staging)
+## Later
 
-- 🟡 Tenant letter approval + e-approval flow (new status, migration)
-- 🟡 Auto-dispatch on approval + global dispatch kill switch
-- 🟡 Follow-up/deadline cron (Vercel Cron)
-- 🟡 Auto-triage acting on its verdict (accept → next step; decline → resources)
-- 🔴 Capture the forwarding-address date and correct the deadline math
-
-## Later — Phase 2+ (see PLAN.md §5)
-
-- 🟡 "Remind me" pre-move-out capture (table + cron + reminder email)
-- 🟡 Referral program
-- 🔴 Stripe payment links; recovery verification; small-claims packet; certified mail
-- Landlord entity + memory; LLM-assisted reply classification; outcome analytics
+- Referral program (roommates share a landlord)
+- "Remind me" pre-move-out capture (needs a table; see the migration note above)
+- 🔴 Stripe payment links (per-transaction fees) — after Venmo/Zelle proves to be
+  a real problem
+- 🔴 Certified mail for landlords without email (costs money per letter)
+- Recovery verification; small-claims packet (⚖️); landlord memory; reply
+  classification (🔴 if it needs a paid API)
 
 ## Done
 
+- 2026-10-30 — Full autonomy granted; build tick every 2 hours.
+- 2026-10-30 — Letter defects fixed: follow-ups no longer state false facts (#4).
 - 2026-10-30 — Triage function: `triageCase()` in `src/lib/triage.ts` with 31 tests,
-  verdict shown on the admin case page (display only).
-
+  verdict shown on the admin case page (display only) (#5).
+- 2026-10-30 — Re-planned around founder decisions (no attorney, $0, revenue first).
 - 2026-10-28 — Plan + charter approved; stale tests rewritten around legal
-  invariants; CI added; SLA copy made deliverable; ops/ files; legal packet; setup checklist.
+  invariants; CI added; SLA copy made deliverable; ops/ files; setup checklist.

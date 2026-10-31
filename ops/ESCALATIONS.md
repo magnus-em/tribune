@@ -1,52 +1,36 @@
 # Escalations
 
-Decisions that need Magnus. Answer inline under **Answer:** — a word is enough.
-The next tick applies the answer. 🟡 items take their default on the stated date if
-unanswered; 🔴 items never do.
+Since 2026-10-30 the agent asks Magnus about only two things: **spending money**
+and **contacting people** (`ops/CHARTER.md`). Each ask comes with a
+recommendation. Answer inline under **Answer:**; a word is enough. The next tick
+applies it. Unanswered asks never default to yes.
+
+Things only Magnus can physically do (logins, accounts, dashboards) live in
+`ops/SETUP.md`. They're to-dos, not permission requests.
 
 ---
 
-## Digest — 2026-10-28
+## Digest — 2026-10-30 (evening)
 
-Phase 0 is mostly done. Tests are green (64/64) and now guard the legal invariants
-of the letters. CI runs on every PR. The "within a few hours" promise is now
-"within two business days", which the loop can keep. The `ops/` operating system
-is in place. What's left of Phase 0 (staging, E2E, metrics) waits on your setup
-session. Three decisions:
+Magnus granted full autonomy: the agent commits and merges whenever it wants, and
+asks only before spending money or contacting people. The charter, loop, and
+routine prompts now say so. The build tick runs every 2 hours.
 
----
+Shipped today: the triage function (#5, merged by the 3pm build tick on its own),
+the letter fixes (#4), and the re-plan and autonomy charter (#3).
 
-### E-001 🔴 Do the one-time setup session
-**Context:** Staging, E2E tests, metrics, the ops tick, and the cloud routines
-all need credentials only you can create. Checklist: `ops/SETUP.md` (~1.5–2 hrs).
-**Recommendation:** do sections 1–4 first; they unblock the most.
-**Default:** none. Until then the loop works only on items that need no access
-(SEO pages, triage logic, admin queue, docs).
-**Answer:**
+Legal changes: #4 changed Letters 2 and 3 so they no longer state false facts
+(the "no response" and "no itemization" claims and the "no further demand"
+promise). Citations and damages math are unchanged.
 
-### E-002 🔴 Legal gate — book the attorney
-**Context:** No real letter or fee until a CT attorney answers whether the 15%
-contingency is lawful and whether this is document preparation or UPL. The packet
-with the exact questions and the rendered letters is `ops/legal-packet.md`.
-**Recommendation:** book this week. The answer decides whether we launch as-is,
-adjust, or pivot to the attorney-software model (PLAN.md §4.1).
-**Default:** none. The loop keeps building everything that doesn't touch a real landlord.
-**Answer:**
+Closed:
+- **E-002 (attorney)** — declined by Magnus 2026-10-30.
+- **E-003 (letter defects)** — fixed in #4.
+- **E-004 (loosen the charter)** and **E-005 (self-merge)** — superseded by full
+  autonomy, 2026-10-30.
 
-### E-003 🔴 Letter defects found while rewriting tests
-**Context:** Three factual problems in the letter templates (they're also in the
-attorney packet):
-  a. Letters 2 and 3 always say the landlord delivered no itemized statement, even
-     when the tenant reported receiving one. Letter 1 handles both cases. A real
-     letter could state something false.
-  b. Letter 1 says "I will not send a further demand before filing", and Letter 2
-     says "I will not send another demand", yet Letters 2 and 3 follow. That
-     undercuts credibility.
-  c. Letter 2 opens "You did not respond", which is false if the landlord replied
-     with a dispute.
-**Recommendation:** let the agent fix (a)–(c) now, as a PR you approve: branch 2
-and 3 on itemization like Letter 1, drop the "no further demand" lines from
-Letters 1–2, and make Letter 2's opening conditional on whether a reply exists.
-The attorney then reviews the corrected version.
-**Default:** none (letter content is 🔴).
-**Answer:**
+Open: none that need an answer.
+
+The one to-do that still matters: **`ops/SETUP.md` Part A (~20 min, free).** Prod
+may not be able to send email until it's done, so letters, notifications, and
+invoices all wait on it.

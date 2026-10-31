@@ -43,16 +43,18 @@ If any of these change, it's a business decision — update deliberately, do not
 ## Legal Stakes
 
 The product drafts legal correspondence. **Citations, deadlines, and damages calculations have legal consequences.** When editing letter templates, statute references, or legal math:
-- Draft structure is fine; leave exact statute citations and damages numbers for explicit human verification.
-- Do not invent CT case law or subsection numbers from training data.
-- Flag any ambiguity rather than guessing.
+- Restate only verified statute text (`LEGAL_REVIEW_47a-21.md`). Do not invent CT case law or subsection numbers from training data.
+- Never weaken a test that guards a legal invariant. Add tests; don't loosen them.
+- Flag any ambiguity rather than guessing, and list every legal change in the next ops digest.
 
 ## Before Acting — Delegation Charter
 
 Tribune is run by an autonomous operating loop (`ops/PLAN.md`, `ops/LOOP.md`).
-What may be done without asking is defined in **`ops/CHARTER.md`** (🟢 do / 🟡 PR +
-72 h veto window / 🔴 explicit yes). Letter templates, statute citations, deadline
-and damages math, RLS/auth, spend, and new external services are always 🔴.
+**Full autonomy since 2026-10-30** (`ops/CHARTER.md`): commit, merge, and ship without
+asking. Ask Magnus first only before **spending money** or **contacting people**
+(emails, posts, DMs, or messages on a real case). Product features may send messages
+only when a user's own action is behind them; a letter never goes to a landlord
+without the tenant's in-app approval.
 
 ## PII & Security
 

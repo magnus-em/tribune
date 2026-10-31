@@ -3,6 +3,23 @@
 Newest first. One entry per tick. Counts only — no names, emails, addresses, or
 per-case amounts.
 
+## 2026-10-31 — build — follow-up slice 3: daily cron emails the tenant when Letter 2/3 is ready
+- Did: `/api/cron/follow-up-notices` plus a daily Vercel Cron entry (free tier).
+  The planner (`src/lib/letters/follow-up-notice.ts`) reuses `followUpOffer()`
+  and adds a once-per-letter dedupe through a tenant-visible system message
+  (written before the email; removed if the email fails or is skipped, so the
+  next run retries). New tenant email template with the disclaimer, Tribune
+  voice, escaped first name only. 31 new tests (300 total). Fails closed without
+  `CRON_SECRET` (added to SETUP Part A and `.env.example`); `DISPATCH_PAUSED`
+  stops it. Removed the recipient address from `sendEmail`'s "skipped" log (PII).
+  No open PRs at start; main CI green; prod returned 200.
+- Learned: `action_type` is an enum without a fitting value, and cloud ticks
+  can't apply migrations, so the dedupe marker lives in `case_messages`
+  `dispatch_metadata` instead of `case_actions`. Notices are attributed
+  (`created_by`) to an admin profile, as the inbound webhook already does.
+  Not run against a database: no staging.
+- Next: follow-up slice 4 (deadline-risk nudges to the tenant).
+
 ## 2026-10-31 — build — follow-up slice 2: tenant page offers Letters 2 and 3
 - Did: The case page now asks the server about the next letter
   (`nextLetterToOffer()`: 1 in setup, 2 or 3 while awaiting the landlord), not

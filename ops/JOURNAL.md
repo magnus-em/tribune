@@ -3,6 +3,18 @@
 Newest first. One entry per tick. Counts only — no names, emails, addresses, or
 per-case amounts.
 
+## 2026-10-31 — build — residential confirm prompt for cases without an answer
+- Did: Second item this tick, the follow-up to #18. `approvalPanelState` takes
+  the residential answer. When triage blocks, the lease is on file, and there's
+  no answer, the panel shows a confirm form (required checkbox + Confirm).
+  `confirmResidentialTenancy()` writes the same marker under the tenant session
+  and refuses a second answer. 5 new tests (370 total). Merged #18 first (CI
+  green).
+- Learned: deleting the merged `loop/` branch with `git push --delete` is
+  refused here, same as before. Merged branches stay until someone deletes them.
+  Not browser-verified (no staging, no tenant login).
+- Next: email-template tests, or doc drift.
+
 ## 2026-10-31 — build — residential question at intake; triage now uses it
 - Did: Took the top of Next (Now was empty). Intake step 1 asks "Did you rent
   this property as your home?" A "No" stops the intake with a residential-only

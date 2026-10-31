@@ -255,8 +255,9 @@ export function prepareLetterDispatch(input: DispatchInput): DispatchPlan {
 // ── Tenant case page ─────────────────────────────────────────────────────────
 
 // Blockers the tenant can clear on the case page. Everything else (status,
-// triage for reasons other than the lease, the kill switch) waits on Tribune.
-export type TenantFixableNeed = "landlord_email" | "forwarding_address" | "lease";
+// triage for reasons other than the lease or a missing residential answer, the
+// kill switch) waits on Tribune.
+export type TenantFixableNeed = "landlord_email" | "forwarding_address" | "lease" | "residential";
 
 export type ApprovalPanelState =
   | { kind: "ready"; title: string; body: string }
@@ -281,13 +282,23 @@ export function nextLetterToOffer(
   return next >= MIN_LETTER_NUMBER + 1 && next <= MAX_LETTER_NUMBER ? next : null;
 }
 
+// What the tenant checks to record the residential answer on the case page.
+export const RESIDENTIAL_STATEMENT =
+  "I rented this property as my home. It was not an office, store, or other business space.";
+
+export const RESIDENTIAL_NEED_MESSAGE =
+  "Tribune serves residential tenants only. Confirm that you rented this property as your home before your letter can be prepared.";
+
 /**
  * What the tenant case page shows for Letter N, from the server's plan.
- * A missing lease fails triage, so `triage` with no lease on file is fixable.
+ * A missing lease or a missing residential answer fails triage, so `triage`
+ * with either one missing is fixable by the tenant (the lease first).
+ * `residential` is `residentialAnswer()` of the case messages.
  */
 export function approvalPanelState(
   plan: DispatchPlan | { ok: false; reason: string; message: string },
-  hasLease: boolean
+  hasLease: boolean,
+  residential: boolean | null
 ): ApprovalPanelState {
   if (plan.ok) return { kind: "ready", title: plan.title, body: plan.body };
   if (
@@ -303,13 +314,17 @@ export function approvalPanelState(
     case "no_forwarding_address":
       return { kind: "needs", need: "forwarding_address", message: plan.message };
     case "triage":
-      return hasLease
-        ? { kind: "hidden" }
-        : {
-            kind: "needs",
-            need: "lease",
-            message: "Tribune needs a copy of your lease before your letter can be prepared.",
-          };
+      if (!hasLease) {
+        return {
+          kind: "needs",
+          need: "lease",
+          message: "Tribune needs a copy of your lease before your letter can be prepared.",
+        };
+      }
+      if (residential === null) {
+        return { kind: "needs", need: "residential", message: RESIDENTIAL_NEED_MESSAGE };
+      }
+      return { kind: "hidden" };
     default:
       return { kind: "hidden" };
   }

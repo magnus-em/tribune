@@ -42,11 +42,6 @@ _Empty. The build tick takes the top of **Next**._
 
 ## Next
 
-- Residential answer for cases created before intake asked: they have no
-  answer on record, so triage says `review` and the approval panel hides, and
-  the tenant can't fix that and the admin has no override. Add a "confirm you
-  rented this as your home" prompt to the approval panel (a new `needs` state)
-  that writes the same intake marker through a server action.
 - Unit tests for email templates (disclaimer present, Tribune voice, no PII leaks).
 - Doc drift: ARCHITECTURE.md and SPEC.md vs. the code.
 - ⚖️ Deadline calculator tool at `/tools/deposit-deadline`.
@@ -79,6 +74,13 @@ _Empty. The build tick takes the top of **Next**._
 
 ## Done
 
+- 2026-10-31 — Residential confirm for older cases: when triage blocks only on
+  a missing residential answer (lease on file), the approval panel asks the
+  tenant to tick "I rented this property as my home…" and confirm.
+  `confirmResidentialTenancy()` runs under the tenant session, refuses when an
+  answer is already on record (so a "no" can't be overwritten), and writes the
+  same intake marker. New `needs: "residential"` state; the lease is asked for
+  first.
 - 2026-10-31 — Residential-vs-commercial question at intake ("Did you rent this
   property as your home?"). "No" stops the intake with a residential-only
   message; the server schema requires "yes". `createCase` records the answer as

@@ -2,7 +2,9 @@ import { differenceInDays, format } from "date-fns";
 import type { Case, CaseAction, CaseMessage, CaseStatus, Profile } from "@/lib/types/database";
 import { triageCase } from "@/lib/triage";
 import { parseDateOnly } from "@/lib/utils/case";
+import { MAX_LETTER_NUMBER, MIN_LETTER_NUMBER } from "@/lib/constants";
 import { generateDemandLetter, type LetterData } from "./templates";
+import { followUpBlockMessage, followUpOffer } from "./follow-up";
 
 /**
  * Tenant approve-and-send — the pure half.
@@ -19,10 +21,6 @@ import { generateDemandLetter, type LetterData } from "./templates";
 
 // Minimum gap between two dispatches on one case.
 export const DISPATCH_COOLDOWN_DAYS = 5;
-
-// Letters 2 and 3 are offered by the follow-up schedule (BACKLOG "Next"), which
-// isn't built yet. Until then only Letter 1 can be approved by the tenant.
-export const TENANT_APPROVABLE_LETTERS: ReadonlySet<number> = new Set([1]);
 
 // Statuses in which the tenant may approve Letter 1. `correspondence_ready`
 // means Tribune staged a letter through the admin flow; that path stays separate.
@@ -165,14 +163,31 @@ export function prepareLetterDispatch(input: DispatchInput): DispatchPlan {
   if (isDispatchPaused(input.dispatchPaused)) {
     return block("dispatch_paused", "Tribune has paused sending letters. Try again later.");
   }
-  if (!TENANT_APPROVABLE_LETTERS.has(letterNumber)) {
+  if (
+    !Number.isInteger(letterNumber) ||
+    letterNumber < MIN_LETTER_NUMBER ||
+    letterNumber > MAX_LETTER_NUMBER
+  ) {
     return block("letter_not_offered", `Letter ${letterNumber} isn't available to send yet.`);
   }
   if (letterNumber !== caseRow.current_letter_number + 1) {
     return block("wrong_letter_number", `Letter ${letterNumber} isn't the next letter on this case.`);
   }
-  if (!LETTER_1_STATUSES.has(caseRow.status)) {
-    return block("status", "This case isn't at a stage where Letter 1 can be sent.");
+
+  // Letters 2 and 3 are offered only by the follow-up schedule, and cite the
+  // send dates of the earlier letters.
+  let previousLetterDates: { letter1?: string; letter2?: string } | undefined;
+  if (letterNumber === 1) {
+    if (!LETTER_1_STATUSES.has(caseRow.status)) {
+      return block("status", "This case isn't at a stage where Letter 1 can be sent.");
+    }
+  } else {
+    const offer = followUpOffer({ caseRow, messages: input.messages, actions: input.actions, now });
+    if (!offer.due) {
+      return block(offer.reason === "status" ? "status" : "letter_not_offered", followUpBlockMessage(offer));
+    }
+    const day = (d: Date | undefined) => (d ? format(d, "yyyy-MM-dd") : undefined);
+    previousLetterDates = { letter1: day(offer.letterDates[1]), letter2: day(offer.letterDates[2]) };
   }
   if (!caseRow.landlord_email?.trim()) {
     return block("no_landlord_email", "Tribune needs your landlord's email address to send this letter.");
@@ -209,7 +224,8 @@ export function prepareLetterDispatch(input: DispatchInput): DispatchPlan {
   );
   const body = generateDemandLetter(
     letterNumber,
-    buildLetterData(caseRow, input.profile, landlordResponded, now)
+    buildLetterData(caseRow, input.profile, landlordResponded, now),
+    previousLetterDates
   );
   return { ok: true, title: letterTitle(letterNumber, caseRow.property_address), body };
 }

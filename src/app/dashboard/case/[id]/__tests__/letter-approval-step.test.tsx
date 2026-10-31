@@ -64,4 +64,30 @@ describe("LetterApprovalStep", () => {
     await userEvent.click(screen.getByRole("button", { name: "Save" }));
     expect(onSaveDetail).toHaveBeenCalledWith("forwarding_address", "10 Oak St, Hartford, CT 06103");
   });
+
+  it("shows when a follow-up letter becomes available, with no way to send it", () => {
+    render(
+      <LetterApprovalStep
+        letterNumber={2}
+        state={{ kind: "waiting", message: "Letter 2 becomes available on November 3, 2026." }}
+        onApprove={noop}
+        onSaveDetail={noop}
+      />
+    );
+    expect(screen.getByText(/Letter 2 becomes available on November 3, 2026\./)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /approve & send/i })).toBeNull();
+    expect(screen.queryByRole("checkbox")).toBeNull();
+  });
+
+  it("labels a ready follow-up with its letter number", () => {
+    render(
+      <LetterApprovalStep
+        letterNumber={3}
+        state={{ kind: "ready", title: "Demand Letter 3 — 1 Elm St", body: "FINAL" }}
+        onApprove={noop}
+        onSaveDetail={noop}
+      />
+    );
+    expect(screen.getByText("Approve Letter 3")).toBeTruthy();
+  });
 });

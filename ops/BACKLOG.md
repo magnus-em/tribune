@@ -42,10 +42,6 @@ _Empty. The build tick takes the top of **Next**._
 
 ## Next
 
-- Follow-up, slice 2 — tenant UI: the case page asks `getLetterForApproval` for
-  the next letter (`current_letter_number + 1`), not always Letter 1, and shows
-  "Letter N becomes available on …" while it waits. The schedule and the server
-  rules are done (slice 1).
 - Follow-up, slice 3 — cron (Vercel Cron, free tier): a daily route that emails
   the tenant when Letter 2 or 3 becomes available (transactional, about their own
   case). Respects `DISPATCH_PAUSED`. Never sends to a landlord.
@@ -86,6 +82,12 @@ _Empty. The build tick takes the top of **Next**._
 
 ## Done
 
+- 2026-10-31 — Follow-up, slice 2 of 4 — tenant UI: `nextLetterToOffer()` picks
+  the letter the case page asks about (1 in setup, 2 or 3 while
+  `awaiting_landlord`). The approval panel shows Letter N for approval, or
+  "Letter N becomes available on …" while the schedule's wait runs (new
+  `availableOn` on the blocked plan, `waiting` panel state). Approve & send
+  posts the right letter number. Server rules unchanged.
 - 2026-10-31 — ⚖️ Follow-up schedule, slice 1 of 4: pure `followUpOffer()` in
   `src/lib/letters/follow-up.ts` (Letter 2 at 10 business days after Letter 1,
   Letter 3 at 7 after Letter 2; only while `awaiting_landlord`, no landlord reply

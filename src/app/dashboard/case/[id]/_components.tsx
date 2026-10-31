@@ -1247,10 +1247,15 @@ export function LetterApprovalStep({
           color: "hsl(var(--muted-foreground))",
         }}
       >
-        Approve Letter {letterNumber}
+        {state.kind === "waiting" ? `Letter ${letterNumber}` : `Approve Letter ${letterNumber}`}
       </div>
       <div className="p-4 space-y-4">
-        {state.kind === "needs" ? (
+        {state.kind === "waiting" ? (
+          <p className="text-sm text-muted-foreground">
+            {state.message} Tribune shows it here for you to read and approve then. Nothing is
+            sent to your landlord until you approve it.
+          </p>
+        ) : state.kind === "needs" ? (
           state.need !== "lease" && (
             <ContactDetailForm field={state.need} message={state.message} onSave={onSaveDetail} />
           )

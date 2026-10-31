@@ -1,5 +1,6 @@
 import {
   approvalPanelState,
+  nextLetterToOffer,
   parseContactDetail,
   type DispatchPlan,
 } from '../approve-and-send';
@@ -57,5 +58,45 @@ describe('parseContactDetail', () => {
 
   it.each(['', '10 Oak St', 'Somewhere in Hartford, CT'])('rejects forwarding address %p', (raw) => {
     expect(parseContactDetail('forwarding_address', raw).ok).toBe(false);
+  });
+});
+
+describe('approvalPanelState — follow-up wait', () => {
+  it('shows when the next letter becomes available', () => {
+    const plan = {
+      ok: false,
+      reason: 'letter_not_offered',
+      message: 'Letter 2 becomes available on November 3, 2026.',
+      availableOn: '2026-11-03',
+    } as DispatchPlan;
+    expect(approvalPanelState(plan, true)).toEqual({
+      kind: 'waiting',
+      message: 'Letter 2 becomes available on November 3, 2026.',
+    });
+  });
+
+  it('stays hidden for a block that is not a wait', () => {
+    expect(approvalPanelState(blocked('letter_not_offered'), true)).toEqual({ kind: 'hidden' });
+    const paused = { ok: false, reason: 'dispatch_paused', message: 'x', availableOn: '2026-11-03' } as DispatchPlan;
+    expect(approvalPanelState(paused, true)).toEqual({ kind: 'hidden' });
+  });
+});
+
+describe('nextLetterToOffer', () => {
+  it.each([
+    ['intake_submitted', 0, 1],
+    ['under_review', 0, 1],
+    ['awaiting_landlord', 1, 2],
+    ['awaiting_landlord', 2, 3],
+    ['awaiting_landlord', 3, null],
+    ['awaiting_landlord', 0, null],
+    ['correspondence_ready', 0, null],
+    ['landlord_responded', 1, null],
+    ['letter_sent', 1, null],
+    ['resolved', 1, null],
+    ['closed', 2, null],
+    ['under_review', 1, null],
+  ] as const)('%s with letter %i sent → %p', (status, current, expected) => {
+    expect(nextLetterToOffer({ status, current_letter_number: current })).toBe(expected);
   });
 });

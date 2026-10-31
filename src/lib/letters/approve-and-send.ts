@@ -77,7 +77,14 @@ export interface DispatchInput {
 
 export type DispatchPlan =
   | { ok: true; title: string; body: string }
-  | { ok: false; reason: DispatchBlockReason; message: string };
+  | {
+      ok: false;
+      reason: DispatchBlockReason;
+      message: string;
+      // Set only when the follow-up schedule's wait is the one thing missing
+      // (yyyy-MM-dd). The case page shows "Letter N becomes available on …".
+      availableOn?: string;
+    };
 
 export function isDispatchPaused(value: string | undefined): boolean {
   return value?.trim().toLowerCase() === "true";
@@ -184,7 +191,11 @@ export function prepareLetterDispatch(input: DispatchInput): DispatchPlan {
   } else {
     const offer = followUpOffer({ caseRow, messages: input.messages, actions: input.actions, now });
     if (!offer.due) {
-      return block(offer.reason === "status" ? "status" : "letter_not_offered", followUpBlockMessage(offer));
+      const plan = block(offer.reason === "status" ? "status" : "letter_not_offered", followUpBlockMessage(offer));
+      if (!plan.ok && offer.reason === "not_yet" && offer.dueOn) {
+        plan.availableOn = format(offer.dueOn, "yyyy-MM-dd");
+      }
+      return plan;
     }
     const day = (d: Date | undefined) => (d ? format(d, "yyyy-MM-dd") : undefined);
     previousLetterDates = { letter1: day(offer.letterDates[1]), letter2: day(offer.letterDates[2]) };
@@ -239,7 +250,24 @@ export type TenantFixableNeed = "landlord_email" | "forwarding_address" | "lease
 export type ApprovalPanelState =
   | { kind: "ready"; title: string; body: string }
   | { kind: "needs"; need: TenantFixableNeed; message: string }
+  | { kind: "waiting"; message: string }
   | { kind: "hidden" };
+
+/**
+ * Which letter the tenant case page asks the server about, or null for none.
+ * Letter 1 during setup; Letters 2 and 3 while Tribune waits on the landlord.
+ * The server still decides whether that letter is offered (prepareLetterDispatch).
+ */
+export function nextLetterToOffer(
+  caseRow: Pick<LetterCase, "status" | "current_letter_number">
+): number | null {
+  const next = caseRow.current_letter_number + 1;
+  if (caseRow.current_letter_number === 0) {
+    return LETTER_1_STATUSES.has(caseRow.status) ? 1 : null;
+  }
+  if (caseRow.status !== "awaiting_landlord") return null;
+  return next >= MIN_LETTER_NUMBER + 1 && next <= MAX_LETTER_NUMBER ? next : null;
+}
 
 /**
  * What the tenant case page shows for Letter N, from the server's plan.
@@ -250,6 +278,9 @@ export function approvalPanelState(
   hasLease: boolean
 ): ApprovalPanelState {
   if (plan.ok) return { kind: "ready", title: plan.title, body: plan.body };
+  if (plan.reason === "letter_not_offered" && "availableOn" in plan && plan.availableOn) {
+    return { kind: "waiting", message: plan.message };
+  }
   switch (plan.reason) {
     case "no_landlord_email":
       return { kind: "needs", need: "landlord_email", message: plan.message };

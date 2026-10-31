@@ -2,6 +2,7 @@
 
 **Status:** approved by Magnus 2026-10-28 (plan + delegation charter).
 **Revised 2026-10-30:** founder decisions: no attorney, zero cash, revenue first (§0, §4.1).
+**Full autonomy 2026-10-30:** the agent asks only before spending money or contacting people (`ops/CHARTER.md`).
 **Purpose:** run Tribune — launch, acquisition, operations, engineering — with an
 autonomous agent loop. Magnus gives high-level guidance every few days.
 This file is the agent's north star. Every loop tick reads it first.
@@ -24,6 +25,8 @@ This file is the agent's north star. Every loop tick reads it first.
   (contingency fee, UPL) as a business risk. The agent's job is to get the first
   paid recovery as fast as possible with free tools only, and to keep every
   free mitigation in place (§4.1).
+- **Full autonomy (2026-10-30):** the agent commits and merges on its own and asks
+  only before spending money or contacting people. The build tick runs every 2 hours.
 - **What Magnus does:** a ~20-minute minimum setup (prod email env vars, admin
   flag), one-time posts in his own network that the agent drafts, and at most 3
   decisions per weekly digest.
@@ -184,8 +187,8 @@ outbound letter, and an audit log entry for every automated action.
 
 ## 5. What needs to be built (backlog, in order)
 
-The full live backlog moves to `ops/BACKLOG.md` in Phase 0. Items marked 🔴 need
-Magnus's explicit yes under the charter (§6.4).
+The live backlog is `ops/BACKLOG.md`; it supersedes this list. Since full autonomy
+(2026-10-30), 🔴 below means it spends money; everything else is the agent's call.
 
 **Phase 0 — Autonomy foundation (needs §7 setup)**
 - [ ] Fix the stale tests; add GitHub Actions CI (lint, typecheck, unit, build)
@@ -199,12 +202,12 @@ Magnus's explicit yes under the charter (§6.4).
 
 **Phase 1 — System as operator (before the first real case)**
 - [ ] Auto-triage on intake
-- [ ] Tenant letter approval + e-approval flow (new status) 🔴 (migration, letter flow)
+- [ ] Tenant letter approval + e-approval flow
 - [ ] Auto-dispatch on approval + dispatch kill switch
-- [ ] Follow-up/deadline cron (Vercel Cron) 🔴 (new scheduled job)
+- [ ] Follow-up/deadline cron (Vercel Cron)
 - [ ] Verify inbound webhook end to end on staging; then prod
 - [ ] Exception queue in admin (everything the system can't decide)
-- [ ] Capture the forwarding-address date → correct deadline math 🔴 (legal math, migration)
+- [ ] Capture the forwarding-address date → correct deadline math
 
 **Phase 2 — Growth surface (in parallel with the legal wait)**
 - [ ] SEO content system + sitemap/metadata/structured data
@@ -213,14 +216,14 @@ Magnus's explicit yes under the charter (§6.4).
 - [ ] Referral program
 
 **Phase 3 — Money and escalation**
-- [ ] Stripe payment links on invoices 🔴 (new service)
+- [ ] Stripe payment links on invoices 🔴 (per-transaction fees)
 - [ ] Recovery verification (landlord confirmation)
-- [ ] Small-claims packet generator 🔴 (legal forms)
+- [ ] Small-claims packet generator
 - [ ] Certified mail (Lob or similar) for landlords without email 🔴 (new service, spend)
 
 **Phase 4 — Compounding**
 - [ ] Landlord entity + memory
-- [ ] LLM-assisted reply classification and draft responses, tenant-approved 🔴 (new service)
+- [ ] LLM-assisted reply classification and draft responses, tenant-approved 🔴 (paid API)
 - [ ] Outcome analytics → experiments
 
 ---
@@ -231,17 +234,17 @@ Magnus's explicit yes under the charter (§6.4).
 - Each tick starts cold. Everything the agent knows lives in the repo (`ops/`),
   not in chat.
 - One backlog item per tick, one PR per item. Small blast radius.
-- Every change goes through a PR with green CI. Self-merge only within the charter.
+- Every change goes through a PR with green CI. The agent merges its own PRs.
 - Revert first, debug second, if `main` or prod breaks.
 - Decisions that wait on Magnus come with a stated default and a deadline, so
-  the loop never blocks on a non-🔴 item.
+  the loop never blocks on anything but spend or contacting people.
 
 ### 6.2 Three loops
 
 | Loop | Cadence | Runs where | Does |
 |---|---|---|---|
 | **Ops tick** | Daily | Cloud routine with ops secrets (or a local scheduled task as a fallback) | Health check (prod up, Sentry new issues, CI on main) → exception queue (flagged intakes, landlord replies, failed dispatches) → act within charter → log escalations |
-| **Build tick** | Whenever compute is available (2–4×/day) | Cloud routine on the GitHub repo | Top unblocked BACKLOG item → branch → implement → lint/types/unit/E2E on preview → PR → merge per charter → JOURNAL |
+| **Build tick** | Every 2 hours | Cloud routine on the GitHub repo | Top unblocked BACKLOG item → branch → implement → lint/types/unit/E2E on preview → PR → merge per charter → JOURNAL |
 | **Review tick** | Weekly | Cloud routine | Metrics + funnel analysis → reprioritize BACKLOG → update this PLAN → write the digest for Magnus (one page, ≤3 decisions, each with a recommendation and a default) |
 
 Mechanics: Claude Code scheduled cloud routines (`/schedule`) for all three,
@@ -258,19 +261,10 @@ least-privilege secret set in the cloud environment (§7).
 7. JOURNAL: what changed, what was learned, what's next. Update BACKLOG/TASKS.
 8. Stop.
 
-### 6.4 Delegation charter (Magnus approves once; replaces CLAUDE.md "Ask First")
+### 6.4 Delegation charter
 
-- **🟢 Green — the agent does it and merges:** bug fixes, tests, refactors, docs;
-  admin-only features; non-legal UI copy within the voice rules; SEO pages that
-  restate already-verified statute text; PII-scrubbed analytics events.
-- **🟡 Yellow — the agent does it, opens a PR, and merges after 72 h unless Magnus
-  vetoes:** additive migrations tested on staging; new dev dependencies; prod
-  dependencies from a pre-approved list; cron jobs; changes to tenant-facing flows.
-- **🔴 Red — needs Magnus's explicit yes:** letter templates, statute
-  citations, damages or deadline math; RLS/auth changes; destructive migrations
-  or deleting data; new paid services or spend; pricing and fee terms; the
-  first time any new kind of message goes to real third parties; anything
-  public under Magnus's identity; changes to legal posture.
+See `ops/CHARTER.md`. Since 2026-10-30: full autonomy. Ask Magnus only before
+spending money or contacting people.
 
 ### 6.5 Talking to Magnus
 - `ops/ESCALATIONS.md`, mirrored as GitHub issues labeled `magnus`: context,

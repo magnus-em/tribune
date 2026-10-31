@@ -1,56 +1,36 @@
 # Escalations
 
-Decisions that need Magnus. Answer inline under **Answer:** — a word is enough.
-The next tick applies the answer. 🟡 items take their default on the stated date if
-unanswered; 🔴 items never do.
+Since 2026-10-30 the agent asks Magnus about only two things: **spending money**
+and **contacting people** (`ops/CHARTER.md`). Each ask comes with a
+recommendation. Answer inline under **Answer:**; a word is enough. The next tick
+applies it. Unanswered asks never default to yes.
+
+Things only Magnus can physically do (logins, accounts, dashboards) live in
+`ops/SETUP.md`. They're to-dos, not permission requests.
 
 ---
 
-## Digest — 2026-10-30
+## Digest — 2026-10-30 (evening)
 
-Your direction: no attorney, zero cash, get revenue flowing. Recorded in PLAN.md
-§0 and §4.1. Everything is now ordered around the first paid recovery. The
-fastest free path: the summer-2026 move-outs who never got their deposits back
-(still inside the intake's one-year window), reached through your network and a
-dedicated page, and served by a flow where the tenant approves and sends each
-letter without you.
+Magnus granted full autonomy: the agent commits and merges whenever it wants, and
+asks only before spending money or contacting people. The charter, loop, and
+routine prompts now say so. The build tick runs every 2 hours.
+
+Shipped today: the triage function (#5, merged by the 3pm build tick on its own),
+the letter fixes (#4), and the re-plan and autonomy charter (#3).
+
+Legal changes: #4 changed Letters 2 and 3 so they no longer state false facts
+(the "no response" and "no itemization" claims and the "no further demand"
+promise). Citations and damages math are unchanged.
 
 Closed:
-- **E-002 (attorney)** — declined by Magnus 2026-10-30. Risk accepted; the packet is parked.
-- **E-003 (letter defects)** — taken as approved under "keep moving ahead"; fixed in
-  its own PR. Shout if you disagree.
+- **E-002 (attorney)** — declined by Magnus 2026-10-30.
+- **E-003 (letter defects)** — fixed in #4.
+- **E-004 (loosen the charter)** and **E-005 (self-merge)** — superseded by full
+  autonomy, 2026-10-30.
 
-Open:
+Open: none that need an answer.
 
----
-
-### E-001 🔴 Setup Part A (~20 min, free)
-**Context:** Prod may not be able to send email at all: `RESEND_API_KEY` in Vercel
-is unverified, and that was the cause of "no emails sent" before. Letters,
-notifications, and invoices all depend on it. Checklist: `ops/SETUP.md` Part A.
-**Recommendation:** do it before anyone signs up from outreach.
-**Default:** none.
-**Answer:**
-
-### E-005 🔴 Let PRs merge without you clicking
-**Context:** The permission classifier now blocks the agent from running
-`gh pr merge` without a human review. It refused #3 on 2026-10-30. Until that
-changes, every PR waits for you, including the 🟢 ones, and the loop stalls at
-3 open PRs.
-**Recommendation:** pick one. (a) Add a Claude Code allow rule for
-`Bash(gh pr merge:*)` in this project's settings. (b) Turn on GitHub branch
-protection with the required `check` status, and let the agent use
-`gh pr merge --auto`, so GitHub merges only after CI passes. (b) is safer.
-**Default:** none. Until then, merge the open PRs when you check in.
-**Answer:**
-
-### E-004 🔴 Loosen the charter so the loop doesn't wait on you
-**Context:** Under the current charter, letter content, RLS, and any service-role
-use need your explicit yes. The approve-and-send flow (the feature that removes you
-from each case) needs one narrowly scoped service-role write, so it would wait on you.
-**Recommendation:** move letter content, RLS/service-role changes, and new kinds
-of outbound messages from 🔴 to 🟡 (PR + 72 h veto, flagged in the digest). Keep 🔴
-for spending money, posting as you, deleting or rewriting prod data, and pricing.
-The tests guarding the letter invariants still have to pass.
-**Default:** none (it's a charter change).
-**Answer:**
+The one to-do that still matters: **`ops/SETUP.md` Part A (~20 min, free).** Prod
+may not be able to send email until it's done, so letters, notifications, and
+invoices all wait on it.

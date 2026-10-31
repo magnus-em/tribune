@@ -1,31 +1,33 @@
 # Backlog
 
-The build tick takes the top unblocked item in **Now**. Tiers follow
-`ops/CHARTER.md`. `blocked:` means don't start it; the reason says what unblocks it.
-Keep items PR-sized. Split anything bigger before starting.
+The build tick takes the top unblocked item in **Now**. Since 2026-10-30 everything
+is 🟢 (do it, merge on green) unless marked 🔴 (spends money or contacts people).
+See `ops/CHARTER.md`. ⚖️ marks legal content: the charter's legal rules apply, and
+the item goes in the digest's "Legal changes" list. `blocked:` means don't start it;
+the reason says what unblocks it. Keep items PR-sized. Split anything bigger before
+starting.
 
-**Priority since 2026-10-30: the first paid recovery.** Zero cash. No attorney.
-Anything that doesn't move a real case toward a paid invoice waits.
+**Priority: the first paid recovery.** Zero cash. No attorney. Anything that doesn't
+move a real case toward a paid invoice waits.
 
 ## Now
 
-1. 🔴 **Tenant approve-and-send (Letter 1)** — the feature that removes Magnus from
-   each case. Spec below. 🔴 because it needs a narrowly scoped service-role write;
-   becomes 🟡 if E-004 is approved.
-2. 🟢 **Summer-cohort page + outreach drafts** — `/moved-out` landing page: "Moved
+1. ⚖️ **Timeline deadline label** — the tenant case timeline labels the statutory
+   deadline "(30 days)" (`src/components/case-timeline.tsx`). The statute and
+   `STATUTE_DAYS` say 21. Fix the label and add a test.
+2. ⚖️ **Tenant approve-and-send (Letter 1)** — the feature that removes Magnus from
+   each case. Spec below. Uses `triageCase()` (shipped in #5).
+3. **Summer-cohort page + outreach drafts** — `/moved-out` landing page: "Moved
    out this summer and never got your deposit back?" Restates only verified
    § 47a-21 text, carries the disclaimer, CTA to intake. Plus
    `ops/outreach/posts.md`: 3 ready-to-paste posts (Yale grad lists, r/newhaven,
    New Haven housing groups) with each venue's self-promotion rules noted.
-3. 🟢 **Triage function** — pure `triageCase(case)` in `src/lib/triage.ts` →
-   `accept | decline | review` with reasons (CT, residential, moved out, landlord
-   email present, amount ≥ minimum, deadline status). Exhaustive tests. Admin
-   display only at first; approve-and-send uses it to decide when Letter 1 is offered.
-4. 🟢 **Admin exception queue** — read-only `/admin` view: new intakes, landlord
+   Drafts only. Magnus posts them (contacting people is 🔴).
+4. **Admin exception queue** — read-only `/admin` view: new intakes, landlord
    replies with no follow-up, cases within 3 days of a deadline, overdue invoices.
-5. 🟢 **SEO foundation** — `sitemap.ts`, `robots.ts`, per-page metadata, Open Graph,
+5. **SEO foundation** — `sitemap.ts`, `robots.ts`, per-page metadata, Open Graph,
    `LegalService`/`FAQPage` structured data. No new deps.
-6. 🟢 **CT deposit law guide** — `/guides/connecticut-security-deposit-law`,
+6. ⚖️ **CT deposit law guide** — `/guides/connecticut-security-deposit-law`,
    restating only verified statute text, with sources and the disclaimer.
 
 ## Spec — tenant approve-and-send
@@ -34,8 +36,8 @@ Anything that doesn't move a real case toward a paid invoice waits.
   generated server-side from the template and the case data, a required checkbox
   ("I've read this letter, it's accurate, and I authorize Tribune to send it to
   my landlord in my name"), and an **Approve & send** button.
-- **When due:** Letter 1 once intake is complete, the lease is uploaded, and triage
-  says `accept`. Letters 2 and 3 come later via the follow-up cron (Next).
+- **When due:** Letter 1 once intake is complete, the lease is uploaded, and
+  `triageCase()` says `accept`. Letters 2 and 3 come later via the follow-up cron.
 - **Server action `approveAndSendLetter(caseId, letterNumber)`:**
   1. Under the tenant's session: load the case (RLS proves ownership). Check the
      status allows it, `letterNumber === current_letter_number + 1`, a landlord
@@ -56,30 +58,40 @@ Anything that doesn't move a real case toward a paid invoice waits.
 
 ## Next
 
-- 🟡 Follow-up cron (Vercel Cron, free tier): after 10 business days with no reply
+- Follow-up cron (Vercel Cron, free tier): after 10 business days with no reply
   and no recovery, offer the tenant Letter 2; after 7 more, Letter 3. Also
-  deadline-risk nudges.
-- 🟡 Landlord-reply handling on the tenant page: show the reply and the next-step
+  deadline-risk nudges to the tenant. Never sends to a landlord without approval.
+- Landlord-reply handling on the tenant page: show the reply and the next-step
   options (report recovery, send the next letter).
-- 🟢 Unit tests for email templates (disclaimer present, Tribune voice, no PII leaks).
-- 🟢 Doc drift: ARCHITECTURE.md and SPEC.md vs. the code.
-- 🟢 More guide pages, then city pages (only verified statute text).
-- 🔴 Deadline calculator tool (deadline math).
-- 🟢 Migrate `next lint` → ESLint CLI.
-- 🟢 Weekly metrics — blocked: read-only role (SETUP Part B).
-- 🟡 Staging + Playwright E2E — blocked: staging project (SETUP Part B).
+- Triage follow-up: a residential-vs-commercial question at intake, so that check
+  stops being informational.
+- Unit tests for email templates (disclaimer present, Tribune voice, no PII leaks).
+- Doc drift: ARCHITECTURE.md and SPEC.md vs. the code.
+- ⚖️ Deadline calculator tool at `/tools/deposit-deadline`.
+- ⚖️ More guide pages, then city pages (only verified statute text).
+- Migrate `next lint` → ESLint CLI.
+- ⚖️ Capture the forwarding-address date and correct the deadline math. Needs an
+  additive migration — blocked: cloud ticks can't apply migrations. Write it, and an
+  interactive session applies it.
+- Weekly metrics — blocked: read-only role (SETUP Part B).
+- Staging + Playwright E2E — blocked: staging project (SETUP Part B).
 
 ## Later
 
-- 🟡 Referral program (roommates share a landlord)
-- 🟡 "Remind me" pre-move-out capture — blocked: staging (needs a table)
-- 🔴 Capture the forwarding-address date and correct the deadline math
-- 🔴 Stripe payment links (free to start; per-transaction fees only) — after
-  Venmo/Zelle proves to be a real problem
-- Recovery verification; small-claims packet; landlord memory; LLM reply classification
+- Referral program (roommates share a landlord)
+- "Remind me" pre-move-out capture (needs a table; see the migration note above)
+- 🔴 Stripe payment links (per-transaction fees) — after Venmo/Zelle proves to be
+  a real problem
+- 🔴 Certified mail for landlords without email (costs money per letter)
+- Recovery verification; small-claims packet (⚖️); landlord memory; reply
+  classification (🔴 if it needs a paid API)
 
 ## Done
 
+- 2026-10-30 — Full autonomy granted; build tick every 2 hours.
+- 2026-10-30 — Letter defects fixed: follow-ups no longer state false facts (#4).
+- 2026-10-30 — Triage function: `triageCase()` in `src/lib/triage.ts` with 31 tests,
+  verdict shown on the admin case page (display only) (#5).
 - 2026-10-30 — Re-planned around founder decisions (no attorney, $0, revenue first).
 - 2026-10-28 — Plan + charter approved; stale tests rewritten around legal
   invariants; CI added; SLA copy made deliverable; ops/ files; setup checklist.

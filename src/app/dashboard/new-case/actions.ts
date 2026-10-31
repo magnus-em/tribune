@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { addDays, format } from "date-fns";
 import { CONTINGENCY_PCT, STATUTE_DAYS, MAX_FILE_SIZE_BYTES, ALLOWED_FILE_TYPES } from "@/lib/constants";
 import { intakeSchema } from "@/lib/schemas/intake";
+import { residentialAttestationMetadata } from "@/lib/triage";
 import type { ExtractedLeaseData } from "@/lib/schemas/intake";
 import { sendEmail } from "@/lib/email/client";
 import { renderCaseSubmittedEmail } from "@/lib/email/templates/case-submitted";
@@ -166,6 +167,7 @@ export async function createCase(formData: FormData): Promise<{
     fwd_zip: formData.get("fwd_zip") as string,
     property_address: formData.get("property_address") as string,
     unit_number: (formData.get("unit_number") as string) || undefined,
+    residential_tenancy: (formData.get("residential_tenancy") as string) as "yes" | "no" | "",
     lease_start_date: formData.get("lease_start_date") as string,
     lease_end_date: formData.get("lease_end_date") as string,
     move_out_date: formData.get("move_out_date") as string,
@@ -267,6 +269,20 @@ export async function createCase(formData: FormData): Promise<{
   }
 
   const caseId = caseRow.id;
+
+  // Record the residential answer. Triage reads it; without it the case goes to
+  // review, so a failed write here is safe but needs a look.
+  const { error: residentialError } = await supabase.from("case_messages").insert({
+    case_id: caseId,
+    message_type: "system",
+    title: "Residential tenancy confirmed",
+    body: "You confirmed at intake that you rented this property as your home.",
+    created_by: userId,
+    dispatch_metadata: residentialAttestationMetadata(data.residential_tenancy === "yes", new Date().toISOString()),
+  });
+  if (residentialError) {
+    console.error("[createCase] residential answer insert failed for case", caseId);
+  }
 
   // Upload all files
   const uploadErrors: string[] = [];

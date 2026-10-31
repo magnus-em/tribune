@@ -8,6 +8,7 @@ import {
   type LetterCase,
 } from '../approve-and-send';
 import { generateLetter1 } from '../templates';
+import { residentialAttestationMetadata } from '../../triage';
 
 // Local-time "now" so date-only comparisons don't depend on the runner's TZ.
 const now = new Date(2026, 9, 31, 12); // 2026-10-31 noon
@@ -33,10 +34,18 @@ const caseRow: LetterCase = {
   withholding_reason: null,
 };
 
+// The intake marker recording the tenant's "rented as my home" answer. Triage
+// sends a case with no answer to review, so every eligible fixture carries it.
+const residential = {
+  message_type: 'system' as const,
+  dispatch_metadata: residentialAttestationMetadata(true, '2026-09-01T12:00:00.000Z'),
+  created_at: '2026-09-01T12:00:00.000Z',
+};
+
 const base: DispatchInput = {
   caseRow,
   profile: { full_name: 'Sam Tenant', email: 'tenant@example.com', phone: null },
-  messages: [],
+  messages: [residential],
   actions: [],
   hasLease: true,
   letterNumber: 1,
@@ -134,7 +143,7 @@ describe('prepareLetterDispatch — kill switch', () => {
 describe('prepareLetterDispatch — rate limit', () => {
   test(`a dispatch within ${DISPATCH_COOLDOWN_DAYS} days blocks the send (letter message)`, () => {
     const messages = [{ message_type: 'tribune_letter' as const, dispatch_metadata: { sent_at: daysAgo(4.9) }, created_at: daysAgo(4.9) }];
-    expect(reason({ ...base, messages })).toBe('cooldown');
+    expect(reason({ ...base, messages: [residential, ...messages] })).toBe('cooldown');
   });
 
   test(`a dispatch within ${DISPATCH_COOLDOWN_DAYS} days blocks the send (audit log)`, () => {
@@ -156,7 +165,7 @@ describe('prepareLetterDispatch — rate limit', () => {
     const messages = [{ message_type: 'tribune_letter' as const, dispatch_metadata: null, created_at: daysAgo(1) }];
     const actions = [{ action_type: 'resolution_reported' as const, metadata: { sent_at: daysAgo(1) }, created_at: daysAgo(1) }];
     expect(lastDispatchAt(messages, actions)).toBeNull();
-    expect(reason({ ...base, messages, actions })).toBe('ok');
+    expect(reason({ ...base, messages: [residential, ...messages], actions })).toBe('ok');
   });
 
   test('lastDispatchAt returns the most recent dispatch', () => {
@@ -253,7 +262,7 @@ describe('prepareLetterDispatch — Letters 2 and 3 follow the follow-up schedul
 
   test('only a pure wait carries availableOn', () => {
     const messages = [{ message_type: 'landlord_reply' as const, dispatch_metadata: null, created_at: '2026-10-05T12:00:00.000Z' }];
-    const replied = prepareLetterDispatch({ ...awaiting(1, 2), messages });
+    const replied = prepareLetterDispatch({ ...awaiting(1, 2), messages: [residential, ...messages] });
     expect(replied.ok).toBe(false);
     if (!replied.ok) expect(replied.availableOn).toBeUndefined();
     const ready = prepareLetterDispatch(awaiting(1, 2));
@@ -262,7 +271,7 @@ describe('prepareLetterDispatch — Letters 2 and 3 follow the follow-up schedul
 
   test('a landlord reply since the last letter stops the offer', () => {
     const messages = [{ message_type: 'landlord_reply' as const, dispatch_metadata: null, created_at: '2026-10-05T12:00:00.000Z' }];
-    expect(reason({ ...awaiting(1, 2), messages })).toBe('letter_not_offered');
+    expect(reason({ ...awaiting(1, 2), messages: [residential, ...messages] })).toBe('letter_not_offered');
   });
 
   test('a reported recovery stops the offer', () => {
@@ -305,7 +314,7 @@ describe('prepareLetterDispatch — the next letter after a landlord reply', () 
     ...withCase({ status: 'landlord_responded', current_letter_number }),
     letterNumber,
     actions,
-    messages,
+    messages: [residential, ...messages],
   });
 
   test('Letter 2 is offered after a reply, without the 10-business-day wait', () => {
@@ -359,5 +368,24 @@ describe('prepareLetterDispatch — the next letter after a landlord reply', () 
 
   test('a missing dispatch record for an earlier letter blocks it', () => {
     expect(reason(responded(2, 3, [letter2], [reply('2026-10-25T12:00:00.000Z')]))).toBe('letter_not_offered');
+  });
+});
+
+describe('prepareLetterDispatch — residential tenancy', () => {
+  test('no residential answer on record blocks the send (triage review)', () => {
+    expect(reason({ ...base, messages: [] })).toBe('triage');
+  });
+
+  test('a recorded "not residential" answer blocks the send', () => {
+    const notResidential = {
+      ...residential,
+      dispatch_metadata: residentialAttestationMetadata(false, '2026-09-02T12:00:00.000Z'),
+      created_at: '2026-09-02T12:00:00.000Z',
+    };
+    expect(reason({ ...base, messages: [residential, notResidential] })).toBe('triage');
+  });
+
+  test('the residential marker is not a dispatch and starts no cooldown', () => {
+    expect(lastDispatchAt([residential], [])).toBeNull();
   });
 });

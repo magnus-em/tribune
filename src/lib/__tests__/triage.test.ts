@@ -1,4 +1,10 @@
-import { triageCase, propertyInConnecticut } from '../triage';
+import {
+  triageCase,
+  propertyInConnecticut,
+  residentialAnswer,
+  residentialAttestationMetadata,
+  RESIDENTIAL_ATTESTATION_KIND,
+} from '../triage';
 import type { TriageInput, TriageCheckId } from '../triage';
 
 // Local-time "today" so date-only comparisons don't depend on the runner's TZ.
@@ -11,6 +17,7 @@ const base: TriageInput = {
   amount_withheld_cents: 50000,
   statutory_deadline: '2026-09-21',
   has_lease: true,
+  residential: true,
 };
 
 const status = (input: TriageInput, id: TriageCheckId) =>
@@ -55,9 +62,26 @@ describe('triageCase', () => {
     ]);
   });
 
-  test('residential is informational and never blocks accept', () => {
-    expect(status(base, 'residential')).toBe('unknown');
+  test('a confirmed residential tenancy passes', () => {
+    expect(status(base, 'residential')).toBe('pass');
     expect(triageCase(base, today).verdict).toBe('accept');
+  });
+
+  test('no residential answer on record goes to review, never accept', () => {
+    const input = { ...base, residential: null };
+    expect(status(input, 'residential')).toBe('unknown');
+    expect(triageCase(input, today).verdict).toBe('review');
+  });
+
+  test('a tenancy the tenant says is not residential is declined', () => {
+    const input = { ...base, residential: false };
+    expect(status(input, 'residential')).toBe('fail');
+    expect(triageCase(input, today).verdict).toBe('decline');
+  });
+
+  test('not residential declines even when other checks also fail', () => {
+    const input = { ...base, residential: false, has_lease: false, landlord_email: null };
+    expect(triageCase(input, today).verdict).toBe('decline');
   });
 
   describe('decline', () => {
@@ -136,5 +160,37 @@ describe('triageCase', () => {
 
   test('defaults today to now', () => {
     expect(() => triageCase(base)).not.toThrow();
+  });
+});
+
+describe('residentialAnswer', () => {
+  const msg = (meta: unknown, created_at = '2026-10-01T12:00:00Z', message_type = 'system') =>
+    ({ message_type, dispatch_metadata: meta, created_at }) as Parameters<typeof residentialAnswer>[0][number];
+
+  test('no messages → null', () => {
+    expect(residentialAnswer([])).toBeNull();
+  });
+
+  test('reads the intake marker', () => {
+    expect(residentialAnswer([msg(residentialAttestationMetadata(true, '2026-10-01T12:00:00Z'))])).toBe(true);
+    expect(residentialAnswer([msg(residentialAttestationMetadata(false, '2026-10-01T12:00:00Z'))])).toBe(false);
+  });
+
+  test('the latest answer wins', () => {
+    const messages = [
+      msg(residentialAttestationMetadata(false, 'x'), '2026-10-02T12:00:00Z'),
+      msg(residentialAttestationMetadata(true, 'x'), '2026-10-01T12:00:00Z'),
+    ];
+    expect(residentialAnswer(messages)).toBe(false);
+  });
+
+  test.each([
+    ['other system metadata', msg({ notice: 'follow_up_available', letter_number: 2 })],
+    ['no metadata', msg(null)],
+    ['array metadata', msg([1, 2])],
+    ['non-boolean answer', msg({ attestation: RESIDENTIAL_ATTESTATION_KIND, residential: 'yes' })],
+    ['not a system message', msg(residentialAttestationMetadata(true, 'x'), undefined, 'tribune_update')],
+  ])('ignores %s', (_label, m) => {
+    expect(residentialAnswer([m])).toBeNull();
   });
 });

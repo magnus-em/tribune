@@ -12,7 +12,7 @@ import {
   type Profile,
   STATUS_LABELS,
 } from "@/lib/types/database";
-import { triageCase, type TriageVerdict } from "@/lib/triage";
+import { residentialAnswer, triageCase, type TriageVerdict } from "@/lib/triage";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -373,8 +373,20 @@ const TRIAGE_VERDICT_STYLES: Record<TriageVerdict, string> = {
   decline: "bg-red-50 text-red-800 border-red-200",
 };
 
-function TriagePanel({ caseData, hasLease }: { caseData: Case; hasLease: boolean }) {
-  const { verdict, checks } = triageCase({ ...caseData, has_lease: hasLease });
+function TriagePanel({
+  caseData,
+  hasLease,
+  messages,
+}: {
+  caseData: Case;
+  hasLease: boolean;
+  messages: CaseMessage[];
+}) {
+  const { verdict, checks } = triageCase({
+    ...caseData,
+    has_lease: hasLease,
+    residential: residentialAnswer(messages),
+  });
 
   return (
     <div className="rounded-xl border bg-card p-4 space-y-3 text-sm">
@@ -987,7 +999,7 @@ export default function AdminCaseDetailPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <ContactsPanel caseData={caseData} profile={profile} />
         <CaseAssessmentPanel caseData={caseData} documents={documents} daysOverdue={daysOverdue} />
-        <TriagePanel caseData={caseData} hasLease={hasLease} />
+        <TriagePanel caseData={caseData} hasLease={hasLease} messages={messages} />
       </div>
 
       {/* Situation description */}

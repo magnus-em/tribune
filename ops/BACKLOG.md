@@ -42,8 +42,11 @@ _Empty. The build tick takes the top of **Next**._
 
 ## Next
 
-- Triage follow-up: a residential-vs-commercial question at intake, so that check
-  stops being informational.
+- Residential answer for cases created before intake asked: they have no
+  answer on record, so triage says `review` and the approval panel hides, and
+  the tenant can't fix that and the admin has no override. Add a "confirm you
+  rented this as your home" prompt to the approval panel (a new `needs` state)
+  that writes the same intake marker through a server action.
 - Unit tests for email templates (disclaimer present, Tribune voice, no PII leaks).
 - Doc drift: ARCHITECTURE.md and SPEC.md vs. the code.
 - ⚖️ Deadline calculator tool at `/tools/deposit-deadline`.
@@ -76,6 +79,14 @@ _Empty. The build tick takes the top of **Next**._
 
 ## Done
 
+- 2026-10-31 — Residential-vs-commercial question at intake ("Did you rent this
+  property as your home?"). "No" stops the intake with a residential-only
+  message; the server schema requires "yes". `createCase` records the answer as
+  a tenant-visible system message (`dispatch_metadata.attestation =
+  "residential_tenancy"`; a `case_actions` row would need a new enum value,
+  which means a migration). `triageCase` now reads it: yes → pass, no →
+  decline, no answer → review. The check is no longer informational, so
+  approve-and-send needs the answer before a letter can go out.
 - 2026-10-31 — ⚖️ Landlord-reply handling on the tenant page: when the case is
   `landlord_responded`, a "Your landlord replied" panel shows the latest reply
   and the options (report a recovery; review the next letter; or, with no letter

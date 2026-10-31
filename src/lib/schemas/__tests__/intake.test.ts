@@ -4,6 +4,7 @@ import {
   depositStepSchema,
   agreementStepSchema,
   intakeSchema,
+  NOT_RESIDENTIAL_MESSAGE,
 } from '../intake';
 
 function isoDaysAgo(days: number): string {
@@ -22,6 +23,7 @@ const validDetails = {
   fwd_zip: '06511',
   property_address: '789 Elm Ave, New Haven, CT',
   unit_number: '2B',
+  residential_tenancy: 'yes' as const,
   lease_start_date: isoDaysAgo(330),
   lease_end_date: isoDaysAgo(60),
   move_out_date: isoDaysAgo(60),
@@ -170,10 +172,45 @@ describe('Intake Schemas', () => {
       ['deposit > 0', { deposit_amount: '0' }, 'deposit_amount'],
       ['lease order', { lease_start_date: isoDaysAgo(10), lease_end_date: isoDaysAgo(100) }, 'lease_end_date'],
       ['yes/no answered', { notice_given: '' as const }, 'notice_given'],
+      ['residential answered', { residential_tenancy: '' as const }, 'residential_tenancy'],
+      ['residential tenancy only', { residential_tenancy: 'no' as const }, 'residential_tenancy'],
     ])('enforces cross-field rule: %s', (_name, override, path) => {
       const result = intakeSchema.safeParse({ ...validIntake, ...override });
       expect(result.success).toBe(false);
       expect(issuePaths(result)).toContain(path);
+    });
+  });
+
+  describe('residential tenancy question', () => {
+    test.each([
+      ['details step', detailsStepSchema, validDetails],
+      ['full intake', intakeSchema, validIntake],
+    ] as const)('%s: "no" is rejected with the residential-only message', (_name, schema, valid) => {
+      const result = schema.safeParse({ ...valid, residential_tenancy: 'no' });
+      expect(result.success).toBe(false);
+      const issue = result.error?.issues.find((i) => i.path.join('.') === 'residential_tenancy');
+      expect(issue?.message).toBe(NOT_RESIDENTIAL_MESSAGE);
+    });
+
+    test.each([
+      ['details step', detailsStepSchema, validDetails],
+      ['full intake', intakeSchema, validIntake],
+    ] as const)('%s: unanswered is rejected', (_name, schema, valid) => {
+      const result = schema.safeParse({ ...valid, residential_tenancy: '' });
+      expect(result.success).toBe(false);
+      expect(issuePaths(result)).toContain('residential_tenancy');
+    });
+
+    test('missing field is rejected by the server-side schema', () => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { residential_tenancy, ...withoutAnswer } = validIntake;
+      expect(intakeSchema.safeParse(withoutAnswer).success).toBe(false);
+    });
+
+    test('the message speaks as Tribune and gives no advice', () => {
+      expect(NOT_RESIDENTIAL_MESSAGE).toMatch(/^Tribune /);
+      expect(NOT_RESIDENTIAL_MESSAGE).not.toMatch(/\b(we|us|our|I)\b/);
+      expect(NOT_RESIDENTIAL_MESSAGE).not.toMatch(/\byou should\b/i);
     });
   });
 });

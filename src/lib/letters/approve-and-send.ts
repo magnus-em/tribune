@@ -1,6 +1,6 @@
 import { differenceInDays, format } from "date-fns";
 import type { Case, CaseAction, CaseMessage, CaseStatus, Profile } from "@/lib/types/database";
-import { triageCase } from "@/lib/triage";
+import { residentialAnswer, triageCase } from "@/lib/triage";
 import { parseDateOnly } from "@/lib/utils/case";
 import { MAX_LETTER_NUMBER, MIN_LETTER_NUMBER } from "@/lib/constants";
 import { generateDemandLetter, type LetterData } from "./templates";
@@ -221,6 +221,7 @@ export function prepareLetterDispatch(input: DispatchInput): DispatchPlan {
       amount_withheld_cents: caseRow.amount_withheld_cents,
       statutory_deadline: caseRow.statutory_deadline,
       has_lease: input.hasLease,
+      residential: residentialAnswer(input.messages),
     },
     now
   );

@@ -1,16 +1,17 @@
 import { differenceInCalendarDays, startOfDay } from "date-fns";
-import type { Case } from "@/lib/types/database";
+import type { Case, CaseMessage } from "@/lib/types/database";
+import type { Json } from "@/lib/types/supabase";
 import { parseDateOnly } from "@/lib/utils/case";
 
 /**
  * Intake triage — a pure, deterministic read of a case's facts.
  *
- * Display only: the admin case page shows the verdict. Nothing acts on it yet.
- * Approve-and-send (ops/BACKLOG.md) will use `accept` to decide when Letter 1
- * is offered to the tenant.
+ * The admin case page shows the verdict, and approve-and-send requires
+ * `accept` before a letter can go out.
  *
  * Conservative by design: `decline` only when a fact rules the case out
- * (property clearly outside Connecticut). Anything uncertain is `review`.
+ * (property clearly outside Connecticut, or the tenant said the tenancy wasn't
+ * residential). Anything uncertain is `review`.
  *
  * This does NOT compute the statutory deadline. It compares the stored
  * `statutory_deadline` to today. The forwarding-address branch of § 47a-21
@@ -48,12 +49,50 @@ export type TriageInput = Pick<
   | "landlord_email"
   | "amount_withheld_cents"
   | "statutory_deadline"
-> & { has_lease: boolean };
+> & {
+  has_lease: boolean;
+  /**
+   * The tenant's intake answer to "did you rent this property as your home?",
+   * from `residentialAnswer()`. null when no answer is on record (cases created
+   * before intake asked, or the record failed to save).
+   */
+  residential: boolean | null;
+};
+
+/**
+ * Marker key on the intake system message (`case_messages.dispatch_metadata`)
+ * that records the residential answer. A `case_actions` row would need a new
+ * `action_type` enum value, which needs a migration.
+ */
+export const RESIDENTIAL_ATTESTATION_KIND = "residential_tenancy";
+
+export function residentialAttestationMetadata(residential: boolean, answeredAt: string) {
+  return { attestation: RESIDENTIAL_ATTESTATION_KIND, residential, answered_at: answeredAt };
+}
+
+/** The tenant's recorded residential answer; the latest one wins. null if none. */
+export function residentialAnswer(
+  messages: Pick<CaseMessage, "message_type" | "dispatch_metadata" | "created_at">[]
+): boolean | null {
+  let answer: boolean | null = null;
+  let at = -Infinity;
+  for (const m of messages) {
+    if (m.message_type !== "system") continue;
+    const meta: Json | null = m.dispatch_metadata;
+    if (!meta || typeof meta !== "object" || Array.isArray(meta)) continue;
+    if (meta.attestation !== RESIDENTIAL_ATTESTATION_KIND) continue;
+    if (typeof meta.residential !== "boolean") continue;
+    const t = new Date(m.created_at).getTime();
+    if (t >= at) {
+      at = t;
+      answer = meta.residential;
+    }
+  }
+  return answer;
+}
 
 // Checks whose failure rules the case out. Every other failure or unknown means review.
-const DECLINE_ON_FAIL: ReadonlySet<TriageCheckId> = new Set(["connecticut"]);
-// Shown to the admin but never block `accept`.
-const INFORMATIONAL: ReadonlySet<TriageCheckId> = new Set(["residential"]);
+const DECLINE_ON_FAIL: ReadonlySet<TriageCheckId> = new Set(["connecticut", "residential"]);
 
 const US_STATE_CODES = new Set([
   "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "DC", "FL", "GA", "HI", "ID",
@@ -98,12 +137,17 @@ export function triageCase(input: TriageInput, today: Date = new Date()): Triage
           : "Property is outside Connecticut",
   });
 
-  // Intake has no residential/commercial field. Sign-up states "residential
-  // tenants only", so this is informational until intake records it.
+  // Intake asks whether the tenant rented the property as their home. A case
+  // with no recorded answer goes to review rather than being assumed residential.
   checks.push({
     id: "residential",
-    status: "unknown",
-    detail: "Not recorded per case; sign-up says residential tenants only",
+    status: input.residential === null ? "unknown" : input.residential ? "pass" : "fail",
+    detail:
+      input.residential === null
+        ? "No residential answer on record"
+        : input.residential
+          ? "Tenant confirmed a residential tenancy at intake"
+          : "Tenant said this was not a residential tenancy",
   });
 
   const movedOut = differenceInCalendarDays(day, parseDateOnly(input.move_out_date)) >= 0;
@@ -145,7 +189,7 @@ export function triageCase(input: TriageInput, today: Date = new Date()): Triage
 
   let verdict: TriageVerdict = "accept";
   for (const check of checks) {
-    if (check.status === "pass" || INFORMATIONAL.has(check.id)) continue;
+    if (check.status === "pass") continue;
     if (check.status === "fail" && DECLINE_ON_FAIL.has(check.id)) {
       verdict = "decline";
       break;

@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { CONTINGENCY_PCT, STATUTE_DAYS } from "@/lib/constants";
 import type { IntakeFormData, ExtractedLeaseData } from "@/lib/schemas/intake";
+import { NOT_RESIDENTIAL_MESSAGE } from "@/lib/schemas/intake";
 import { formatCents, parseDateOnly } from "@/lib/utils/case";
 import { addDays, format, differenceInDays } from "date-fns";
 
@@ -379,6 +380,7 @@ export function DetailsStep({
     register,
     formState: { errors },
     watch,
+    setValue,
   } = useFormContext<IntakeFormData>();
 
   const moveOutDate = watch("move_out_date");
@@ -483,6 +485,22 @@ export function DetailsStep({
             <Label htmlFor="unit_number">Unit (optional)</Label>
             <Input id="unit_number" {...register("unit_number")} />
           </div>
+        </div>
+        <div className="space-y-1.5">
+          <Label>Did you rent this property as your home?</Label>
+          <p className="text-xs text-muted-foreground">
+            Tribune serves residential tenants only. Answer &ldquo;No&rdquo; for an
+            office, store, or other business space.
+          </p>
+          <YesNo
+            value={watch("residential_tenancy")}
+            onChange={(v) => setValue("residential_tenancy", v)}
+          />
+          {watch("residential_tenancy") === "no" ? (
+            <FieldError message={NOT_RESIDENTIAL_MESSAGE} />
+          ) : (
+            <FieldError message={errors.residential_tenancy?.message} />
+          )}
         </div>
         <div className="grid sm:grid-cols-3 gap-3">
           <div className="space-y-1.5">

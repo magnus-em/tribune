@@ -5,6 +5,18 @@ import { z } from "zod";
 // "" = not yet selected (initial state); "yes"/"no" = chosen
 const yesNo = z.enum(["yes", "no", ""]);
 
+// Tribune serves residential tenants only. Shown when the tenant answers "no".
+export const NOT_RESIDENTIAL_MESSAGE =
+  "Tribune serves residential tenants only: people who rented the property as their home. Business and commercial rentals aren't covered.";
+
+function checkResidential(value: "yes" | "no" | "", ctx: z.RefinementCtx) {
+  if (value === "") {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Please select one", path: ["residential_tenancy"] });
+  } else if (value === "no") {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: NOT_RESIDENTIAL_MESSAGE, path: ["residential_tenancy"] });
+  }
+}
+
 // ─── Per-step schemas (used for step-level validation) ────────────────────────
 
 export const detailsStepSchema = z
@@ -18,11 +30,13 @@ export const detailsStepSchema = z
     fwd_zip: z.string().regex(/^\d{5}(-\d{4})?$/, "Enter a valid ZIP code"),
     property_address: z.string().min(5, "Property address is required"),
     unit_number: z.string().optional(),
+    residential_tenancy: yesNo,
     lease_start_date: z.string().min(1, "Lease start date is required"),
     lease_end_date: z.string().min(1, "Lease end date is required"),
     move_out_date: z.string().min(1, "Move-out date is required"),
   })
   .superRefine((data, ctx) => {
+    checkResidential(data.residential_tenancy, ctx);
     if (data.lease_start_date && data.lease_end_date) {
       if (new Date(data.lease_start_date) >= new Date(data.lease_end_date)) {
         ctx.addIssue({
@@ -140,6 +154,7 @@ export const intakeSchema = z
     fwd_zip: z.string().regex(/^\d{5}(-\d{4})?$/, "Enter a valid ZIP code"),
     property_address: z.string().min(5, "Property address is required"),
     unit_number: z.string().optional(),
+    residential_tenancy: yesNo,
     lease_start_date: z.string().min(1, "Lease start date is required"),
     lease_end_date: z.string().min(1, "Lease end date is required"),
     move_out_date: z.string().min(1, "Move-out date is required"),
@@ -167,6 +182,7 @@ export const intakeSchema = z
     signature_name: z.string().min(2, "Full legal name is required"),
   })
   .superRefine((data, ctx) => {
+    checkResidential(data.residential_tenancy, ctx);
     if (data.lease_start_date && data.lease_end_date) {
       if (new Date(data.lease_start_date) >= new Date(data.lease_end_date)) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Lease end must be after start", path: ["lease_end_date"] });

@@ -3,6 +3,24 @@
 Newest first. One entry per tick. Counts only — no names, emails, addresses, or
 per-case amounts.
 
+## 2026-10-31 — build — residential question at intake; triage now uses it
+- Did: Took the top of Next (Now was empty). Intake step 1 asks "Did you rent
+  this property as your home?" A "No" stops the intake with a residential-only
+  message, and the server schema requires "yes". `createCase` writes the answer
+  as a tenant-visible system message with a `dispatch_metadata` marker.
+  `residentialAnswer()` reads it. Triage: yes → pass, no → decline, no answer →
+  review, so it's no longer informational. Approve-and-send and the admin triage
+  panel pass the answer through. The approve-and-send fixtures now carry the
+  marker, and new tests cover a missing answer and a "no" answer (both blocked).
+  22 new tests (365 total). No open PRs at start; main CI green; prod returned 200.
+- Learned: `case_actions.action_type` is a Postgres enum, so a new action type
+  needs a migration. A `system` message with metadata needs none (tenants may
+  insert `system` rows under RLS). Cases created before this change have no
+  answer, so they sit in review with nothing the tenant or admin can do. Real
+  usage is believed to be zero, but it's in Next as a follow-up. Not
+  browser-verified: the intake requires a login and there's no staging.
+- Next: the legacy residential prompt, or the email-template tests.
+
 ## 2026-10-31 — build — landlord-reply handling on the tenant page (⚖️)
 - Did: Took the top of Next (Now was empty). After a landlord reply the tenant
   case page shows the reply and the options: report a recovery, or review the

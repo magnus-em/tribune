@@ -12,8 +12,7 @@ move a real case toward a paid invoice waits.
 
 ## Now
 
-1. ⚖️ **CT deposit law guide** — `/guides/connecticut-security-deposit-law`,
-   restating only verified statute text, with sources and the disclaimer.
+_Empty. The build tick takes the top of **Next**._
 
 ## Spec — tenant approve-and-send
 
@@ -82,6 +81,12 @@ move a real case toward a paid invoice waits.
 
 ## Done
 
+- 2026-10-31 — ⚖️ CT deposit law guide at `/guides/connecticut-security-deposit-law`:
+  quotes § 47a-21(d) verbatim (deadline and damages, from `src/lib/statute.ts`),
+  plain restatements of both deadline branches, delivery options (A)/(B), the
+  damages rule and its interest-only exception, a "not covered here" list
+  (interest rate, itemization detail, other subsections, case law), sources, and
+  the disclaimer. In the sitemap; linked from the landing and /moved-out footers.
 - 2026-10-31 — SEO foundation: `sitemap.ts` (/, /moved-out), `robots.ts`
   (disallows admin, dashboard, api, auth, login, demo), `metadataBase`, Open
   Graph and Twitter metadata, a canonical on /moved-out, `FAQPage` JSON-LD from

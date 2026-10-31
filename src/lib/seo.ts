@@ -23,6 +23,7 @@ export const PUBLIC_ROUTES: ReadonlyArray<{
 }> = [
   { path: "/", changeFrequency: "weekly", priority: 1 },
   { path: "/moved-out", changeFrequency: "monthly", priority: 0.8 },
+  { path: "/guides/connecticut-security-deposit-law", changeFrequency: "monthly", priority: 0.7 },
 ];
 
 /** Authenticated, transactional, or internal paths crawlers should skip. */

@@ -3,6 +3,24 @@
 Newest first. One entry per tick. Counts only — no names, emails, addresses, or
 per-case amounts.
 
+## 2026-10-31 — build — CT deposit law guide (⚖️)
+- Did: `/guides/connecticut-security-deposit-law`. Every legal statement is either
+  a verbatim § 47a-21(d) quote from `src/lib/statute.ts` or a plain restatement of
+  one: the two deadline clocks (later controls), options (A) and (B), twice the
+  deposit paid, and the interest-only exception (greater of $10 or twice the
+  interest). 9 tests: quotes match LEGAL_REVIEW, no "30 days", damages base is the
+  deposit not the withheld amount, no subsection other than (d), no case law or
+  attorney's-fees/forfeiture language, sources linked, disclaimer, Tribune voice,
+  no advice phrasing. Added to the sitemap and both public footers. Checked the
+  production build in Chromium at 1280px and 390px: no errors, no horizontal scroll.
+- Learned: LEGAL_REVIEW verifies only two passages of subsection (d), so the guide
+  lists the interest rate, itemization detail, other subsections, and case law as
+  "not covered" instead of summarizing them. I dropped a line about older 30-day
+  versions of the statute because it comes from the review's note, not verified
+  statute text. Local `next build` fails on Google Fonts unless
+  `NODE_EXTRA_CA_CERTS=/root/.ccr/ca-bundle.crt` is set (sandbox proxy); CI is fine.
+- Next: "Now" is empty. The next tick takes the top of "Next" (the follow-up cron).
+
 ## 2026-10-31 — build — SEO foundation (second item this tick)
 - Did: sitemap and robots routes, `src/lib/seo.ts` (site URL, public routes,
   disallowed paths, JSON-LD builders with `</script>` escaping), root Open Graph

@@ -1,6 +1,7 @@
 import { format } from "date-fns";
 import { CheckCircle2, Circle, Clock, FileText, Mail, MessageSquare, AlertCircle } from "lucide-react";
 import { type CaseMessage, type CaseAction } from "@/lib/types/database";
+import { STATUTE_DAYS } from "@/lib/constants";
 
 interface TimelineEvent {
   id: string;
@@ -59,7 +60,7 @@ export function CaseTimeline({ messages, actions, statutoryDeadline, moveOutDate
     id: "deadline",
     type: "milestone",
     date: statutoryDeadline,
-    title: "Statutory deadline (30 days)",
+    title: `Statutory deadline (${STATUTE_DAYS} days)`,
     description: deadlinePassed ? "Landlord failed to return deposit" : "Landlord must return deposit by this date",
     icon: deadlinePassed ? "alert" : "clock",
     variant: deadlinePassed ? "warning" : "default",

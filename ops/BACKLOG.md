@@ -12,22 +12,19 @@ move a real case toward a paid invoice waits.
 
 ## Now
 
-1. ⚖️ **Timeline deadline label** — the tenant case timeline labels the statutory
-   deadline "(30 days)" (`src/components/case-timeline.tsx`). The statute and
-   `STATUTE_DAYS` say 21. Fix the label and add a test.
-2. ⚖️ **Tenant approve-and-send (Letter 1)** — the feature that removes Magnus from
+1. ⚖️ **Tenant approve-and-send (Letter 1)** — the feature that removes Magnus from
    each case. Spec below. Uses `triageCase()` (shipped in #5).
-3. **Summer-cohort page + outreach drafts** — `/moved-out` landing page: "Moved
+2. **Summer-cohort page + outreach drafts** — `/moved-out` landing page: "Moved
    out this summer and never got your deposit back?" Restates only verified
    § 47a-21 text, carries the disclaimer, CTA to intake. Plus
    `ops/outreach/posts.md`: 3 ready-to-paste posts (Yale grad lists, r/newhaven,
    New Haven housing groups) with each venue's self-promotion rules noted.
    Drafts only. Magnus posts them (contacting people is 🔴).
-4. **Admin exception queue** — read-only `/admin` view: new intakes, landlord
+3. **Admin exception queue** — read-only `/admin` view: new intakes, landlord
    replies with no follow-up, cases within 3 days of a deadline, overdue invoices.
-5. **SEO foundation** — `sitemap.ts`, `robots.ts`, per-page metadata, Open Graph,
+4. **SEO foundation** — `sitemap.ts`, `robots.ts`, per-page metadata, Open Graph,
    `LegalService`/`FAQPage` structured data. No new deps.
-6. ⚖️ **CT deposit law guide** — `/guides/connecticut-security-deposit-law`,
+5. ⚖️ **CT deposit law guide** — `/guides/connecticut-security-deposit-law`,
    restating only verified statute text, with sources and the disclaimer.
 
 ## Spec — tenant approve-and-send
@@ -88,6 +85,8 @@ move a real case toward a paid invoice waits.
 
 ## Done
 
+- 2026-10-31 — Timeline deadline label: "(30 days)" → "(21 days)" from `STATUTE_DAYS`,
+  with a test.
 - 2026-10-30 — Full autonomy granted; build tick every 2 hours.
 - 2026-10-30 — Letter defects fixed: follow-ups no longer state false facts (#4).
 - 2026-10-30 — Triage function: `triageCase()` in `src/lib/triage.ts` with 31 tests,

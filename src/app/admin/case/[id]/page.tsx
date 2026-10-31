@@ -570,6 +570,7 @@ function AdminWritePanel({
       statutoryDeadline: caseData.statutory_deadline,
       daysOverdue,
       itemizedDeductionsReceived: caseData.itemized_deductions_received,
+      landlordResponded: messages.some((m) => m.message_type === "landlord_reply" || m.message_type === "tenant_landlord_reply"),
       situationDescription: caseData.situation_description,
       withholding_reason: caseData.withholding_reason ?? undefined,
     };
@@ -580,14 +581,20 @@ function AdminWritePanel({
     if (!data) { toast.error("Tenant profile not loaded"); return; }
     const num = parseInt(letterNum);
     try {
-      // Find prior letter dates for Letter 2 / 3
+      // Prior letters for Letter 2 / 3: only ones actually sent (a staged draft
+      // was never delivered), dated by the local calendar day they went out. A
+      // raw timestamptz would be cut to its UTC date and can land a day late.
+      const sentOn = (m: CaseMessage) => {
+        const sentAt = (m.dispatch_metadata as { sent_at?: string } | null)?.sent_at;
+        return format(new Date(sentAt ?? m.created_at), "yyyy-MM-dd");
+      };
       const priorLetters = messages
-        .filter((m) => m.message_type === "tribune_letter")
+        .filter((m) => m.message_type === "tribune_letter" && m.dispatch_channel)
         .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 
       const generated = generateDemandLetter(num, data, {
-        letter1: priorLetters[0]?.created_at,
-        letter2: priorLetters[1]?.created_at,
+        letter1: priorLetters[0] && sentOn(priorLetters[0]),
+        letter2: priorLetters[1] && sentOn(priorLetters[1]),
       });
       setLetterBody(generated);
       if (!letterTitle) setLetterTitle(`Demand Letter ${num} — ${caseData.property_address}`);

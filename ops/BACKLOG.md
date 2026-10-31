@@ -12,17 +12,11 @@ move a real case toward a paid invoice waits.
 
 ## Now
 
-1. **Summer-cohort page + outreach drafts** — `/moved-out` landing page: "Moved
-   out this summer and never got your deposit back?" Restates only verified
-   § 47a-21 text, carries the disclaimer, CTA to intake. Plus
-   `ops/outreach/posts.md`: 3 ready-to-paste posts (Yale grad lists, r/newhaven,
-   New Haven housing groups) with each venue's self-promotion rules noted.
-   Drafts only. Magnus posts them (contacting people is 🔴).
-2. **Admin exception queue** — read-only `/admin` view: new intakes, landlord
+1. **Admin exception queue** — read-only `/admin` view: new intakes, landlord
    replies with no follow-up, cases within 3 days of a deadline, overdue invoices.
-3. **SEO foundation** — `sitemap.ts`, `robots.ts`, per-page metadata, Open Graph,
+2. **SEO foundation** — `sitemap.ts`, `robots.ts`, per-page metadata, Open Graph,
    `LegalService`/`FAQPage` structured data. No new deps.
-4. ⚖️ **CT deposit law guide** — `/guides/connecticut-security-deposit-law`,
+3. ⚖️ **CT deposit law guide** — `/guides/connecticut-security-deposit-law`,
    restating only verified statute text, with sources and the disclaimer.
 
 ## Spec — tenant approve-and-send
@@ -88,6 +82,13 @@ move a real case toward a paid invoice waits.
   classification (🔴 if it needs a paid API)
 
 ## Done
+
+- 2026-10-31 — ⚖️ Summer-cohort page `/moved-out`: quotes § 47a-21(d) verbatim
+  from `src/lib/statute.ts` (a test checks the quotes against
+  LEGAL_REVIEW_47a-21.md), what to gather, how Tribune works, FAQ, the
+  disclaimer at the top and bottom, CTAs to intake. Plus `ops/outreach/posts.md`:
+  3 drafts (Yale lists, r/newhaven, Facebook groups) with venue rules to check.
+  Magnus posts them; the agent doesn't.
 
 - 2026-10-31 — ⚖️ Approve-and-send slice 2 (tenant UI): the tenant case page shows
   the server-generated Letter 1, the `APPROVAL_STATEMENT` checkbox, and

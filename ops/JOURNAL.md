@@ -3,6 +3,24 @@
 Newest first. One entry per tick. Counts only — no names, emails, addresses, or
 per-case amounts.
 
+## 2026-10-31 — build — summer-cohort page and outreach drafts
+- Did: Added a public `/moved-out` page ("Moved out this summer and never got your
+  deposit back?"). It quotes the two verified § 47a-21(d) passages word for word
+  from a new `src/lib/statute.ts`, lists what to gather, explains approve-and-send
+  and the 15% fee, and carries the disclaimer under the hero and in the footer.
+  Every CTA goes to `/login?next=/dashboard/new-case`. 8 tests: the quotes match
+  LEGAL_REVIEW_47a-21.md, no "30 days", the disclaimer, the CTA targets, no
+  we/us/our, approval before sending. Wrote `ops/outreach/posts.md` with 3
+  drafts and the venue rules to check first. No open PRs at start; main CI
+  green; prod up.
+- Learned: the page is public, so it was checked in a local browser (prod build,
+  1280px and 390px, no horizontal scroll). The landing CSS reset strips list
+  numbers, so ordered lists need `listStyle: "decimal"`. Nothing links to
+  `/moved-out` from the landing page yet; the posts are its only traffic source,
+  and SEO (sitemap, metadata) is BACKLOG Now #2. The venue rules in the drafts
+  are things to check, not verified copies; the agent can't read logged-in pages.
+- Next: the admin exception queue. Magnus: SETUP Part A, then post the drafts.
+
 ## 2026-10-31 — build — approve-and-send, tenant UI (slice 2 of 2)
 - Did: The tenant case page now asks the server for Letter 1 while the case is in
   setup. If it's ready, it shows the exact server-generated letter, the required

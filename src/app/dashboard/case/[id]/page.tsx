@@ -14,7 +14,20 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { uploadDocument, getDocumentUrl, reportRecovery, markLandlordIntroSent } from "./actions";
+import {
+  uploadDocument,
+  getDocumentUrl,
+  reportRecovery,
+  markLandlordIntroSent,
+  getLetterForApproval,
+  approveAndSendLetter,
+  updateLetterContactDetail,
+} from "./actions";
+import {
+  approvalPanelState,
+  type ApprovalPanelState,
+  type ContactDetailField,
+} from "@/lib/letters/approve-and-send";
 import { INTRO_SENT_TITLE, REVIEW_SLA } from "@/lib/constants";
 import { LegalDisclaimer } from "@/components/legal-disclaimer";
 import { statusColor, parseDateOnly } from "@/lib/utils/case";
@@ -36,6 +49,7 @@ import {
   EvidenceCenter,
   ActionBanner,
   LandlordIntroStep,
+  LetterApprovalStep,
   RecoveryStep,
   RecoveryForm,
   InvoicePanel,
@@ -51,6 +65,7 @@ export default function CaseDetailPage() {
   const [documents, setDocuments] = useState<CaseDocument[]>([]);
   const [invoice, setInvoice] = useState<InvoiceData | null>(null);
   const [tenantName, setTenantName] = useState("");
+  const [letterPlan, setLetterPlan] = useState<Awaited<ReturnType<typeof getLetterForApproval>> | null>(null);
   const [loading, setLoading] = useState(true);
   const evidenceRef = useRef<HTMLDivElement>(null);
 
@@ -105,6 +120,17 @@ export default function CaseDetailPage() {
     setDocuments(docsResult || []);
     setInvoice(invoiceResult ?? null);
     setTenantName((profileResult as { full_name?: string } | null)?.full_name ?? "");
+    // Before any letter has gone out, ask the server whether Letter 1 is ready
+    // for the tenant's approval. The server generates the text and decides.
+    if (
+      caseResult &&
+      caseResult.current_letter_number === 0 &&
+      (caseResult.status === "intake_submitted" || caseResult.status === "under_review")
+    ) {
+      setLetterPlan(await getLetterForApproval(caseId, 1));
+    } else {
+      setLetterPlan(null);
+    }
     setLoading(false);
   }, [caseId]);
 
@@ -139,6 +165,28 @@ export default function CaseDetailPage() {
     } else {
       trackEvent("landlord_intro_sent");
       toast.success("Marked as sent. Tribune will take it from here.");
+      loadData();
+    }
+  }
+
+  async function handleApproveLetter() {
+    const result = await approveAndSendLetter(caseId, 1);
+    if (result.error) {
+      toast.error(result.error);
+    } else {
+      trackEvent("letter_approved_and_sent", { letter_number: 1 });
+      toast.success("Approved. Tribune sent your letter to your landlord.");
+    }
+    loadData();
+  }
+
+  async function handleSaveDetail(field: ContactDetailField, value: string) {
+    const result = await updateLetterContactDetail(caseId, field, value);
+    if (result.error) {
+      toast.error(result.error);
+    } else {
+      trackEvent("letter_detail_added", { field });
+      toast.success("Saved.");
       loadData();
     }
   }
@@ -189,7 +237,17 @@ export default function CaseDetailPage() {
   const rounds = groupIntoRounds(events);
   const activeRoundIdx = 0; // rounds are newest-first, so active round is at index 0
 
-  const headline = getStatusHeadline(caseData.status, hasLease);
+  const approval: ApprovalPanelState = letterPlan
+    ? approvalPanelState(letterPlan, hasLease)
+    : { kind: "hidden" };
+  const letterReady = approval.kind === "ready";
+  const letterNeedsDetail = approval.kind === "needs" && approval.need !== "lease";
+
+  const headline = letterReady
+    ? "Your demand letter is ready for your approval"
+    : letterNeedsDetail
+      ? "Action needed — Tribune needs one more detail"
+      : getStatusHeadline(caseData.status, hasLease);
 
   // Derive the current action banner
   function getActionBannerProps() {
@@ -201,6 +259,29 @@ export default function CaseDetailPage() {
           "Tribune cannot review your case until we have a copy of your lease agreement. Use the \"Upload Lease\" button in Case Readiness below.",
       };
     }
+    if (letterReady) {
+      return {
+        variant: "required" as const,
+        title: "Read and approve your demand letter",
+        description:
+          "Your Letter 1 is ready. Nothing is sent until you approve it below. When you do, Tribune emails it to your landlord in your name.",
+      };
+    }
+    if (letterNeedsDetail) {
+      return {
+        variant: "required" as const,
+        title: "Tribune needs one more detail",
+        description:
+          "Add the missing detail below so Tribune can prepare your demand letter for your approval.",
+      };
+    }
+    if (approval.kind === "needs" && approval.need === "lease") {
+      return {
+        variant: "required" as const,
+        title: "Upload your lease",
+        description: approval.message + " Use the \"Upload Lease\" button in Case Readiness below.",
+      };
+    }
     if (
       caseData!.status === "intake_submitted" ||
       caseData!.status === "under_review"
@@ -209,7 +290,7 @@ export default function CaseDetailPage() {
         variant: "waiting" as const,
         title: "Tribune is reviewing your case",
         description:
-          `Tribune responds to new cases ${REVIEW_SLA}. You'll receive an email when your demand letter is ready or if Tribune needs anything else from you. No action needed right now.`,
+          `Tribune responds to new cases ${REVIEW_SLA}. When your demand letter is ready, it appears on this page for you to read and approve. Nothing goes to your landlord until you approve it.`,
       };
     }
     if (caseData!.status === "correspondence_ready") {
@@ -398,6 +479,16 @@ export default function CaseDetailPage() {
           tenantName={tenantName}
           introSent={introSent}
           onConfirmSent={handleConfirmIntro}
+        />
+      )}
+
+      {/* Setup: tenant approves Letter 1, or adds a detail it needs */}
+      {inSetup && (
+        <LetterApprovalStep
+          letterNumber={1}
+          state={approval}
+          onApprove={handleApproveLetter}
+          onSaveDetail={handleSaveDetail}
         />
       )}
 

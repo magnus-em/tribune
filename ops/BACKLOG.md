@@ -12,24 +12,17 @@ move a real case toward a paid invoice waits.
 
 ## Now
 
-1. ⚖️ **Tenant approve-and-send (Letter 1) — slice 2: tenant UI.** On the tenant
-   case page, when `getLetterForApproval(caseId, 1)` returns `ok`, show the letter,
-   the required checkbox (`APPROVAL_STATEMENT`), and **Approve & send** calling
-   `approveAndSendLetter`. When it's blocked for a reason the tenant can fix
-   (`no_forwarding_address`, `no_landlord_email`, lease missing), say what's needed.
-   Also update the "Tribune is reviewing" banner/`STATUS_DESCRIPTIONS` copy so it
-   doesn't contradict the button. Slice 1 (server side) is done.
-2. **Summer-cohort page + outreach drafts** — `/moved-out` landing page: "Moved
+1. **Summer-cohort page + outreach drafts** — `/moved-out` landing page: "Moved
    out this summer and never got your deposit back?" Restates only verified
    § 47a-21 text, carries the disclaimer, CTA to intake. Plus
    `ops/outreach/posts.md`: 3 ready-to-paste posts (Yale grad lists, r/newhaven,
    New Haven housing groups) with each venue's self-promotion rules noted.
    Drafts only. Magnus posts them (contacting people is 🔴).
-3. **Admin exception queue** — read-only `/admin` view: new intakes, landlord
+2. **Admin exception queue** — read-only `/admin` view: new intakes, landlord
    replies with no follow-up, cases within 3 days of a deadline, overdue invoices.
-4. **SEO foundation** — `sitemap.ts`, `robots.ts`, per-page metadata, Open Graph,
+3. **SEO foundation** — `sitemap.ts`, `robots.ts`, per-page metadata, Open Graph,
    `LegalService`/`FAQPage` structured data. No new deps.
-5. ⚖️ **CT deposit law guide** — `/guides/connecticut-security-deposit-law`,
+4. ⚖️ **CT deposit law guide** — `/guides/connecticut-security-deposit-law`,
    restating only verified statute text, with sources and the disclaimer.
 
 ## Spec — tenant approve-and-send
@@ -72,6 +65,12 @@ move a real case toward a paid invoice waits.
 - ⚖️ Deadline calculator tool at `/tools/deposit-deadline`.
 - ⚖️ More guide pages, then city pages (only verified statute text).
 - Migrate `next lint` → ESLint CLI.
+- RLS: "Tenants can update own cases" allows any column (status,
+  `current_letter_number`, amounts). Narrow it — a column-limited policy or a
+  trigger — so tenant writes go only through the server actions. Needs a
+  migration (see the migration note below).
+- Voice: `LandlordIntroStep` says "our messages" / "authorizes us"; and the
+  `RecoveryStep` says "so we can close your case". Tribune is the actor.
 - ⚖️ Capture the forwarding-address date and correct the deadline math. Needs an
   additive migration — blocked: cloud ticks can't apply migrations. Write it, and an
   interactive session applies it.
@@ -89,6 +88,13 @@ move a real case toward a paid invoice waits.
   classification (🔴 if it needs a paid API)
 
 ## Done
+
+- 2026-10-31 — ⚖️ Approve-and-send slice 2 (tenant UI): the tenant case page shows
+  the server-generated Letter 1, the `APPROVAL_STATEMENT` checkbox, and
+  **Approve & send**; when the landlord email or forwarding address is missing the
+  tenant adds it in place (`updateLetterContactDetail`); a missing lease points to
+  the upload. Review-banner and `STATUS_DESCRIPTIONS` copy now say nothing is sent
+  without the tenant's approval. Not browser-verified (no staging).
 
 - 2026-10-31 — ⚖️ Approve-and-send slice 1 (server side): `prepareLetterDispatch()`
   in `src/lib/letters/approve-and-send.ts` (eligibility, kill switch, 5-day rate

@@ -26,8 +26,8 @@ export const STATUS_LABELS: Record<CaseStatus, string> = {
 };
 
 export const STATUS_DESCRIPTIONS: Record<CaseStatus, string> = {
-  intake_submitted: `Tribune has received your case and will review it ${REVIEW_SLA}.`,
-  under_review: "Tribune is reviewing your case details.",
+  intake_submitted: `Tribune has received your case and will review it ${REVIEW_SLA}. Your demand letter is sent only after you approve it.`,
+  under_review: "Tribune is reviewing your case details. Your demand letter is sent only after you approve it.",
   correspondence_ready: "Tribune is preparing to send a letter to your landlord.",
   letter_sent: "Tribune has sent correspondence to your landlord.",
   awaiting_landlord: "Tribune has sent a letter. Waiting for your landlord to respond.",

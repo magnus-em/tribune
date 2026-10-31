@@ -3,6 +3,21 @@
 Newest first. One entry per tick. Counts only — no names, emails, addresses, or
 per-case amounts.
 
+## 2026-10-31 — build — follow-up slice 4: one reminder while a letter waits for approval
+- Did: `followUpNoticeDecision()` now returns `kind: available | reminder`. If
+  Letter 2 or 3 is still unapproved 5 calendar days after the first notice, the
+  cron sends one reminder (in-app message + email, own dedupe marker). Approval,
+  a landlord reply, a recovery, or the kill switch stop it. Reminder copy: nothing
+  sent, approval stays with the tenant, "only reminder", disclaimer, no
+  deadline/urgency words (tested). 14 new tests (313 total). One existing fixture
+  got a realistic Letter 3 notice timestamp; its assertion is unchanged. No open
+  PRs at start; prod returned 200.
+- Learned: "deadline-risk" was ambiguous. A statutory-deadline nudge would rely on
+  `statutory_deadline`, which ignores the 15-days-after-forwarding-address branch,
+  so it could tell a tenant the wrong date. Left out until the forwarding-address
+  date is captured. Not run against a database: no staging.
+- Next: landlord-reply handling on the tenant page.
+
 ## 2026-10-31 — build — follow-up slice 3: daily cron emails the tenant when Letter 2/3 is ready
 - Did: `/api/cron/follow-up-notices` plus a daily Vercel Cron entry (free tier).
   The planner (`src/lib/letters/follow-up-notice.ts`) reuses `followUpOffer()`

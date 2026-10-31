@@ -16,7 +16,8 @@ export const dynamic = "force-dynamic";
 
 /**
  * Daily cron (vercel.json): emails each tenant once when Letter 2 or 3 becomes
- * available on their case. Transactional, about the tenant's own case.
+ * available on their case, and once more if it is still waiting for their
+ * approval a few days later. Transactional, about the tenant's own case.
  *
  * Never contacts a landlord and sends no letter. The letter still goes out only
  * after the tenant approves it in the app. `DISPATCH_PAUSED=true` stops it.
@@ -110,7 +111,7 @@ export async function GET(request: NextRequest) {
 
     // The in-app message is written first: it is the dedupe marker, so a crash
     // after the email can't lead to a second email tomorrow.
-    const message = followUpAvailableMessage(notice.letterNumber, now);
+    const message = followUpAvailableMessage(notice.letterNumber, now, notice.kind);
     const { data: inserted, error: insertError } = await supabase
       .from("case_messages")
       .insert({
@@ -119,7 +120,7 @@ export async function GET(request: NextRequest) {
         title: message.title,
         body: message.body,
         created_by: adminProfile.id,
-        dispatch_metadata: followUpNoticeMetadata(notice.letterNumber, now.toISOString()),
+        dispatch_metadata: followUpNoticeMetadata(notice.letterNumber, now.toISOString(), notice.kind),
       })
       .select("id")
       .single();
@@ -131,12 +132,13 @@ export async function GET(request: NextRequest) {
 
     const sent = await sendEmail({
       to: profile.email,
-      subject: followUpAvailableSubject(notice.letterNumber),
+      subject: followUpAvailableSubject(notice.letterNumber, notice.kind),
       html: renderFollowUpAvailableEmail({
         tenantName: profile.full_name ?? "",
         caseId: notice.caseId,
         letterNumber: notice.letterNumber,
         siteUrl,
+        kind: notice.kind,
       }),
     });
 
@@ -151,5 +153,6 @@ export async function GET(request: NextRequest) {
     notified++;
   }
 
-  return NextResponse.json({ ok: true, considered: cases.length, notified, failed });
+  const reminders = plan.notices.filter((n) => n.kind === "reminder").length;
+  return NextResponse.json({ ok: true, considered: cases.length, notified, failed, reminders_planned: reminders });
 }

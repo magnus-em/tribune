@@ -13,9 +13,22 @@ import { isDispatchPaused } from "@/lib/letters/approve-and-send";
  *
  * Dedupe: the system message carries `dispatch_metadata.notice` and
  * `letter_number`. If one exists for Letter N, the tenant isn't notified again.
+ *
+ * Reminder: if Letter N is still waiting for approval
+ * `FOLLOW_UP_REMINDER_AFTER_DAYS` days after the first notice, the tenant gets
+ * one reminder (its own marker, `follow_up_reminder`). Never more than one.
+ * Once the tenant approves, `current_letter_number` moves on and the offer for
+ * Letter N is gone, so no reminder follows an approval.
  */
 
 export const FOLLOW_UP_NOTICE_KIND = "follow_up_available";
+export const FOLLOW_UP_REMINDER_KIND = "follow_up_reminder";
+
+/** Calendar days between the "ready" notice and the single reminder. */
+export const FOLLOW_UP_REMINDER_AFTER_DAYS = 5;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+export type NoticeKind = "available" | "reminder";
 
 export type NoticeMessage = Pick<CaseMessage, "message_type" | "created_at"> & {
   dispatch_metadata: Json | null;
@@ -29,31 +42,58 @@ export interface FollowUpNoticeInput {
 }
 
 export type FollowUpNoticeDecision =
-  | { send: true; letterNumber: number; dueOn: Date }
-  | { send: false; reason: "not_offered" | "already_notified" };
+  | { send: true; kind: NoticeKind; letterNumber: number; dueOn: Date }
+  | { send: false; reason: "not_offered" | "already_notified" | "already_reminded" };
 
 /** The metadata stored on the in-app message. Also the dedupe marker. */
-export function followUpNoticeMetadata(letterNumber: number, notifiedAt: string) {
-  return { notice: FOLLOW_UP_NOTICE_KIND, letter_number: letterNumber, notified_at: notifiedAt };
+export function followUpNoticeMetadata(
+  letterNumber: number,
+  notifiedAt: string,
+  kind: NoticeKind = "available"
+) {
+  return {
+    notice: kind === "reminder" ? FOLLOW_UP_REMINDER_KIND : FOLLOW_UP_NOTICE_KIND,
+    letter_number: letterNumber,
+    notified_at: notifiedAt,
+  };
 }
 
-export function alreadyNotified(messages: NoticeMessage[], letterNumber: number): boolean {
-  return messages.some((m) => {
+function markers(messages: NoticeMessage[], noticeKind: string, letterNumber: number) {
+  return messages.filter((m) => {
     if (m.message_type !== "system") return false;
     const meta = m.dispatch_metadata;
     if (!meta || typeof meta !== "object" || Array.isArray(meta)) return false;
-    return meta.notice === FOLLOW_UP_NOTICE_KIND && meta.letter_number === letterNumber;
+    return meta.notice === noticeKind && meta.letter_number === letterNumber;
   });
 }
 
-/** Whether this case's tenant should get a "Letter N is ready" notice now. */
+export function alreadyNotified(messages: NoticeMessage[], letterNumber: number): boolean {
+  return markers(messages, FOLLOW_UP_NOTICE_KIND, letterNumber).length > 0;
+}
+
+export function alreadyReminded(messages: NoticeMessage[], letterNumber: number): boolean {
+  return markers(messages, FOLLOW_UP_REMINDER_KIND, letterNumber).length > 0;
+}
+
+/**
+ * Whether this case's tenant should get a "Letter N is ready" notice now, or
+ * the one reminder that Letter N is still waiting for their approval.
+ */
 export function followUpNoticeDecision(input: FollowUpNoticeInput): FollowUpNoticeDecision {
   const offer = followUpOffer(input);
   if (!offer.due) return { send: false, reason: "not_offered" };
-  if (alreadyNotified(input.messages, offer.letterNumber)) {
+  const n = offer.letterNumber;
+
+  const notices = markers(input.messages, FOLLOW_UP_NOTICE_KIND, n);
+  if (!notices.length) return { send: true, kind: "available", letterNumber: n, dueOn: offer.dueOn };
+  if (alreadyReminded(input.messages, n)) return { send: false, reason: "already_reminded" };
+
+  const firstNotice = Math.min(...notices.map((m) => new Date(m.created_at).getTime()));
+  const now = (input.now ?? new Date()).getTime();
+  if (!Number.isFinite(firstNotice) || now - firstNotice < FOLLOW_UP_REMINDER_AFTER_DAYS * DAY_MS) {
     return { send: false, reason: "already_notified" };
   }
-  return { send: true, letterNumber: offer.letterNumber, dueOn: offer.dueOn };
+  return { send: true, kind: "reminder", letterNumber: n, dueOn: offer.dueOn };
 }
 
 export interface NoticeCase {
@@ -67,6 +107,7 @@ export interface PlannedNotice {
   caseId: string;
   tenantId: string;
   letterNumber: number;
+  kind: NoticeKind;
 }
 
 export type NoticeRunPlan =
@@ -95,7 +136,12 @@ export function planFollowUpNotices(args: {
       now: args.now,
     });
     if (decision.send) {
-      notices.push({ caseId: c.id, tenantId: c.tenant_id, letterNumber: decision.letterNumber });
+      notices.push({
+        caseId: c.id,
+        tenantId: c.tenant_id,
+        letterNumber: decision.letterNumber,
+        kind: decision.kind,
+      });
     }
   }
   return { paused: false, notices };

@@ -42,7 +42,6 @@ _Empty. The build tick takes the top of **Next**._
 
 ## Next
 
-- Follow-up, slice 4 — deadline-risk nudges to the tenant.
 - Landlord-reply handling on the tenant page: show the reply and the next-step
   options (report recovery, send the next letter).
 - Triage follow-up: a residential-vs-commercial question at intake, so that check
@@ -79,6 +78,13 @@ _Empty. The build tick takes the top of **Next**._
 
 ## Done
 
+- 2026-10-31 — Follow-up, slice 4 of 4 — one reminder nudge: the daily cron
+  emails the tenant once more if Letter 2 or 3 is still waiting for approval 5
+  calendar days after the "ready" notice (`follow_up_reminder` marker, never more
+  than one per letter; none after approval or once the case leaves
+  `awaiting_landlord`). Copy makes no deadline or urgency claims. Statutory-
+  deadline nudges are deliberately out: the stored deadline ignores the
+  forwarding-address branch, so they wait on that ⚖️ item.
 - 2026-10-31 — Follow-up, slice 3 of 4 — daily cron `/api/cron/follow-up-notices`
   (Vercel Cron, `vercel.json`, 14:00 UTC). Pure `planFollowUpNotices()` /
   `followUpNoticeDecision()` in `src/lib/letters/follow-up-notice.ts`: notifies the

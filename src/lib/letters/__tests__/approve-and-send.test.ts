@@ -248,6 +248,16 @@ describe('prepareLetterDispatch — Letters 2 and 3 follow the follow-up schedul
     const plan = prepareLetterDispatch(awaiting(1, 2, [early]));
     expect(plan.ok ? 'ok' : plan.reason).toBe('letter_not_offered');
     if (!plan.ok) expect(plan.message).toContain('November 3, 2026');
+    if (!plan.ok) expect(plan.availableOn).toBe('2026-11-03');
+  });
+
+  test('only a pure wait carries availableOn', () => {
+    const messages = [{ message_type: 'landlord_reply' as const, dispatch_metadata: null, created_at: '2026-10-05T12:00:00.000Z' }];
+    const replied = prepareLetterDispatch({ ...awaiting(1, 2), messages });
+    expect(replied.ok).toBe(false);
+    if (!replied.ok) expect(replied.availableOn).toBeUndefined();
+    const ready = prepareLetterDispatch(awaiting(1, 2));
+    expect('availableOn' in ready).toBe(false);
   });
 
   test('a landlord reply since the last letter stops the offer', () => {

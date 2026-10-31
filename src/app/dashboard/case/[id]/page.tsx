@@ -25,6 +25,7 @@ import {
 } from "./actions";
 import {
   approvalPanelState,
+  nextLetterToOffer,
   type ApprovalPanelState,
   type ContactDetailField,
 } from "@/lib/letters/approve-and-send";
@@ -66,6 +67,7 @@ export default function CaseDetailPage() {
   const [invoice, setInvoice] = useState<InvoiceData | null>(null);
   const [tenantName, setTenantName] = useState("");
   const [letterPlan, setLetterPlan] = useState<Awaited<ReturnType<typeof getLetterForApproval>> | null>(null);
+  const [letterNumber, setLetterNumber] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const evidenceRef = useRef<HTMLDivElement>(null);
 
@@ -120,17 +122,12 @@ export default function CaseDetailPage() {
     setDocuments(docsResult || []);
     setInvoice(invoiceResult ?? null);
     setTenantName((profileResult as { full_name?: string } | null)?.full_name ?? "");
-    // Before any letter has gone out, ask the server whether Letter 1 is ready
-    // for the tenant's approval. The server generates the text and decides.
-    if (
-      caseResult &&
-      caseResult.current_letter_number === 0 &&
-      (caseResult.status === "intake_submitted" || caseResult.status === "under_review")
-    ) {
-      setLetterPlan(await getLetterForApproval(caseId, 1));
-    } else {
-      setLetterPlan(null);
-    }
+    // Ask the server whether the next letter (1 in setup, 2 or 3 while Tribune
+    // waits on the landlord) is ready for the tenant's approval. The server
+    // generates the text and decides.
+    const next = caseResult ? nextLetterToOffer(caseResult) : null;
+    setLetterNumber(next);
+    setLetterPlan(next ? await getLetterForApproval(caseId, next) : null);
     setLoading(false);
   }, [caseId]);
 
@@ -170,11 +167,12 @@ export default function CaseDetailPage() {
   }
 
   async function handleApproveLetter() {
-    const result = await approveAndSendLetter(caseId, 1);
+    if (!letterNumber) return;
+    const result = await approveAndSendLetter(caseId, letterNumber);
     if (result.error) {
       toast.error(result.error);
     } else {
-      trackEvent("letter_approved_and_sent", { letter_number: 1 });
+      trackEvent("letter_approved_and_sent", { letter_number: letterNumber });
       toast.success("Approved. Tribune sent your letter to your landlord.");
     }
     loadData();
@@ -264,7 +262,7 @@ export default function CaseDetailPage() {
         variant: "required" as const,
         title: "Read and approve your demand letter",
         description:
-          "Your Letter 1 is ready. Nothing is sent until you approve it below. When you do, Tribune emails it to your landlord in your name.",
+          `Your Letter ${letterNumber} is ready. Nothing is sent until you approve it below. When you do, Tribune emails it to your landlord in your name.`,
       };
     }
     if (letterNeedsDetail) {
@@ -482,10 +480,12 @@ export default function CaseDetailPage() {
         />
       )}
 
-      {/* Setup: tenant approves Letter 1, or adds a detail it needs */}
-      {inSetup && (
+      {/* Tenant approves the next letter (1 in setup, 2 or 3 later), adds a
+          detail it needs, or sees when the next one becomes available */}
+      {letterNumber !== null && (
         <LetterApprovalStep
-          letterNumber={1}
+          key={letterNumber}
+          letterNumber={letterNumber}
           state={approval}
           onApprove={handleApproveLetter}
           onSaveDetail={handleSaveDetail}

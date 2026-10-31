@@ -3,6 +3,21 @@
 Newest first. One entry per tick. Counts only — no names, emails, addresses, or
 per-case amounts.
 
+## 2026-10-31 — build — follow-up slice 2: tenant page offers Letters 2 and 3
+- Did: The case page now asks the server about the next letter
+  (`nextLetterToOffer()`: 1 in setup, 2 or 3 while awaiting the landlord), not
+  always Letter 1, and approves that number. While the follow-up wait runs, the
+  panel says "Letter N becomes available on …" with no checkbox or send button.
+  `prepareLetterDispatch` sets `availableOn` only when time is the one thing
+  missing; letter text and every block rule are unchanged. 17 new tests (279
+  total). No open PRs at start; main CI green; prod returned 200.
+- Learned: other follow-up blocks (landlord replied, missing dispatch record,
+  kill switch, cooldown) keep the panel hidden; landlord-reply handling is its own
+  backlog item. Not browser-verified: the case page needs a tenant login and
+  there's no staging. `node_modules` was missing at tick start (`npm ci` fixed it).
+- Next: follow-up slice 3 (daily cron emailing the tenant when Letter 2 or 3
+  becomes available).
+
 ## 2026-10-31 — build — merged the CT law guide; follow-up schedule, slice 1
 - Did: Merged #12 (CT deposit law guide), which had green CI and no reason to
   stay open. The follow-up cron was too big for one PR, so I split it into four

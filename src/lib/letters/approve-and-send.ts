@@ -213,3 +213,67 @@ export function prepareLetterDispatch(input: DispatchInput): DispatchPlan {
   );
   return { ok: true, title: letterTitle(letterNumber, caseRow.property_address), body };
 }
+
+// ── Tenant case page ─────────────────────────────────────────────────────────
+
+// Blockers the tenant can clear on the case page. Everything else (status,
+// triage for reasons other than the lease, the kill switch) waits on Tribune.
+export type TenantFixableNeed = "landlord_email" | "forwarding_address" | "lease";
+
+export type ApprovalPanelState =
+  | { kind: "ready"; title: string; body: string }
+  | { kind: "needs"; need: TenantFixableNeed; message: string }
+  | { kind: "hidden" };
+
+/**
+ * What the tenant case page shows for Letter N, from the server's plan.
+ * A missing lease fails triage, so `triage` with no lease on file is fixable.
+ */
+export function approvalPanelState(
+  plan: DispatchPlan | { ok: false; reason: string; message: string },
+  hasLease: boolean
+): ApprovalPanelState {
+  if (plan.ok) return { kind: "ready", title: plan.title, body: plan.body };
+  switch (plan.reason) {
+    case "no_landlord_email":
+      return { kind: "needs", need: "landlord_email", message: plan.message };
+    case "no_forwarding_address":
+      return { kind: "needs", need: "forwarding_address", message: plan.message };
+    case "triage":
+      return hasLease
+        ? { kind: "hidden" }
+        : {
+            kind: "needs",
+            need: "lease",
+            message: "Tribune needs a copy of your lease before your letter can be prepared.",
+          };
+    default:
+      return { kind: "hidden" };
+  }
+}
+
+export type ContactDetailField = "landlord_email" | "forwarding_address";
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/**
+ * Validate a detail the tenant adds on the case page so Letter 1 can go out.
+ * The forwarding address is where the landlord is told to send payment, so it
+ * must at least have a street line and a ZIP.
+ */
+export function parseContactDetail(
+  field: ContactDetailField,
+  raw: string
+): { ok: true; value: string } | { ok: false; message: string } {
+  const value = raw.trim().replace(/\s+/g, " ");
+  if (field === "landlord_email") {
+    if (value.length > 254 || !EMAIL_RE.test(value)) {
+      return { ok: false, message: "Enter a valid email address." };
+    }
+    return { ok: true, value: value.toLowerCase() };
+  }
+  if (value.length < 10 || value.length > 300 || !/\b\d{5}(?:-\d{4})?\b/.test(value)) {
+    return { ok: false, message: "Enter your full mailing address, including the ZIP code." };
+  }
+  return { ok: true, value };
+}

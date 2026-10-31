@@ -10,7 +10,9 @@ import { renderCaseUpdateEmail } from "@/lib/email/templates/case-update";
 import { renderLandlordLetterEmail } from "@/lib/email/templates/landlord-letter";
 import {
   APPROVAL_STATEMENT,
+  parseContactDetail,
   prepareLetterDispatch,
+  type ContactDetailField,
   type DispatchInput,
   type DispatchPlan,
 } from "@/lib/letters/approve-and-send";
@@ -479,6 +481,52 @@ export async function approveAndSendLetter(caseId: string, letterNumber: number)
   } catch (err) {
     console.error("[approveAndSendLetter] admin FYI failed:", err);
   }
+
+  revalidatePath(`/admin/case/${caseId}`);
+  revalidatePath(`/dashboard/case/${caseId}`);
+  return { success: true };
+}
+
+// The tenant adds a detail Letter 1 needs (landlord email or forwarding address)
+// before any letter has gone out. Runs under the tenant's session; RLS limits
+// the update to their own case.
+const CONTACT_DETAIL_LABELS: Record<ContactDetailField, string> = {
+  landlord_email: "your landlord's email address",
+  forwarding_address: "your forwarding address",
+};
+
+export async function updateLetterContactDetail(
+  caseId: string,
+  field: ContactDetailField,
+  value: string
+) {
+  if (!(field in CONTACT_DETAIL_LABELS)) return { error: "Unknown field" };
+  const parsed = parseContactDetail(field, value);
+  if (!parsed.ok) return { error: parsed.message };
+
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const { data: updated, error } = await supabase
+    .from("cases")
+    .update({ [field]: parsed.value })
+    .eq("id", caseId)
+    .eq("tenant_id", user.id)
+    .eq("current_letter_number", 0)
+    .in("status", ["intake_submitted", "under_review"])
+    .select("id");
+  if (error) return { error: "Tribune couldn't save that. Try again." };
+  if (!updated?.length) return { error: "This case can't be changed at this stage." };
+
+  // No value in the message: the timeline records that it changed, not what to.
+  await supabase.from("case_messages").insert({
+    case_id: caseId,
+    message_type: "system",
+    title: `You added ${CONTACT_DETAIL_LABELS[field]}`,
+    body: `You added ${CONTACT_DETAIL_LABELS[field]} so Tribune can send your demand letter.`,
+    created_by: user.id,
+  });
 
   revalidatePath(`/admin/case/${caseId}`);
   revalidatePath(`/dashboard/case/${caseId}`);

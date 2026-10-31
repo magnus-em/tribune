@@ -3,6 +3,26 @@
 Newest first. One entry per tick. Counts only — no names, emails, addresses, or
 per-case amounts.
 
+## 2026-10-31 — build — approve-and-send, tenant UI (slice 2 of 2)
+- Did: The tenant case page now asks the server for Letter 1 while the case is in
+  setup. If it's ready, it shows the exact server-generated letter, the required
+  `APPROVAL_STATEMENT` checkbox, and **Approve & send** (`approveAndSendLetter`).
+  If the landlord email or forwarding address is missing, the tenant adds it in
+  place through a new `updateLetterContactDetail` action (session client, only
+  before Letter 1, audit row without the value). A missing lease routes to the
+  upload. Review-banner, headline, and `STATUS_DESCRIPTIONS` copy now say nothing
+  is sent without the tenant's approval. Pure `approvalPanelState()` and
+  `parseContactDetail()` with tests, plus a render test for the step (button stays
+  disabled until the box is ticked). Letter text and citations are unchanged.
+- Learned: not browser-verified: the page needs a real login and there's no
+  staging, so a jsdom render test stands in. The tenant UPDATE policy on `cases`
+  covers every column, so a tenant could edit status or amounts directly. The
+  letter still only goes out on their own approval, but it's in BACKLOG "Next".
+  The intro step and recovery step still say "us"/"we" (BACKLOG "Next").
+  The end-to-end path is now live in code: a real Letter 1 can go out once
+  SETUP Part A (email sending) is done.
+- Next: the summer-cohort page and outreach drafts.
+
 ## 2026-10-31 — build — approve-and-send, server side (slice 1 of 2)
 - Did: Split approve-and-send into server side + tenant UI and shipped the server
   side. `prepareLetterDispatch()` is pure: kill switch (`DISPATCH_PAUSED`), Letter 1

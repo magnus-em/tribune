@@ -38,6 +38,12 @@ import { toast } from "sonner";
 import { formatCents, parseDateOnly } from "@/lib/utils/case";
 import type { Case, CaseMessage, CaseAction } from "@/lib/types/database";
 import { CONTINGENCY_PCT, REVIEW_SLA } from "@/lib/constants";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  APPROVAL_STATEMENT,
+  type ApprovalPanelState,
+  type ContactDetailField,
+} from "@/lib/letters/approve-and-send";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -1136,6 +1142,151 @@ export function LandlordIntroStep({
             {confirming ? "Saving…" : "I've sent this to my landlord"}
           </Button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Letter Approval Step ─────────────────────────────────────────────────────
+// The tenant reads the exact letter Tribune will send (generated server-side),
+// confirms it, and approves. Nothing reaches the landlord without this click.
+// When a detail the letter needs is missing, the tenant can add it here.
+
+const CONTACT_DETAIL_INPUTS: Record<
+  ContactDetailField,
+  { label: string; placeholder: string; type: string; hint: string }
+> = {
+  landlord_email: {
+    label: "Landlord's email address",
+    placeholder: "landlord@example.com",
+    type: "email",
+    hint: "Tribune emails your letter to this address. Replies come back to Tribune.",
+  },
+  forwarding_address: {
+    label: "Your forwarding address",
+    placeholder: "Street, unit, city, state, ZIP",
+    type: "text",
+    hint: "The letter asks your landlord to send payment here.",
+  },
+};
+
+function ContactDetailForm({
+  field,
+  message,
+  onSave,
+}: {
+  field: ContactDetailField;
+  message: string;
+  onSave: (field: ContactDetailField, value: string) => Promise<void>;
+}) {
+  const [value, setValue] = useState("");
+  const [saving, setSaving] = useState(false);
+  const input = CONTACT_DETAIL_INPUTS[field];
+
+  async function handleSave() {
+    setSaving(true);
+    await onSave(field, value);
+    setSaving(false);
+  }
+
+  return (
+    <div className="space-y-3">
+      <p className="text-sm text-muted-foreground">{message}</p>
+      <div className="space-y-1.5">
+        <Label htmlFor={`letter_${field}`}>{input.label}</Label>
+        <Input
+          id={`letter_${field}`}
+          type={input.type}
+          placeholder={input.placeholder}
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+        />
+        <p className="text-xs text-muted-foreground">{input.hint}</p>
+      </div>
+      <Button size="sm" onClick={handleSave} disabled={saving || !value.trim()}>
+        {saving ? "Saving…" : "Save"}
+      </Button>
+    </div>
+  );
+}
+
+export function LetterApprovalStep({
+  letterNumber,
+  state,
+  onApprove,
+  onSaveDetail,
+}: {
+  letterNumber: number;
+  state: ApprovalPanelState;
+  onApprove: () => Promise<void>;
+  onSaveDetail: (field: ContactDetailField, value: string) => Promise<void>;
+}) {
+  const [approved, setApproved] = useState(false);
+  const [sending, setSending] = useState(false);
+
+  // A missing lease is handled by the action banner and Case Readiness.
+  if (state.kind === "hidden" || (state.kind === "needs" && state.need === "lease")) return null;
+
+  async function handleApprove() {
+    setSending(true);
+    await onApprove();
+    setSending(false);
+  }
+
+  return (
+    <div className="border bg-card overflow-hidden">
+      <div
+        style={{
+          padding: "8px 16px",
+          borderBottom: "1px solid hsl(var(--border))",
+          background: "hsl(var(--muted))",
+          fontFamily: "var(--font-space-mono, monospace)",
+          fontSize: "10px",
+          letterSpacing: "0.12em",
+          textTransform: "uppercase",
+          color: "hsl(var(--muted-foreground))",
+        }}
+      >
+        Approve Letter {letterNumber}
+      </div>
+      <div className="p-4 space-y-4">
+        {state.kind === "needs" ? (
+          state.need !== "lease" && (
+            <ContactDetailForm field={state.need} message={state.message} onSave={onSaveDetail} />
+          )
+        ) : (
+          <>
+            <p className="text-sm text-muted-foreground">
+              This is the exact letter Tribune will email to your landlord in your name. Read it
+              carefully. If anything in it is wrong, don&apos;t approve it.
+            </p>
+            <div className="rounded-lg border bg-muted/30 p-3 max-h-96 overflow-y-auto">
+              <p className="text-xs font-semibold mb-2">{state.title}</p>
+              <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground/90">
+                {state.body}
+              </p>
+            </div>
+            <div className="flex items-start gap-2">
+              <Checkbox
+                id="approve_letter"
+                checked={approved}
+                onCheckedChange={(checked) => setApproved(checked === true)}
+                className="mt-0.5"
+              />
+              <Label htmlFor="approve_letter" className="text-sm font-normal leading-snug">
+                {APPROVAL_STATEMENT}
+              </Label>
+            </div>
+            <Button
+              className="w-full"
+              onClick={handleApprove}
+              disabled={!approved || sending}
+            >
+              <Send className="size-3.5 mr-1.5" />
+              {sending ? "Sending…" : "Approve & send"}
+            </Button>
+          </>
+        )}
       </div>
     </div>
   );

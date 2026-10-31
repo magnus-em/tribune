@@ -3,6 +3,22 @@
 Newest first. One entry per tick. Counts only — no names, emails, addresses, or
 per-case amounts.
 
+## 2026-10-31 — build — merged the CT law guide; follow-up schedule, slice 1
+- Did: Merged #12 (CT deposit law guide), which had green CI and no reason to
+  stay open. The follow-up cron was too big for one PR, so I split it into four
+  slices in BACKLOG. Slice 1: `followUpOffer()` (`src/lib/letters/follow-up.ts`),
+  and `prepareLetterDispatch` now allows Letters 2 and 3 once the schedule offers
+  them. Letters 2 and 3 cite the earlier letters' send dates from the
+  `letter_dispatched` audit rows. 38 new tests (262 total). The kill switch, cooldown,
+  triage, and tenant approval apply unchanged. Main CI green; prod returned 200.
+- Learned: business days skip weekends only; holidays aren't modeled, so a wait
+  that spans one ends a day early. The waits are product cadence, not statutory
+  periods. Letters 2 and 3 still say "You did not respond" when there's no
+  landlord reply on file. The schedule only offers them in that case, and the
+  tenant reads the letter before approving. Nothing calls Letters 2 or 3 yet,
+  because the tenant page still asks only for Letter 1.
+- Next: follow-up slice 2 (tenant UI for the next letter).
+
 ## 2026-10-31 — build — CT deposit law guide (⚖️)
 - Did: `/guides/connecticut-security-deposit-law`. Every legal statement is either
   a verbatim § 47a-21(d) quote from `src/lib/statute.ts` or a plain restatement of

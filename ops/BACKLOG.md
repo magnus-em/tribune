@@ -42,9 +42,14 @@ _Empty. The build tick takes the top of **Next**._
 
 ## Next
 
-- Follow-up cron (Vercel Cron, free tier): after 10 business days with no reply
-  and no recovery, offer the tenant Letter 2; after 7 more, Letter 3. Also
-  deadline-risk nudges to the tenant. Never sends to a landlord without approval.
+- Follow-up, slice 2 — tenant UI: the case page asks `getLetterForApproval` for
+  the next letter (`current_letter_number + 1`), not always Letter 1, and shows
+  "Letter N becomes available on …" while it waits. The schedule and the server
+  rules are done (slice 1).
+- Follow-up, slice 3 — cron (Vercel Cron, free tier): a daily route that emails
+  the tenant when Letter 2 or 3 becomes available (transactional, about their own
+  case). Respects `DISPATCH_PAUSED`. Never sends to a landlord.
+- Follow-up, slice 4 — deadline-risk nudges to the tenant.
 - Landlord-reply handling on the tenant page: show the reply and the next-step
   options (report recovery, send the next letter).
 - Triage follow-up: a residential-vs-commercial question at intake, so that check
@@ -81,6 +86,12 @@ _Empty. The build tick takes the top of **Next**._
 
 ## Done
 
+- 2026-10-31 — ⚖️ Follow-up schedule, slice 1 of 4: pure `followUpOffer()` in
+  `src/lib/letters/follow-up.ts` (Letter 2 at 10 business days after Letter 1,
+  Letter 3 at 7 after Letter 2; only while `awaiting_landlord`, no landlord reply
+  since the last letter, no recovery reported). `prepareLetterDispatch` now
+  accepts Letters 2 and 3 when the schedule offers them and fills in the earlier
+  letters' send dates. Letter templates unchanged. No UI yet.
 - 2026-10-31 — ⚖️ CT deposit law guide at `/guides/connecticut-security-deposit-law`:
   quotes § 47a-21(d) verbatim (deadline and damages, from `src/lib/statute.ts`),
   plain restatements of both deadline branches, delivery options (A)/(B), the

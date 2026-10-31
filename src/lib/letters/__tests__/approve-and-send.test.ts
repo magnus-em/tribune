@@ -81,7 +81,7 @@ describe('prepareLetterDispatch — eligibility', () => {
     expect(reason(withCase({ current_letter_number: 1 }))).toBe('wrong_letter_number');
   });
 
-  test('Letters 2 and 3 are not tenant-approvable until the follow-up schedule exists', () => {
+  test('Letters 2 and 3 are not offered without dispatch history, and 0 or 4 never are', () => {
     expect(reason({ ...withCase({ current_letter_number: 1, status: 'awaiting_landlord' }), letterNumber: 2 })).toBe('letter_not_offered');
     expect(reason({ ...withCase({ current_letter_number: 2, status: 'awaiting_landlord' }), letterNumber: 3 })).toBe('letter_not_offered');
     expect(reason({ ...base, letterNumber: 4 })).toBe('letter_not_offered');
@@ -206,5 +206,71 @@ describe('prepareLetterDispatch — server-side regeneration', () => {
     const plan = prepareLetterDispatch({ ...base, dispatchPaused: 'true' });
     expect(plan.ok).toBe(false);
     expect(plan).not.toHaveProperty('body');
+  });
+});
+
+describe('prepareLetterDispatch — Letters 2 and 3 follow the follow-up schedule', () => {
+  beforeAll(() => {
+    jest.useFakeTimers();
+    jest.setSystemTime(now);
+  });
+  afterAll(() => jest.useRealTimers());
+
+  // Letter 1 sent Thu 2026-10-01; 10 business days later is Thu 2026-10-15.
+  const letter1 = { action_type: 'letter_dispatched' as const, metadata: { letter_number: 1, sent_at: '2026-10-01T15:00:00.000Z' }, created_at: '2026-10-01T15:00:00.000Z' };
+  // Letter 2 sent Mon 2026-10-19; 7 business days later is Wed 2026-10-28.
+  const letter2 = { action_type: 'letter_dispatched' as const, metadata: { letter_number: 2, sent_at: '2026-10-19T15:00:00.000Z' }, created_at: '2026-10-19T15:00:00.000Z' };
+
+  const awaiting = (current_letter_number: number, letterNumber: number, actions: DispatchInput['actions'] = [letter1]): DispatchInput => ({
+    ...withCase({ status: 'awaiting_landlord', current_letter_number }),
+    letterNumber,
+    actions,
+  });
+
+  test('Letter 2 is offered once the wait has passed, and cites the Letter 1 date', () => {
+    const plan = prepareLetterDispatch(awaiting(1, 2));
+    if (!plan.ok) throw new Error(plan.reason);
+    expect(plan.title).toBe('Demand Letter 2 — 789 Elm Ave, New Haven, CT 06511');
+    expect(plan.body).toContain('SECOND DEMAND');
+    expect(plan.body).toContain('on October 1, 2026');
+    expect(plan.body).toContain('$4,000.00'); // twice the full deposit
+  });
+
+  test('Letter 3 is offered after Letter 2 and cites both dates', () => {
+    const plan = prepareLetterDispatch(awaiting(2, 3, [letter1, letter2]));
+    if (!plan.ok) throw new Error(plan.reason);
+    expect(plan.body).toContain('FINAL NOTICE');
+    expect(plan.body).toContain('October 1, 2026 and October 19, 2026');
+  });
+
+  test('Letter 2 is not offered before the wait ends', () => {
+    const early = { ...letter1, metadata: { letter_number: 1, sent_at: '2026-10-20T15:00:00.000Z' }, created_at: '2026-10-20T15:00:00.000Z' };
+    const plan = prepareLetterDispatch(awaiting(1, 2, [early]));
+    expect(plan.ok ? 'ok' : plan.reason).toBe('letter_not_offered');
+    if (!plan.ok) expect(plan.message).toContain('November 3, 2026');
+  });
+
+  test('a landlord reply since the last letter stops the offer', () => {
+    const messages = [{ message_type: 'landlord_reply' as const, dispatch_metadata: null, created_at: '2026-10-05T12:00:00.000Z' }];
+    expect(reason({ ...awaiting(1, 2), messages })).toBe('letter_not_offered');
+  });
+
+  test('a reported recovery stops the offer', () => {
+    const recovered = { action_type: 'resolution_reported' as const, metadata: null, created_at: '2026-10-10T12:00:00.000Z' };
+    expect(reason(awaiting(1, 2, [letter1, recovered]))).toBe('letter_not_offered');
+  });
+
+  test.each(['landlord_responded', 'resolved', 'closed', 'declined', 'under_review'] as const)(
+    'Letter 2 is blocked in %s',
+    (status) => {
+      expect(reason({ ...awaiting(1, 2), caseRow: { ...caseRow, status, current_letter_number: 1 } })).toBe('status');
+    }
+  );
+
+  test('the kill switch and the other checks still apply to Letters 2 and 3', () => {
+    expect(reason({ ...awaiting(1, 2), dispatchPaused: 'true' })).toBe('dispatch_paused');
+    expect(reason({ ...awaiting(1, 2), caseRow: { ...caseRow, status: 'awaiting_landlord', current_letter_number: 1, landlord_email: null } })).toBe('no_landlord_email');
+    expect(reason({ ...awaiting(1, 2), hasLease: false })).toBe('triage');
+    expect(reason(awaiting(1, 3))).toBe('wrong_letter_number');
   });
 });

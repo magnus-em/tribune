@@ -3,6 +3,22 @@
 Newest first. One entry per tick. Counts only — no names, emails, addresses, or
 per-case amounts.
 
+## 2026-10-31 — build — SEO foundation (second item this tick)
+- Did: sitemap and robots routes, `src/lib/seo.ts` (site URL, public routes,
+  disallowed paths, JSON-LD builders with `</script>` escaping), root Open Graph
+  and Twitter metadata, a canonical plus FAQPage JSON-LD on /moved-out, and
+  Organization JSON-LD site-wide. 14 tests, including one that keeps
+  `LegalService` and `Attorney` out of the structured data. Checked the built
+  robots.txt, sitemap.xml, and /moved-out HTML.
+- Learned: a canonical in the root layout would be inherited by every page and
+  point them all at "/", so only /moved-out sets one. The landing page is a
+  client component, so it can't export its own metadata. The landing FAQ was
+  left out of the structured data: it says "we" and makes unverified claims
+  ("most matters resolve in 4–8 weeks", "filing fees are typically under $75").
+  That copy needs a voice and accuracy pass. Deleting merged branches on the
+  remote was refused again.
+- Next: ⚖️ CT deposit law guide. Landing copy voice/accuracy pass added to Next.
+
 ## 2026-10-31 — build — admin exception queue (read-only)
 - Did: Added `buildExceptionQueue()` (`src/lib/exceptions.ts`, 25 tests) and an
   "Exception queue" panel at the top of `/admin` with four buckets: new intakes,

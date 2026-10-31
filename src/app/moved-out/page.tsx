@@ -7,12 +7,27 @@ import {
   STATUTE_DEADLINE_QUOTE,
   STATUTE_SOURCES,
 } from "@/lib/statute";
+import { JsonLd } from "@/components/json-ld";
+import { faqPageJsonLd } from "@/lib/seo";
 import s from "../landing.module.css";
 
+const TITLE = "Moved out this summer and never got your deposit back? — Tribune";
+const DESCRIPTION =
+  "What Connecticut's security deposit statute (§ 47a-21) says about the landlord's deadline, and how Tribune helps Connecticut tenants who moved out in the past year recover a withheld deposit.";
+
 export const metadata: Metadata = {
-  title: "Moved out this summer and never got your deposit back? — Tribune",
-  description:
-    "What Connecticut's security deposit statute (§ 47a-21) says about the landlord's deadline, and how Tribune helps Connecticut tenants who moved out in the past year recover a withheld deposit.",
+  title: TITLE,
+  description: DESCRIPTION,
+  alternates: { canonical: "/moved-out" },
+  openGraph: {
+    type: "article",
+    siteName: "Tribune",
+    title: TITLE,
+    description: DESCRIPTION,
+    url: "/moved-out",
+    locale: "en_US",
+  },
+  twitter: { card: "summary", title: TITLE, description: DESCRIPTION },
 };
 
 const INTAKE_HREF = "/login?next=/dashboard/new-case";
@@ -98,6 +113,7 @@ const FAQ = [
 export default function MovedOutPage() {
   return (
     <div className={s.page}>
+      <JsonLd data={faqPageJsonLd(FAQ)} />
       <nav className={s.nav}>
         <div className={s.navInner}>
           <Link href="/" className={s.navLogo}>

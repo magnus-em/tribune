@@ -5,6 +5,8 @@ import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { PostHogProvider } from "@/lib/analytics/posthog";
 import { NavigationProgress } from "@/components/navigation-progress";
+import { JsonLd } from "@/components/json-ld";
+import { SITE_DESCRIPTION, SITE_NAME, SITE_URL, organizationJsonLd } from "@/lib/seo";
 import "./globals.css";
 
 const geist = localFont({
@@ -50,10 +52,26 @@ const spaceMono = Space_Mono({
   display: "swap",
 });
 
+const DEFAULT_TITLE = "Tribune — Security Deposit Recovery";
+
+// No canonical or og:url here: every page would inherit them and point at "/".
+// Pages that want a canonical set it themselves.
 export const metadata: Metadata = {
-  title: "Tribune — Security Deposit Recovery",
-  description:
-    "Connecticut tenants: your landlord had 21 days. Tribune prepares your demand letters and handles your case on contingency. You pay nothing unless we recover.",
+  metadataBase: new URL(SITE_URL),
+  title: DEFAULT_TITLE,
+  description: SITE_DESCRIPTION,
+  openGraph: {
+    type: "website",
+    siteName: SITE_NAME,
+    title: DEFAULT_TITLE,
+    description: SITE_DESCRIPTION,
+    locale: "en_US",
+  },
+  twitter: {
+    card: "summary",
+    title: DEFAULT_TITLE,
+    description: SITE_DESCRIPTION,
+  },
 };
 
 export default function RootLayout({
@@ -64,6 +82,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${geist.variable} ${ibmPlexSerif.variable} ${ibmPlexMono.variable} ${fraunces.variable} ${dmSans.variable} ${spaceMono.variable}`}>
       <body className="font-sans antialiased bg-background text-foreground">
+        <JsonLd data={organizationJsonLd()} />
         <NavigationProgress />
         <PostHogProvider>
           <TooltipProvider>{children}</TooltipProvider>

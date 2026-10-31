@@ -28,6 +28,15 @@ import {
   ArrowUpDown,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import Link from "next/link";
+import {
+  buildExceptionQueue,
+  exceptionCount,
+  EXCEPTION_LABELS,
+  type ExceptionKind,
+  type ExceptionMessage,
+  type ExceptionInvoice,
+} from "@/lib/exceptions";
 
 interface CaseWithProfile extends Case {
   profiles: { full_name: string; email: string } | null;
@@ -194,9 +203,96 @@ function StatCard({
   );
 }
 
+const EXCEPTION_ORDER: ExceptionKind[] = [
+  "deadline_soon",
+  "landlord_reply",
+  "new_intake",
+  "invoice_overdue",
+];
+
+function ExceptionQueuePanel({
+  cases,
+  messages,
+  invoices,
+}: {
+  cases: CaseWithProfile[];
+  messages: ExceptionMessage[];
+  invoices: ExceptionInvoice[];
+}) {
+  const queue = useMemo(
+    () => buildExceptionQueue(cases, messages, invoices),
+    [cases, messages, invoices]
+  );
+  const byId = useMemo(() => new Map(cases.map((c) => [c.id, c])), [cases]);
+  const total = exceptionCount(queue);
+
+  return (
+    <section className="space-y-3" aria-labelledby="exception-queue-heading">
+      <div className="flex items-baseline justify-between gap-2">
+        <h2 id="exception-queue-heading" className="text-lg font-semibold tracking-tight">
+          Exception queue
+        </h2>
+        <span className="text-sm text-muted-foreground">
+          {total === 0 ? "Nothing needs attention" : `${total} item${total === 1 ? "" : "s"}`}
+        </span>
+      </div>
+      <div className="grid gap-4 md:grid-cols-2">
+        {EXCEPTION_ORDER.map((kind) => {
+          const items = queue[kind];
+          return (
+            <Card key={kind} className="rounded-xl">
+              <CardContent className="pt-5 pb-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">{EXCEPTION_LABELS[kind]}</span>
+                  <Badge variant={items.length > 0 ? "default" : "outline"}>
+                    {items.length}
+                  </Badge>
+                </div>
+                {items.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">None</p>
+                ) : (
+                  <ul className="divide-y text-sm">
+                    {items.map((item) => {
+                      const c = byId.get(item.case_id);
+                      return (
+                        <li key={`${kind}-${item.case_id}`}>
+                          <Link
+                            href={`/admin/case/${item.case_id}`}
+                            className="flex flex-col gap-0.5 py-1.5 hover:underline sm:flex-row sm:items-center sm:justify-between sm:gap-3"
+                          >
+                            <span className="truncate">
+                              {c?.profiles?.full_name || "Unknown tenant"}
+                              {c?.property_address && (
+                                <span className="text-muted-foreground"> · {c.property_address}</span>
+                              )}
+                            </span>
+                            <span className="shrink-0 text-xs text-muted-foreground">
+                              {item.detail}
+                            </span>
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Deadlines use the stored statutory deadline, which doesn&apos;t yet account for a
+        later forwarding-address date.
+      </p>
+    </section>
+  );
+}
+
 export default function AdminPage() {
   const router = useRouter();
   const [cases, setCases] = useState<CaseWithProfile[]>([]);
+  const [messages, setMessages] = useState<ExceptionMessage[]>([]);
+  const [invoices, setInvoices] = useState<ExceptionInvoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -204,11 +300,23 @@ export default function AdminPage() {
   useEffect(() => {
     async function load() {
       const supabase = createClient();
-      const { data } = await supabase
-        .from("cases")
-        .select("*, profiles(full_name, email)")
-        .order("created_at", { ascending: false });
+      const [{ data }, { data: msgs }, { data: invs }] = await Promise.all([
+        supabase
+          .from("cases")
+          .select("*, profiles(full_name, email)")
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("case_messages")
+          .select("case_id, message_type, created_at")
+          .in("message_type", ["landlord_reply", "tribune_letter", "tribune_update"]),
+        supabase
+          .from("invoices")
+          .select("case_id, status, due_date")
+          .not("status", "in", "(paid,waived)"),
+      ]);
       setCases(data || []);
+      setMessages(msgs || []);
+      setInvoices(invs || []);
       setLoading(false);
     }
     load();
@@ -280,6 +388,8 @@ export default function AdminPage() {
           Manage and review tenant cases.
         </p>
       </div>
+
+      <ExceptionQueuePanel cases={cases} messages={messages} invoices={invoices} />
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">

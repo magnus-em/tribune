@@ -12,11 +12,9 @@ move a real case toward a paid invoice waits.
 
 ## Now
 
-1. **Admin exception queue** — read-only `/admin` view: new intakes, landlord
-   replies with no follow-up, cases within 3 days of a deadline, overdue invoices.
-2. **SEO foundation** — `sitemap.ts`, `robots.ts`, per-page metadata, Open Graph,
+1. **SEO foundation** — `sitemap.ts`, `robots.ts`, per-page metadata, Open Graph,
    `LegalService`/`FAQPage` structured data. No new deps.
-3. ⚖️ **CT deposit law guide** — `/guides/connecticut-security-deposit-law`,
+2. ⚖️ **CT deposit law guide** — `/guides/connecticut-security-deposit-law`,
    restating only verified statute text, with sources and the disclaimer.
 
 ## Spec — tenant approve-and-send
@@ -82,6 +80,11 @@ move a real case toward a paid invoice waits.
   classification (🔴 if it needs a paid API)
 
 ## Done
+
+- 2026-10-31 — Admin exception queue on `/admin`: pure `buildExceptionQueue()`
+  in `src/lib/exceptions.ts` (25 tests) sorts cases into new intakes, landlord
+  replies with no later Tribune letter/update, stored statutory deadline within
+  3 days, and overdue invoices (past due, `overdue`, or `collections`). Read-only.
 
 - 2026-10-31 — ⚖️ Summer-cohort page `/moved-out`: quotes § 47a-21(d) verbatim
   from `src/lib/statute.ts` (a test checks the quotes against

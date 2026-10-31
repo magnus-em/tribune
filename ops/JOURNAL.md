@@ -3,6 +3,21 @@
 Newest first. One entry per tick. Counts only — no names, emails, addresses, or
 per-case amounts.
 
+## 2026-10-31 — build — admin exception queue (read-only)
+- Did: Added `buildExceptionQueue()` (`src/lib/exceptions.ts`, 25 tests) and an
+  "Exception queue" panel at the top of `/admin` with four buckets: new intakes,
+  landlord replies with no follow-up, stored statutory deadline within 3 days,
+  overdue invoices. Two extra client reads under admin RLS (message types/times,
+  unsettled invoices). Nothing writes or sends. No open PRs at start; main CI
+  green; prod returned 200.
+- Learned: "follow-up" is a later `tribune_letter` or `tribune_update`; tenant
+  and system messages don't clear a landlord reply. Invoices aren't in the
+  generated Supabase types (the client is untyped, so it compiles). The deadline
+  bucket inherits the stored-deadline caveat (forwarding-address date not
+  captured). Not browser-verified: `/admin` needs an admin login and there's no
+  staging.
+- Next: SEO foundation, then the CT deposit law guide.
+
 ## 2026-10-31 — build — summer-cohort page and outreach drafts
 - Did: Added a public `/moved-out` page ("Moved out this summer and never got your
   deposit back?"). It quotes the two verified § 47a-21(d) passages word for word

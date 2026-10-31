@@ -3,6 +3,17 @@
 Newest first. One entry per tick. Counts only — no names, emails, addresses, or
 per-case amounts.
 
+## 2026-10-31 — build — timeline deadline label says 21 days
+- Did: The tenant case timeline labeled the statutory deadline "(30 days)". It now
+  renders `STATUTE_DAYS` (21, per § 47a-21). Added a render test that pins
+  "(21 days)" and rejects "30 days". No open PRs at start; main CI green.
+- Learned: the same timeline entry says "Landlord failed to return deposit" once
+  the stored deadline passes, which states a fact Tribune doesn't know (the
+  landlord may have paid, or the forwarding-address branch may give a later
+  deadline). Worth softening in a later slice. The first local `next build` failed
+  on a Google Fonts fetch; a rerun passed.
+- Next: Tenant approve-and-send (Letter 1).
+
 ## 2026-10-30 — manual — full autonomy; build tick every 2 hours
 - Did: Magnus granted full autonomy ("you merge or commit etc whenever you want...
   just dont spend my money or contact people without asking me"). Rewrote

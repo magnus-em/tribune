@@ -3,6 +3,16 @@
 Newest first. One entry per tick. Counts only — no names, emails, addresses, or
 per-case amounts.
 
+## 2026-11-01 — build — backend still down; no build, URGENT escalation added
+- Did: Health check: `/api/health` returns 503 (auth and db both false), so the
+  Supabase project is still paused. No open PRs. Per LOOP.md, added the
+  `URGENT: backend down since 2026-10-31` block at the top of ESCALATIONS.md with
+  the restore steps, and built nothing.
+- Learned: the 10-31 fix depends on Magnus restoring the project; the keep-alive
+  cron can't wake a paused project.
+- Next: once `/api/health` returns 200, resume BACKLOG Now #1 (landing-page voice
+  and accuracy). Later ticks: don't repeat the URGENT block.
+
 ## 2026-10-31 — manual — backend found paused; health check, keep-alive, refocus
 - Did: Magnus reported Google sign-in failing on prod. Cause: the Supabase project
   was paused (`INACTIVE`, the hostname no longer resolves), so every sign-in,

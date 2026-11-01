@@ -1,3 +1,21 @@
+URGENT: backend down since 2026-10-31
+
+`/api/health` still returns 503 (`{"ok":false,"auth":false,"db":false}`) as of
+2026-11-01 02:05 UTC. Nobody can sign in or start a case, so the build loop has
+stopped shipping until this is fixed. Only Magnus can restore it (free):
+
+1. supabase.com → project `tribune` → **Restore project** (it was paused for
+   inactivity on the free tier).
+2. Wait for it to come up, then open https://usetribune.org/api/health and
+   check for `{"ok":true,...}`.
+3. Try Google sign-in on https://usetribune.org/login.
+
+The daily health cron keeps it awake after that. Rest of SETUP.md Part A
+(Google OAuth publishing status, Resend SMTP) is also needed before a tenant
+can sign up.
+
+---
+
 # Escalations
 
 Since 2026-10-30 the agent asks Magnus about only two things: **spending money**

@@ -1,7 +1,7 @@
 URGENT: backend down since 2026-10-31
 
 `/api/health` still returns 503 (`{"ok":false,"auth":false,"db":false}`) as of
-2026-11-01 02:05 UTC. Nobody can sign in or start a case, so the build loop has
+2026-11-01 13:07 UTC. Nobody can sign in or start a case, so the build loop has
 stopped shipping until this is fixed. Only Magnus can restore it (free):
 
 1. supabase.com → project `tribune` → **Restore project** (it was paused for

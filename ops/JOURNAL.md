@@ -3,6 +3,16 @@
 Newest first. One entry per tick. Counts only — no names, emails, addresses, or
 per-case amounts.
 
+## 2026-11-01 — build — backend still down (13:07 UTC); no build, Magnus notified
+- Did: Health check: `/api/health` still 503 (`auth` and `db` false). No open PRs.
+  The URGENT block is already at the top of ESCALATIONS.md, so left it as is.
+  Built nothing. Sent Magnus one push notification pointing at the restore steps
+  (the 02:05 tick escalated in the repo only).
+- Learned: nothing new; the fix is still Magnus's Supabase restore.
+- Next: later ticks: don't notify again for this outage; just end the tick while
+  `/api/health` is 503. Once it returns 200, resume BACKLOG Now #1 (landing-page
+  voice and accuracy).
+
 ## 2026-11-01 — build — backend still down; no build, URGENT escalation added
 - Did: Health check: `/api/health` returns 503 (auth and db both false), so the
   Supabase project is still paused. No open PRs. Per LOOP.md, added the

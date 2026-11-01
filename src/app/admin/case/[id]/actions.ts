@@ -246,7 +246,7 @@ export async function dispatchLetter(
           tenantName: caseData.tenant_name.split(" ")[0],
           caseId,
           messageTitle: `Letter ${msg.letter_number ?? 1} sent to your landlord`,
-          messagePreview: `Tribune has sent Letter ${msg.letter_number ?? 1} to ${caseData.landlord_name} on your behalf. We'll notify you when they respond.`,
+          messagePreview: `Tribune has sent Letter ${msg.letter_number ?? 1} to ${caseData.landlord_name} on your behalf. Tribune will notify you when they respond.`,
           siteUrl,
         });
         await sendEmail({

@@ -1,3 +1,4 @@
+import { escapeHtml } from "@/lib/email/escape";
 export interface CaseDeclinedEmailProps {
   tenantName: string;
   caseId: string;
@@ -11,7 +12,7 @@ export function renderCaseDeclinedEmail({
   declineMessage,
   siteUrl,
 }: CaseDeclinedEmailProps): string {
-  const caseUrl = `${siteUrl}/dashboard/case/${caseId}`;
+  const caseUrl = `${siteUrl}/dashboard/case/${encodeURIComponent(caseId)}`;
 
   return `
 <!DOCTYPE html>
@@ -24,7 +25,7 @@ export function renderCaseDeclinedEmail({
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
   <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 24px; margin-bottom: 20px;">
     <h2 style="margin-top: 0; color: #111827;">Tribune is unable to take your case</h2>
-    <p>Hi ${tenantName},</p>
+    <p>Hi ${escapeHtml(tenantName)},</p>
     <p>
       Thanks for the time you put into your intake. After reviewing the details,
       Tribune isn't able to take this case on.
@@ -32,7 +33,7 @@ export function renderCaseDeclinedEmail({
 
     <div style="background-color: white; border-left: 4px solid #dc2626; padding: 16px; margin: 20px 0;">
       <p style="margin: 0 0 8px; font-size: 13px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.04em;">Why</p>
-      <p style="margin: 0; color: #1f2937; white-space: pre-wrap;">${declineMessage}</p>
+      <p style="margin: 0; color: #1f2937; white-space: pre-wrap;">${escapeHtml(declineMessage)}</p>
     </div>
 
     <p style="margin-top: 24px;">

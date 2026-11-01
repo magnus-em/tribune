@@ -1,4 +1,5 @@
 import { format } from "date-fns";
+import { escapeHtml } from "@/lib/email/escape";
 
 export type FollowUpEmailKind = "available" | "reminder";
 
@@ -15,15 +16,6 @@ function heading(letterNumber: number, kind: FollowUpEmailKind): string {
   return kind === "reminder"
     ? `Letter ${letterNumber} is still waiting for your review`
     : `Letter ${letterNumber} is ready for your review`;
-}
-
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
 }
 
 export function followUpAvailableSubject(

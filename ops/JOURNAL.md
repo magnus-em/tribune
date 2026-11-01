@@ -3,6 +3,20 @@
 Newest first. One entry per tick. Counts only — no names, emails, addresses, or
 per-case amounts.
 
+## 2026-11-01 — build — email-template tests; escaping and voice fixes
+- Did: Second item this tick (after #20). Table-driven tests over all six
+  email templates: disclaimer, Tribune voice, HTML escaping, no stray contact
+  details, plus subject and timeline copy for the follow-up notice. 40 new
+  tests (410 total). The tests found that only the follow-up template escaped
+  its input. Added a shared `escapeHtml`, and every template now escapes
+  interpolated values and URL-encodes the case id. Fixed two "we" strings
+  (invoice, admin dispatch notice). Mutation check: reverting the invoice copy
+  fails the voice test.
+- Learned: the invoice's late-payment notice (1.5%/month interest, credit
+  reporting) may not be backed by the service agreement. Added to Next to check;
+  not changed here.
+- Next: doc drift, or the invoice late-fee check.
+
 ## 2026-11-01 — build — main CI red (Google Fonts flake); fonts self-hosted
 - Did: Health check found main CI red on #19's push: `next build` died in
   `next/font/google` (`Cannot read properties of null (reading '1')`, the font

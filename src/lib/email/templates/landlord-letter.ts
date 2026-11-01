@@ -9,6 +9,8 @@
 // rights pro se. Tribune is the conduit. This keeps us out of "our client"
 // attorney language while still looking organized and competent.
 
+import { escapeHtml } from "@/lib/email/escape";
+
 export interface LandlordLetterEmailParams {
   caseId: string;
   letterNumber: number;
@@ -23,6 +25,11 @@ export function renderLandlordLetterEmail({
   tenantName,
   propertyAddress,
 }: LandlordLetterEmailParams): string {
+  // Plain text in a pre-wrap block: escaping keeps the letter text exactly as
+  // written while stopping a name or address from injecting markup.
+  letterBody = escapeHtml(letterBody);
+  tenantName = escapeHtml(tenantName);
+  propertyAddress = escapeHtml(propertyAddress);
   return `
 <!DOCTYPE html>
 <html>

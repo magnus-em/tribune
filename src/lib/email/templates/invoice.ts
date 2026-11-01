@@ -1,3 +1,5 @@
+import { escapeHtml } from "@/lib/email/escape";
+
 export interface InvoiceEmailProps {
   tenantName: string;
   invoiceNumber: string;
@@ -23,8 +25,16 @@ export function renderInvoiceEmail({
   paymentPhone,
   siteUrl,
 }: InvoiceEmailProps): string {
-  const caseUrl = `${siteUrl}/dashboard/case/${caseId}`;
-  const formattedPhone = paymentPhone.replace(/(\d{3})(\d{3})(\d{4})/, '($1) $2-$3');
+  const caseUrl = `${siteUrl}/dashboard/case/${encodeURIComponent(caseId)}`;
+  const formattedPhone = escapeHtml(
+    paymentPhone.replace(/(\d{3})(\d{3})(\d{4})/, '($1) $2-$3')
+  );
+  tenantName = escapeHtml(tenantName);
+  invoiceNumber = escapeHtml(invoiceNumber);
+  amountDollars = escapeHtml(amountDollars);
+  dueDate = escapeHtml(dueDate);
+  propertyAddress = escapeHtml(propertyAddress);
+  recoveredDollars = escapeHtml(recoveredDollars);
 
   return `
 <!DOCTYPE html>
@@ -108,7 +118,7 @@ export function renderInvoiceEmail({
     <p style="font-size: 13px; color: #374151; margin: 0 0 20px;">
       Hi ${tenantName}, congratulations on recovering your deposit. Per your service agreement,
       Tribune&apos;s ${contingencyPct}% fee of <strong>${amountDollars}</strong> is due by
-      <strong>${dueDate}</strong>. Please include your invoice number in the payment note so we
+      <strong>${dueDate}</strong>. Please include your invoice number in the payment note so Tribune
       can match it to your account.
     </p>
 

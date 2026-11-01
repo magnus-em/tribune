@@ -8,6 +8,20 @@ whatever is done. **Never paste secret values into this file or any committed fi
 
 Without these, letters and notifications don't send in production.
 
+- [ ] **Restore the Supabase project (do this first; nothing works without it).**
+      Supabase → project `tribune` → **Restore project**. Found paused on
+      2026-10-31: free projects pause after a week without traffic, and while
+      paused nobody can sign in. The daily `/api/health` cron keeps it awake from
+      now on and emails `ADMIN_EMAIL` if it goes down again.
+- [ ] **Google sign-in:** Google Cloud console → APIs & Services → OAuth consent
+      screen → publishing status **In production**. While it says "Testing",
+      only the listed test users can sign in with Google. Email, profile, and
+      openid scopes don't need Google's verification review.
+- [ ] **Sign-up emails:** Supabase → Auth → SMTP settings → custom SMTP with
+      Resend (host `smtp.resend.com`, port 465, user `resend`, password = the
+      Resend API key, sender `hello@usetribune.org`). Supabase's built-in sender
+      only delivers to your own team's addresses, so confirmation emails never
+      reach a real tenant. Free on Resend's free tier.
 - [ ] Run `vercel login` locally (the CLI token expired).
 - [ ] Vercel → tribune → Settings → Environment Variables (Production):
   - `RESEND_API_KEY` (the key in `.env.local` works; it's verified)

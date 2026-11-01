@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
-import { IBM_Plex_Serif, IBM_Plex_Mono, Fraunces, DM_Sans, Space_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { PostHogProvider } from "@/lib/analytics/posthog";
@@ -15,41 +14,66 @@ const geist = localFont({
   weight: "100 900",
 });
 
-const ibmPlexSerif = IBM_Plex_Serif({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  style: ["normal", "italic"],
+// Google Fonts are self-hosted (latin subset, files in ./fonts, SIL OFL 1.1).
+// `next/font/google` fetched them at build time, and a bad response from Google
+// failed `next build` on main (2026-10-31). Local files make the build offline.
+const ibmPlexSerif = localFont({
+  src: [
+    { path: "./fonts/ibm-plex-serif-normal-400.woff2", weight: "400", style: "normal" },
+    { path: "./fonts/ibm-plex-serif-normal-500.woff2", weight: "500", style: "normal" },
+    { path: "./fonts/ibm-plex-serif-normal-600.woff2", weight: "600", style: "normal" },
+    { path: "./fonts/ibm-plex-serif-normal-700.woff2", weight: "700", style: "normal" },
+    { path: "./fonts/ibm-plex-serif-italic-400.woff2", weight: "400", style: "italic" },
+    { path: "./fonts/ibm-plex-serif-italic-500.woff2", weight: "500", style: "italic" },
+    { path: "./fonts/ibm-plex-serif-italic-600.woff2", weight: "600", style: "italic" },
+    { path: "./fonts/ibm-plex-serif-italic-700.woff2", weight: "700", style: "italic" },
+  ],
   variable: "--font-ibm-plex-serif",
   display: "swap",
+  adjustFontFallback: "Times New Roman",
 });
 
-const ibmPlexMono = IBM_Plex_Mono({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+const ibmPlexMono = localFont({
+  src: [
+    { path: "./fonts/ibm-plex-mono-normal-400.woff2", weight: "400", style: "normal" },
+    { path: "./fonts/ibm-plex-mono-normal-500.woff2", weight: "500", style: "normal" },
+    { path: "./fonts/ibm-plex-mono-normal-600.woff2", weight: "600", style: "normal" },
+    { path: "./fonts/ibm-plex-mono-normal-700.woff2", weight: "700", style: "normal" },
+  ],
   variable: "--font-ibm-plex-mono",
   display: "swap",
+  adjustFontFallback: false,
 });
 
-const fraunces = Fraunces({
-  subsets: ["latin"],
-  style: ["normal", "italic"],
-  axes: ["opsz"],
+// Variable font: wght 100–900 and the opsz axis.
+const fraunces = localFont({
+  src: [
+    { path: "./fonts/fraunces-normal-100-900.woff2", weight: "100 900", style: "normal" },
+    { path: "./fonts/fraunces-italic-100-900.woff2", weight: "100 900", style: "italic" },
+  ],
   variable: "--font-fraunces",
   display: "swap",
+  adjustFontFallback: "Times New Roman",
 });
 
-const dmSans = DM_Sans({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600"],
+// Variable font: wght 300–600.
+const dmSans = localFont({
+  src: "./fonts/dm-sans-normal-300-600.woff2",
+  weight: "300 600",
+  style: "normal",
   variable: "--font-dm-sans",
   display: "swap",
+  adjustFontFallback: "Arial",
 });
 
-const spaceMono = Space_Mono({
-  subsets: ["latin"],
-  weight: ["400", "700"],
+const spaceMono = localFont({
+  src: [
+    { path: "./fonts/space-mono-normal-400.woff2", weight: "400", style: "normal" },
+    { path: "./fonts/space-mono-normal-700.woff2", weight: "700", style: "normal" },
+  ],
   variable: "--font-space-mono",
   display: "swap",
+  adjustFontFallback: false,
 });
 
 const DEFAULT_TITLE = "Tribune — Security Deposit Recovery";

@@ -3,6 +3,19 @@
 Newest first. One entry per tick. Counts only — no names, emails, addresses, or
 per-case amounts.
 
+## 2026-11-01 — build — main CI red (Google Fonts flake); fonts self-hosted
+- Did: Health check found main CI red on #19's push: `next build` died in
+  `next/font/google` (`Cannot read properties of null (reading '1')`, the font
+  URL had no file extension). Not a code bug: the same commit built fine on later
+  local runs. Re-ran the failed job, then self-hosted the five Google families
+  (latin subset woff2, SIL OFL) with `next/font/local` so the build never fetches
+  from Google. Built with the network proxy blocked: passes. Checked in a local
+  browser that `/`, `/login`, and `/contact` load the fonts. No open PRs at
+  start; prod returned 200. 370 tests pass.
+- Learned: any build-time network fetch is a CI flake source. Keep the build
+  offline.
+- Next: email-template tests, or doc drift.
+
 ## 2026-10-31 — build — residential confirm prompt for cases without an answer
 - Did: Second item this tick, the follow-up to #18. `approvalPanelState` takes
   the residential answer. When triage blocks, the lease is on file, and there's

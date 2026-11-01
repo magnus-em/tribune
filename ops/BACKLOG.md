@@ -74,6 +74,11 @@ _Empty. The build tick takes the top of **Next**._
 
 ## Done
 
+- 2026-11-01 — Build fix: Google Fonts self-hosted. `next build` on main failed
+  (#19's push) because `next/font/google` got a bad response from Google at build
+  time; the code was fine. The five Google families (latin subset, SIL OFL) now
+  live in `src/app/fonts/` and load via `next/font/local`. The build no longer
+  needs the network (verified with the proxy blocked).
 - 2026-10-31 — Residential confirm for older cases: when triage blocks only on
   a missing residential answer (lease on file), the approval panel asks the
   tenant to tick "I rented this property as my home…" and confirm.

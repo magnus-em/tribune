@@ -1,5 +1,18 @@
 {
+  "git": {
+    "deploymentEnabled": {
+      "loop/*": false,
+      "ops/*": false
+    }
+  },
   "crons": [
-    { "path": "/api/cron/follow-up-notices", "schedule": "0 14 * * *" }
+    {
+      "path": "/api/cron/follow-up-notices",
+      "schedule": "0 14 * * *"
+    },
+    {
+      "path": "/api/health",
+      "schedule": "0 12 * * *"
+    }
   ]
 }

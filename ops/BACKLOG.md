@@ -12,7 +12,29 @@ move a real case toward a paid invoice waits.
 
 ## Now
 
-_Empty. The build tick takes the top of **Next**._
+**Until the first real case has run end to end, add no tenant-flow features.** The
+flow from intake to letter to recovery is built. What's missing is tenants. Build
+what brings them in or makes the site trustworthy to them. On 10-31 the Supabase project was
+found paused, so nobody could sign in, and the loop hadn't noticed (see LOOP.md,
+health check).
+
+1. Voice and accuracy: the landing page (`src/app/page.tsx`) FAQ and about copy
+   say "we"/"us", and state unverified figures ("4–8 weeks", "filing fees under
+   $75"). Make Tribune the actor and drop or source the figures. Same for
+   `LandlordIntroStep` ("our messages", "authorizes us") and `RecoveryStep` ("so
+   we can close your case"). This is the first page a tenant reads.
+2. ⚖️ Deadline calculator at `/tools/deposit-deadline`: move-out date in, the
+   § 47a-21 return deadline out, with a link to start a case. This is what a
+   tenant searches for the week the deposit doesn't arrive. Only verified
+   statute text (LEGAL_REVIEW_47a-21.md). If the forwarding-address branch can't
+   be computed from verified text, say so on the page rather than guess.
+3. ⚖️ More guide pages, answering questions tenants actually search ("landlord
+   kept my security deposit CT", "itemized list of damages CT", "security
+   deposit interest CT"). Then New Haven, Hartford, Bridgeport, Stamford pages,
+   only where there's something specific to say. Only verified statute text.
+4. Invoice email: the late-payment notice states 1.5%/month interest and credit
+   reporting "per your service agreement". Check the service agreement actually
+   says that; if not, drop it (unbacked claims to a tenant).
 
 ## Spec — tenant approve-and-send
 
@@ -43,21 +65,11 @@ _Empty. The build tick takes the top of **Next**._
 ## Next
 
 - Doc drift: ARCHITECTURE.md and SPEC.md vs. the code.
-- Invoice email: the late-payment notice states 1.5%/month interest and credit
-  reporting "per your service agreement". Check the service agreement actually
-  says that; if not, drop it (unbacked claims to a tenant).
-- ⚖️ Deadline calculator tool at `/tools/deposit-deadline`.
-- ⚖️ More guide pages, then city pages (only verified statute text).
 - Migrate `next lint` → ESLint CLI.
 - RLS: "Tenants can update own cases" allows any column (status,
   `current_letter_number`, amounts). Narrow it — a column-limited policy or a
   trigger — so tenant writes go only through the server actions. Needs a
   migration (see the migration note below).
-- Voice and accuracy: the landing page (`src/app/page.tsx`) FAQ and about copy
-  say "we"/"us", and state unverified figures ("4–8 weeks", "filing fees under
-  $75"). Make Tribune the actor and drop or source the figures.
-- Voice: `LandlordIntroStep` says "our messages" / "authorizes us"; and the
-  `RecoveryStep` says "so we can close your case". Tribune is the actor.
 - ⚖️ Capture the forwarding-address date and correct the deadline math. Needs an
   additive migration — blocked: cloud ticks can't apply migrations. Write it, and an
   interactive session applies it.

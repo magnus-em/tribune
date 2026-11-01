@@ -3,6 +3,23 @@
 Newest first. One entry per tick. Counts only — no names, emails, addresses, or
 per-case amounts.
 
+## 2026-10-31 — manual — backend found paused; health check, keep-alive, refocus
+- Did: Magnus reported Google sign-in failing on prod. Cause: the Supabase project
+  was paused (`INACTIVE`, the hostname no longer resolves), so every sign-in,
+  sign-up, and dashboard page failed. Restoring needs Magnus's Supabase login
+  (SETUP Part A, first item). Added `/api/health` (Auth + one PostgREST read with
+  the anon key, 200 or 503) and a daily Vercel cron that calls it, which keeps the
+  free project active and emails `ADMIN_EMAIL` when it's down. The login page now
+  shows a message on `?error=auth` instead of nothing. Preview builds are off for
+  `loop/*` and `ops/*` branches (they cost build time and filled Magnus's inbox
+  with Vercel bot comments). BACKLOG "Now" re-pointed at getting tenants in:
+  landing copy, the deadline calculator, guide pages.
+- Learned: the tick health check curled the static homepage, which returns 200 with
+  the backend dead, so ~20 PRs merged onto a site nobody could use. It now checks
+  `/api/health` and stops building when that fails.
+- Next: Magnus restores the project; then confirm Google sign-in reaches the
+  account chooser and `/api/health` returns 200.
+
 ## 2026-11-01 — build — email-template tests; escaping and voice fixes
 - Did: Second item this tick (after #20). Table-driven tests over all six
   email templates: disclaimer, Tribune voice, HTML escaping, no stray contact

@@ -28,7 +28,10 @@ function AuthPageInner() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [error, setError] = useState("");
+  // /auth/callback sends failed code exchanges back here with ?error=auth.
+  const [error, setError] = useState(
+    searchParams.get("error") === "auth" ? "Sign-in didn't finish. Please try again." : ""
+  );
 
   useEffect(() => {
     const supabase = createClient();

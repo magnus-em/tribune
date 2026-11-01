@@ -10,8 +10,16 @@ except spending money and contacting people).
 2. Read in this order: `ops/CHARTER.md`, `ops/PLAN.md`, `ops/BACKLOG.md`, the last
    5 entries of `ops/JOURNAL.md`, and `ops/ESCALATIONS.md`. Apply any answers
    Magnus left in ESCALATIONS before doing anything else.
-3. Health check: CI on `main`, prod up (`curl -sf https://usetribune.org`), new
-   Sentry issues when access exists. If anything is red, fixing it **is** this tick.
+3. Health check: CI on `main`, the backend up (`curl -sf https://usetribune.org/api/health`),
+   new Sentry issues when access exists. If anything is red, fixing it **is** this tick.
+   The homepage is static and returns 200 even with the backend dead. From
+   2026-10-30 to 10-31 the loop merged ~20 PRs while the Supabase project was paused
+   and nobody could sign in. Check `/api/health`, not the homepage.
+   - **Backend down (503 or no answer):** the loop can't fix it. Restoring a paused
+     project needs Magnus's Supabase login. Make sure the top of ESCALATIONS.md
+     starts with `URGENT: backend down since <date>`, with the restore steps
+     (add it once; don't repeat it each tick), then end the tick. Don't build.
+     Features shipped onto a dead backend reach no one.
 4. Open PRs are claimed work (see below).
 
 ## GitHub in the cloud

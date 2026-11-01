@@ -42,8 +42,10 @@ _Empty. The build tick takes the top of **Next**._
 
 ## Next
 
-- Unit tests for email templates (disclaimer present, Tribune voice, no PII leaks).
 - Doc drift: ARCHITECTURE.md and SPEC.md vs. the code.
+- Invoice email: the late-payment notice states 1.5%/month interest and credit
+  reporting "per your service agreement". Check the service agreement actually
+  says that; if not, drop it (unbacked claims to a tenant).
 - ⚖️ Deadline calculator tool at `/tools/deposit-deadline`.
 - ⚖️ More guide pages, then city pages (only verified statute text).
 - Migrate `next lint` → ESLint CLI.
@@ -74,6 +76,16 @@ _Empty. The build tick takes the top of **Next**._
 
 ## Done
 
+- 2026-11-01 — Email-template tests: one table-driven suite over all six
+  templates (case update, declined, submitted, invoice, follow-up
+  available/reminder, landlord letter) checks the not-a-law-firm disclaimer,
+  Tribune voice (no we/us/our/I/the team/the admin/Magnus), HTML escaping, and
+  no stray contact details. Found and fixed: templates interpolated names,
+  addresses, and messages unescaped (a tenant's name could inject markup into
+  the landlord email); now a shared `escapeHtml` in `src/lib/email/escape.ts`
+  and case ids are URL-encoded. Voice fixes: invoice "so we can match it" and
+  the admin dispatch notice "We'll notify you". Letter text is unchanged
+  (escaped plain text renders the same).
 - 2026-11-01 — Build fix: Google Fonts self-hosted. `next build` on main failed
   (#19's push) because `next/font/google` got a bad response from Google at build
   time; the code was fine. The five Google families (latin subset, SIL OFL) now

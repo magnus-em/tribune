@@ -1,4 +1,5 @@
 import { REVIEW_SLA } from "@/lib/constants";
+import { escapeHtml } from "@/lib/email/escape";
 
 export interface CaseSubmittedEmailProps {
   tenantName: string;
@@ -13,7 +14,7 @@ export function renderCaseSubmittedEmail({
   statutoryDeadline,
   siteUrl,
 }: CaseSubmittedEmailProps): string {
-  const caseUrl = `${siteUrl}/dashboard/case/${caseId}`;
+  const caseUrl = `${siteUrl}/dashboard/case/${encodeURIComponent(caseId)}`;
 
   return `
 <!DOCTYPE html>
@@ -26,7 +27,7 @@ export function renderCaseSubmittedEmail({
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
   <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 24px; margin-bottom: 20px;">
     <h2 style="margin-top: 0; color: #111827;">Tribune received your case</h2>
-    <p>Hi ${tenantName},</p>
+    <p>Hi ${escapeHtml(tenantName)},</p>
     <p>
       Thanks for submitting your security deposit case. Tribune is reviewing the
       details you provided and will respond <strong>${REVIEW_SLA}</strong>
@@ -35,7 +36,7 @@ export function renderCaseSubmittedEmail({
 
     <div style="background-color: white; border-left: 4px solid #3b82f6; padding: 16px; margin: 20px 0;">
       <p style="margin: 0 0 8px; font-size: 13px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.04em;">Your landlord's legal deadline</p>
-      <p style="margin: 0; font-size: 18px; font-weight: 600; color: #1f2937;">${statutoryDeadline}</p>
+      <p style="margin: 0; font-size: 18px; font-weight: 600; color: #1f2937;">${escapeHtml(statutoryDeadline)}</p>
       <p style="margin: 8px 0 0; color: #6b7280; font-size: 14px;">
         Under CT § 47a-21. Tribune aims to send a demand letter before this date.
       </p>

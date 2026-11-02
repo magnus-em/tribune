@@ -20,6 +20,9 @@ except spending money and contacting people).
      starts with `URGENT: backend down since <date>`, with the restore steps
      (add it once; don't repeat it each tick), then end the tick. Don't build.
      Features shipped onto a dead backend reach no one.
+     Don't open a PR just to journal "still down": at most one such JOURNAL entry
+     per day, and none if today's already says it (on 11-02, four ticks each
+     merged an identical entry). The weekly review tick still runs its docs work.
 4. Open PRs are claimed work (see below).
 
 ## GitHub in the cloud

@@ -37,18 +37,23 @@ This file is the agent's north star. Every loop tick reads it first.
 
 ---
 
-## 1. Where things stand (verified 2026-10-28)
+## 1. Where things stand (verified 2026-11-02)
 
 | Area | State |
 |---|---|
-| Prod | Live at usetribune.org, serving the June 11 code (landing copy matches `main`). |
-| Inbound email | `reply.usetribune.org` MX → Resend inbound (AWS SES). Root MX → Cloudflare Email Routing. Code uses `case+{id}@reply.usetribune.org`. **Unverified:** Resend webhook is configured and `RESEND_WEBHOOK_SECRET` is in Vercel. |
-| Prod env vars | **Unknown.** Vercel CLI token expired. |
-| Real usage | **Unknown.** Test data was wiped 2026-06-03; the agent's prod-read was blocked by permissions today. |
-| Code health | Lint clean. **21/49 tests fail** (tests predate the June legal rewrite + schema rename). No CI. No E2E. No staging environment. |
-| Docs | Drifted: PRODUCT_BRIEF still describes "our client" letter voice (superseded by agent/pro-se framing); TASKS.md describes the old root-domain reply plan. |
+| Prod | **Backend down since 2026-10-31.** The Supabase project is paused; `/api/health` returns 503 (`auth` and `db` false). Nobody can sign in or start a case. Only Magnus can restore it (SETUP Part A, first item). The static homepage still loads. |
+| Product | Built end to end on `main` but not yet deployed or exercised on a real case: intake with residential question, auto-triage, tenant approve-and-send for Letters 1–3, follow-up cron and reminder, landlord-reply panel, admin exception queue, `/moved-out` and the CT law guide, SEO basics, daily `/api/health` keep-alive. |
+| Inbound email | `reply.usetribune.org` MX → Resend inbound. **Unverified:** Resend webhook and `RESEND_WEBHOOK_SECRET` in Vercel. |
+| Prod env vars | **Unknown.** SETUP Part A not done (Resend, `CRON_SECRET`, `SUPABASE_SERVICE_ROLE_KEY`, Google OAuth publishing, Supabase SMTP). |
+| Real usage | **Unknown.** No read-only role yet; with the backend paused there is none. |
+| Acquisition | Outreach drafts in `ops/outreach/posts.md`; not posted. No tenants have been invited. |
+| Code health | CI (`check`: lint, typecheck, unit, build) green on `main`. No E2E, no staging. |
 | Legal | LEGAL_REVIEW + UPL_POSTURE written. No attorney review, by founder decision (2026-10-30). |
-| Copy vs. reality | The case-submitted banner promises a response "within a few hours" — not deliverable by a daily loop. Must change before launch. |
+
+**What blocks the first paid recovery, in order:** (1) restore the Supabase
+project; (2) the rest of SETUP Part A so sign-up, letters, and notifications
+actually send; (3) tenants: Magnus posts the drafted outreach. Code is not the
+bottleneck.
 
 ---
 

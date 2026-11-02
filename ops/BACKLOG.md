@@ -18,6 +18,18 @@ what brings them in or makes the site trustworthy to them. On 10-31 the Supabase
 found paused, so nobody could sign in, and the loop hadn't noticed (see LOOP.md,
 health check).
 
+**Review 2026-11-02: the blocker isn't code.** In order, what stands between today
+and the first paid recovery:
+- blocked: Magnus — restore the Supabase project (SETUP Part A, first item).
+  `/api/health` 503 since 2026-10-31. Build ticks stop while it's down.
+- blocked: Magnus — rest of SETUP Part A (Google OAuth "In production", Resend
+  SMTP in Supabase, Vercel env vars incl. `CRON_SECRET` and
+  `SUPABASE_SERVICE_ROLE_KEY`). Without them sign-up emails, letters, and
+  notifications don't send.
+- 🔴 Magnus posts `ops/outreach/posts.md`, after the two items above (see digest).
+Once `/api/health` is 200, build ticks resume at item 1. Items 1–2 stay first:
+they are what a tenant arriving from those posts reads and uses.
+
 1. Voice and accuracy: the landing page (`src/app/page.tsx`) FAQ and about copy
    say "we"/"us", and state unverified figures ("4–8 weeks", "filing fees under
    $75"). Make Tribune the actor and drop or source the figures. Same for

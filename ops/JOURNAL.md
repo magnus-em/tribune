@@ -3,6 +3,19 @@
 Newest first. One entry per tick. Counts only — no names, emails, addresses, or
 per-case amounts.
 
+## 2026-11-02 — review — week of 10-26: flow built, backend still down, blocker is setup
+- Did: Health: `/api/health` 503 (backend paused since 10-31); CI on `main` green;
+  no open PRs to merge. Metrics: no read access (`SUPABASE_READONLY_DB_URL` not in
+  the env), noted in METRICS.md. Updated PLAN §1 to 11-02 facts, put the real
+  blockers (Supabase restore, SETUP Part A, outreach) at the top of BACKLOG "Now",
+  and wrote the weekly digest with the Legal changes list and E-006 (post outreach
+  after setup). LOOP: no PR per tick just to journal "still down".
+- Learned: four build ticks today each merged an identical "still down" entry;
+  that's noise and subscription usage for nothing. Code isn't the bottleneck:
+  restore, Part A, and the first posts are.
+- Next: once `/api/health` is 200, build ticks resume at BACKLOG Now #1
+  (landing-page voice and accuracy), then the deadline calculator.
+
 ## 2026-11-02 — build — backend still down (11:10 UTC); no build
 - Did: Health check: `/api/health` still 503 (`auth` and `db` false). No open PRs.
   URGENT block already at the top of ESCALATIONS.md; left as is. Built nothing,

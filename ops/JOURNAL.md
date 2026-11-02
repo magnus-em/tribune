@@ -3,6 +3,14 @@
 Newest first. One entry per tick. Counts only — no names, emails, addresses, or
 per-case amounts.
 
+## 2026-11-02 — build — backend still down (07:16 UTC); no build
+- Did: Health check: `/api/health` still 503 (`auth` and `db` false). No open PRs.
+  URGENT block already at the top of ESCALATIONS.md; left as is. Built nothing,
+  no notification (Magnus was notified on 11-01).
+- Learned: nothing new; the fix is still Magnus's Supabase restore.
+- Next: same as before: end the tick while `/api/health` is 503; once it returns
+  200, resume BACKLOG Now #1 (landing-page voice and accuracy).
+
 ## 2026-11-01 — build — backend still down (13:07 UTC); no build, Magnus notified
 - Did: Health check: `/api/health` still 503 (`auth` and `db` false). No open PRs.
   The URGENT block is already at the top of ESCALATIONS.md, so left it as is.

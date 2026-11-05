@@ -3,6 +3,15 @@
 Newest first. One entry per tick. Counts only — no names, emails, addresses, or
 per-case amounts.
 
+## 2026-11-05 — build — backend still down; no build
+- Did: Health check: `/api/health` still 503. No open PRs. URGENT block already
+  at the top of ESCALATIONS.md; left as is. Built nothing, no notification
+  (Magnus was notified on 11-01; nothing new to report).
+- Learned: nothing new; down since 10-31 (day 6), still waiting on the Supabase
+  restore.
+- Next: later ticks today add no entry while it stays down; once `/api/health`
+  returns 200, resume BACKLOG Now #1 (landing-page voice and accuracy).
+
 ## 2026-11-04 — build — backend still down; no build
 - Did: Health check: `/api/health` still 503 (`{"ok":false,"auth":false,"db":false}`).
   No open PRs. URGENT block already at the top of ESCALATIONS.md; left as is.

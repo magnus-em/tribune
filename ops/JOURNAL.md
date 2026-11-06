@@ -7,9 +7,8 @@ per-case amounts.
 - Did: Health check at 01:06 UTC: `/api/health` still 503
   (`{"ok":false,"auth":false,"db":false}`). No open PRs. URGENT block already at
   the top of ESCALATIONS.md; left as is. Built nothing.
-- Learned: down since 10-31 (day 7). Supabase free-tier projects paused for
-  more than about 90 days may no longer be restorable from the dashboard, so
-  the restore gets less certain the longer it waits.
+- Learned: nothing new; down since 10-31 (day 7), still waiting on the
+  Supabase restore.
 - Next: later ticks today add no entry while it stays down; once `/api/health`
   returns 200, resume BACKLOG Now #1 (landing-page voice and accuracy).
 

@@ -18,28 +18,31 @@ what brings them in or makes the site trustworthy to them. On 10-31 the Supabase
 found paused, so nobody could sign in, and the loop hadn't noticed (see LOOP.md,
 health check).
 
-**Review 2026-11-02: the blocker isn't code.** In order, what stands between today
-and the first paid recovery:
+**Review 2026-11-09 (unchanged from 11-02): the blocker isn't code.** In order, what
+stands between today and the first paid recovery:
 - blocked: Magnus — restore the Supabase project (SETUP Part A, first item).
-  `/api/health` 503 since 2026-10-31. Build ticks stop while it's down.
+  `/api/health` 503 since 2026-10-31 (day 10 on 11-09). While it's down, build ticks
+  take only `static-ok` items, one PR a day (LOOP.md).
 - blocked: Magnus — rest of SETUP Part A (Google OAuth "In production", Resend
   SMTP in Supabase, Vercel env vars incl. `CRON_SECRET` and
   `SUPABASE_SERVICE_ROLE_KEY`). Without them sign-up emails, letters, and
   notifications don't send.
 - 🔴 Magnus posts `ops/outreach/posts.md`, after the two items above (see digest).
-Once `/api/health` is 200, build ticks resume at item 1. Items 1–2 stay first:
-they are what a tenant arriving from those posts reads and uses.
+Items 1–2 stay first: they are what a tenant arriving from those posts reads and
+uses, and they need no backend, so they're `static-ok`. Once `/api/health` is 200,
+build ticks take items in order as usual.
 
-1. Voice and accuracy: the landing page (`src/app/page.tsx`) FAQ and about copy
+1. `static-ok` Voice and accuracy: the landing page (`src/app/page.tsx`) FAQ and about copy
    say "we"/"us", and state unverified figures ("4–8 weeks", "filing fees under
    $75"). Make Tribune the actor and drop or source the figures. Same for
    `LandlordIntroStep` ("our messages", "authorizes us") and `RecoveryStep` ("so
    we can close your case"). This is the first page a tenant reads.
-2. ⚖️ Deadline calculator at `/tools/deposit-deadline`: move-out date in, the
+2. `static-ok` ⚖️ Deadline calculator at `/tools/deposit-deadline`: move-out date in, the
    § 47a-21 return deadline out, with a link to start a case. This is what a
    tenant searches for the week the deposit doesn't arrive. Only verified
    statute text (LEGAL_REVIEW_47a-21.md). If the forwarding-address branch can't
-   be computed from verified text, say so on the page rather than guess.
+   be computed from verified text, say so on the page rather than guess. Pure
+   client-side math; no backend, no data stored.
 3. ⚖️ More guide pages, answering questions tenants actually search ("landlord
    kept my security deposit CT", "itemized list of damages CT", "security
    deposit interest CT"). Then New Haven, Hartford, Bridgeport, Stamford pages,

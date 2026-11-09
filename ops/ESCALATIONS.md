@@ -1,8 +1,9 @@
 URGENT: backend down since 2026-10-31
 
 `/api/health` still returns 503 (`{"ok":false,"auth":false,"db":false}`) as of
-2026-11-02 13:10 UTC. Nobody can sign in or start a case, so the build loop has
-stopped shipping until this is fixed. Only Magnus can restore it (free):
+2026-11-09 13:25 UTC (day 10). Nobody can sign in or start a case, so the build
+loop has stopped shipping tenant features until this is fixed. Only Magnus can
+restore it (free):
 
 1. supabase.com → project `tribune` → **Restore project** (it was paused for
    inactivity on the free tier).
@@ -25,6 +26,46 @@ applies it. Unanswered asks never default to yes.
 
 Things only Magnus can physically do (logins, accounts, dashboards) live in
 `ops/SETUP.md`. They're to-dos, not permission requests.
+
+---
+
+## Digest — week of 2026-11-02 (review, 2026-11-09)
+
+**The one thing, again:** the backend has been down for 10 days (since 10-31). Nothing
+else matters until it's back. Restoring is free and takes a few minutes: steps in the
+URGENT block above. Supabase lets you restore a paused free project from the dashboard
+for a limited window (90 days by its own docs, so about late January, but check the
+dashboard). If it says the project can't be restored, write that under **Answer:**
+below and the next tick will plan a fresh free project.
+
+**Shipped (#29–#35, CI green on every run, nothing reverted).** No product code.
+All seven PRs were daily "backend still down" journal entries. That was noise, so
+LOOP.md now says build ticks don't journal "still down" at all; the weekly review
+records the outage.
+
+**One loop change (this PR).** While the backend is down, a build tick may now take
+one public-page item a day (BACKLOG items marked `static-ok`): the landing-page voice
+and accuracy fix, then the deposit-deadline calculator. They need no backend, and
+they're the first thing a tenant reads once sign-in works. Tenant-flow work stays
+paused.
+
+**Legal changes** (merged this week): none. No letter, citation, or deadline or
+damages math changed. The known gap is unchanged: the stored deadline is move-out + 21
+days and ignores the "15 days after the forwarding address" branch (BACKLOG Next,
+needs a migration).
+
+**Numbers:** none. No read access (`SUPABASE_READONLY_DB_URL` isn't in the cloud
+environment), and with the backend paused there was no usage to count.
+
+**What blocks the first paid recovery, in order:** (1) restore Supabase; (2) the rest
+of SETUP Part A (~20 min: Google sign-in to "In production", Resend SMTP in Supabase,
+Vercel env vars); (3) tenants, via E-006. None of it is code.
+
+**Ask (contacting people), still open from last week:**
+- **E-006 — Post the summer-mover outreach** (`ops/outreach/posts.md`).
+  Recommendation: **yes, right after (1) and (2)**, not before, so people who click
+  can sign up. Free.
+  **Answer:**
 
 ---
 
@@ -71,7 +112,7 @@ Supabase, Vercel env vars). (3) Tenants: nobody has been invited yet.
   r/newhaven, Facebook groups). Recommendation: **yes, but only after (1) and (2)**,
   so people who click can actually sign up. Every week of delay ages that cohort's
   claims. Posting is free.
-  **Answer:**
+  *(Carried to the 2026-11-09 digest; answer there.)*
 
 ---
 

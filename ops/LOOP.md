@@ -18,11 +18,16 @@ except spending money and contacting people).
    - **Backend down (503 or no answer):** the loop can't fix it. Restoring a paused
      project needs Magnus's Supabase login. Make sure the top of ESCALATIONS.md
      starts with `URGENT: backend down since <date>`, with the restore steps
-     (add it once; don't repeat it each tick), then end the tick. Don't build.
-     Features shipped onto a dead backend reach no one.
-     Don't open a PR just to journal "still down": at most one such JOURNAL entry
-     per day, and none if today's already says it (on 11-02, four ticks each
-     merged an identical entry). The weekly review tick still runs its docs work.
+     (add it once; don't repeat it each tick). Build no tenant-flow features:
+     they can't be exercised and reach no one.
+     **Exception (review 2026-11-09):** BACKLOG Now items marked `static-ok` touch
+     only public pages that need no backend, and a tenant arriving after the
+     restore reads them first. While down, a build tick may take the top
+     `static-ok` item, at most one PR per day. Otherwise end the tick.
+     Don't open a PR just to journal "still down". The weekly review tick records
+     the outage; a build tick journals only when it ships something (11-03 to
+     11-09 merged seven identical "still down" entries). The weekly review tick
+     still runs its docs work.
 4. Open PRs are claimed work (see below).
 
 ## GitHub in the cloud

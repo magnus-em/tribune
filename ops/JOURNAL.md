@@ -3,6 +3,19 @@
 Newest first. One entry per tick. Counts only — no names, emails, addresses, or
 per-case amounts.
 
+## 2026-11-09 — review — week of 11-02: backend down all week, nothing shipped
+- Did: Health: `/api/health` 503 (day 10); CI on `main` green on all runs; no open
+  PRs. Metrics: no read access, noted in METRICS.md. PLAN §1 re-verified (no fact
+  changed but the outage length). Digest at the top of ESCALATIONS.md; E-006 carried
+  forward. Changed LOOP.md: build ticks stop journaling "still down", and while down
+  may take one `static-ok` BACKLOG item a day (landing-page voice, deadline
+  calculator). Notified Magnus.
+- Learned: seven of this week's PRs were identical outage notes; the loop was
+  spending runs and PRs on noise. The blocker hasn't moved in 10 days, so the
+  escalation in the repo isn't reaching Magnus; the push notification is the channel.
+- Next: build ticks take BACKLOG Now #1 (`static-ok`) even while down; full building
+  resumes once `/api/health` returns 200.
+
 ## 2026-11-09 — build — backend still down; no build
 - Did: Health check: `/api/health` still 503
   (`{"ok":false,"auth":false,"db":false}`). No open PRs. URGENT block already at

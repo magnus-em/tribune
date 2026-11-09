@@ -28,26 +28,21 @@ stands between today and the first paid recovery:
   `SUPABASE_SERVICE_ROLE_KEY`). Without them sign-up emails, letters, and
   notifications don't send.
 - 🔴 Magnus posts `ops/outreach/posts.md`, after the two items above (see digest).
-Items 1–2 stay first: they are what a tenant arriving from those posts reads and
-uses, and they need no backend, so they're `static-ok`. Once `/api/health` is 200,
+Item 1 stays first: it is what a tenant arriving from those posts reads and
+uses, and it needs no backend, so it's `static-ok`. Once `/api/health` is 200,
 build ticks take items in order as usual.
 
-1. `static-ok` Voice and accuracy: the landing page (`src/app/page.tsx`) FAQ and about copy
-   say "we"/"us", and state unverified figures ("4–8 weeks", "filing fees under
-   $75"). Make Tribune the actor and drop or source the figures. Same for
-   `LandlordIntroStep` ("our messages", "authorizes us") and `RecoveryStep` ("so
-   we can close your case"). This is the first page a tenant reads.
-2. `static-ok` ⚖️ Deadline calculator at `/tools/deposit-deadline`: move-out date in, the
+1. `static-ok` ⚖️ Deadline calculator at `/tools/deposit-deadline`: move-out date in, the
    § 47a-21 return deadline out, with a link to start a case. This is what a
    tenant searches for the week the deposit doesn't arrive. Only verified
    statute text (LEGAL_REVIEW_47a-21.md). If the forwarding-address branch can't
    be computed from verified text, say so on the page rather than guess. Pure
    client-side math; no backend, no data stored.
-3. ⚖️ More guide pages, answering questions tenants actually search ("landlord
+2. ⚖️ More guide pages, answering questions tenants actually search ("landlord
    kept my security deposit CT", "itemized list of damages CT", "security
    deposit interest CT"). Then New Haven, Hartford, Bridgeport, Stamford pages,
    only where there's something specific to say. Only verified statute text.
-4. Invoice email: the late-payment notice states 1.5%/month interest and credit
+3. Invoice email: the late-payment notice states 1.5%/month interest and credit
    reporting "per your service agreement". Check the service agreement actually
    says that; if not, drop it (unbacked claims to a tenant).
 
@@ -79,6 +74,13 @@ build ticks take items in order as usual.
 
 ## Next
 
+- ⚖️ `static-ok` Landing page "What they can't charge" section: it says normal wear
+  and tear is never deductible under CT law and stamps sample charges "Not
+  deductible". The verified § 47a-21(d) text says nothing about wear and tear.
+  Source it from verified statute text or soften it to "ask the landlord to
+  document it".
+- ⚖️ Case-page Letter 2 strategy bullet names "fee shifting" as a next step. Not in
+  the verified statute text; drop it or source it.
 - Doc drift: ARCHITECTURE.md and SPEC.md vs. the code.
 - Migrate `next lint` → ESLint CLI.
 - RLS: "Tenants can update own cases" allows any column (status,
@@ -103,6 +105,15 @@ build ticks take items in order as usual.
 
 ## Done
 
+- 2026-11-09 — ⚖️ Landing-page voice and accuracy (`static-ok`): Tribune is the
+  actor throughout `/`, `/login`, `LandlordIntroStep`, `RecoveryStep`, and the
+  lease-missing notice. Dropped the "4–8 weeks", "under $75", "$250–400/hr",
+  "3–6 hrs", "thousands of notices", and "specialists" claims; the attorney figure
+  in the calculator is labeled as an example. Law cards restate only § 47a-21(d)
+  (both deadline branches, itemization, accrued interest, twice the deposit
+  paid, forwarding address); dropped the unverified escrow/annual-statement and
+  burden-of-proof cards and the "§ 1–5" labels. New landing test guards voice,
+  figures, and the legal statements.
 - 2026-11-01 — Email-template tests: one table-driven suite over all six
   templates (case update, declined, submitted, invoice, follow-up
   available/reminder, landlord letter) checks the not-a-law-firm disclaimer,

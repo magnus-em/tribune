@@ -55,13 +55,13 @@ function DepositCalculator() {
             {fmt(lawyerNet1x)}
           </div>
 
-          <div className={s.calcRowLabel2x}>We file · up to 2× damages</div>
+          <div className={s.calcRowLabel2x}>Small claims · up to 2×</div>
           <div className={s.calcColGood2x}>{fmt(tribuneNet2x)}</div>
           <div className={s.calcColBad2x}>{fmt(lawyerNet2x)}</div>
         </div>
 
         <p className={s.calcNote}>
-          Illustration only — not an estimate of your specific recovery. Tribune: 15% of recovery, $0 if nothing recovered. Attorney fees estimated ~$1,200 (avg. 4 hrs × $300/hr).
+          Illustration only — not an estimate of your specific recovery. Tribune: 15% of recovery, $0 if nothing recovered. The attorney column assumes $1,200 in fees (4 hrs × $300/hr), an example figure, not a quote; actual rates vary.
         </p>
       </div>
     </div>
@@ -69,8 +69,8 @@ function DepositCalculator() {
 }
 
 function useCaseCta() {
-  // Logged-out default. The hook flips these to "go to your case" once we
-  // confirm the user is authed — /dashboard auto-redirects single-case
+  // Logged-out default. The hook flips these to "go to your case" once the
+  // client confirms the user is authed — /dashboard auto-redirects single-case
   // tenants to their case page, so it's the right destination either way.
   const [cta, setCta] = useState({
     href: "/login?next=/dashboard/new-case",
@@ -103,12 +103,14 @@ const CHARGES = [
   { item: "Nail holes", amount: "$50–$150", reason: "Hanging pictures is normal wear and tear." },
 ];
 
+// Restates only CGS § 47a-21(d) as quoted in LEGAL_REVIEW_47a-21.md
+// (see src/lib/statute.ts). The numbers are card labels, not subsections.
 const LAW_FACTS = [
-  { sym: "§ 1", title: "21-day deadline", body: "21 days to return the deposit or send an itemized list. Miss it by a day and your claim gets significantly stronger." },
-  { sym: "§ 2", title: "Specific itemization required", body: "\"Cleaning — $300\" isn't compliant. Connecticut requires specific, documented deductions. Most landlords don't meet this bar." },
-  { sym: "§ 3", title: "Interest & escrow", body: "Deposits must be held in interest-bearing accounts with annual statements. If they weren't, that's a separate violation." },
-  { sym: "§ 4", title: "Double damages", body: "When a landlord violates § 47a-21, the statute provides for liability of up to twice the amount of the security deposit. Whether it applies depends on the facts — Tribune prepares the documentation; you assert the claim.", highlight: true },
-  { sym: "§ 5", title: "Burden is on them", body: "Your landlord has to justify every dollar kept. Can't document it? Can't deduct it." },
+  { sym: "01", title: "21-day deadline", body: "The landlord has 21 days after the tenancy ends, or 15 days after receiving your written forwarding address, whichever is later, to return the deposit or send an itemized statement." },
+  { sym: "02", title: "Itemization required", body: "Any deduction has to come with a written statement itemizing the nature and amount of the damages." },
+  { sym: "03", title: "Accrued interest", body: "What comes back is the full deposit plus accrued interest, or the balance plus accrued interest after itemized deductions." },
+  { sym: "04", title: "Double damages", body: "A landlord who violates this subsection is liable for twice the amount of the security deposit paid. Whether that applies depends on the facts — Tribune prepares the documentation; you assert the claim.", highlight: true },
+  { sym: "05", title: "Sent to your forwarding address", body: "The deposit, or the balance and the itemized statement, goes to you at your forwarding address." },
 ];
 
 export default function LandingPage() {
@@ -156,13 +158,13 @@ export default function LandingPage() {
             <div className={s.heroEyebrow}>
               <span className={s.yalePill}>Built by Yale students</span>
               <span className={s.pill}>Connecticut · § 47a-21</span>
-              <span className={s.pill}>No fee unless we recover</span>
+              <span className={s.pill}>No fee unless you recover</span>
             </div>
             <h1 className={s.heroH1}>
               Your landlord kept<br />
               your deposit —<br />
               <em>or part of it.</em><br />
-              We'll get it back.
+              Tribune goes after it.
             </h1>
             <p className={s.heroSub}>
               Not a form letter you could send yourself — a system that adapts to your landlord and makes paying you back their cheapest move. You stay out of it.
@@ -189,7 +191,7 @@ export default function LandingPage() {
         <span className={s.dot}>·</span>
         <span>No upfront cost</span>
         <span className={s.dot}>·</span>
-        <span>CT § 47a-21 specialists</span>
+        <span>Built on CT § 47a-21</span>
       </div>
 
       {/* THE STRATEGY */}
@@ -207,23 +209,23 @@ export default function LandingPage() {
           <div className={s.strategyGrid}>
             <div className={s.strategyCard} data-reveal>
               <div className={s.strategyCardN}>01</div>
-              <h3 className={s.strategyCardTitle}>We know the script</h3>
+              <h3 className={s.strategyCardTitle}>Tribune knows the script</h3>
               <p className={s.strategyCardBody}>
-                Stall, vague invoice, lowball, silence. Landlords run a small set of plays — and we know what each one is actually worth under § 47a-21.
+                Stall, vague invoice, lowball, silence. Landlords run a small set of plays — and Tribune knows what each one is actually worth under § 47a-21.
               </p>
             </div>
             <div className={s.strategyCard} data-reveal>
               <div className={s.strategyCardN}>02</div>
               <h3 className={s.strategyCardTitle}>Every move is calibrated</h3>
               <p className={s.strategyCardBody}>
-                This isn't a template you could've downloaded. We read your landlord's specific response and adapt the next step to the leverage your case actually has.
+                This isn't a template you could've downloaded. Tribune reads your landlord's specific response and adapts the next step to the leverage your case actually has.
               </p>
             </div>
             <div className={s.strategyCard} data-reveal>
               <div className={s.strategyCardN}>03</div>
               <h3 className={s.strategyCardTitle}>Folding becomes the smart move</h3>
               <p className={s.strategyCardBody}>
-                Against documented exposure and someone who won't go away, paying you back is cheaper than fighting. We make that math impossible to miss.
+                Against documented exposure and someone who won't go away, paying you back is cheaper than fighting. Tribune makes that math impossible to miss.
               </p>
             </div>
           </div>
@@ -273,11 +275,11 @@ export default function LandingPage() {
             ))}
             <div className={s.invoiceFoot}>
               <p className={s.invoiceFootNote}>
-                These charges appear in thousands of CT deduction notices. Most don't hold up under § 47a-21.
+                Example notice, for illustration only.
               </p>
               <div className={s.invoiceFootTotal}>
                 <span className={s.invoiceFootLabel}>Total claimed</span>
-                <span className={s.invoiceFootAmt}><s>$2,850+</s></span>
+                <span className={s.invoiceFootAmt}><s>$550–$1,600</s></span>
                 <span className={s.invoiceFootVerdict}>Potentially void under § 47a-21</span>
               </div>
             </div>
@@ -322,7 +324,7 @@ export default function LandingPage() {
           <div className={s.narrativeLayout}>
             <div className={s.narrativeLeft} data-reveal>
               <p style={{ fontSize: "17px", lineHeight: "1.75", color: "var(--ink-mid)", margin: "0 0 24px" }}>
-                The delay, the vague invoice, the lowball offer — each step of our process is built around what landlords actually do.
+                The delay, the vague invoice, the lowball offer — each step of Tribune's process is built around what landlords actually do.
               </p>
               <p style={{ fontSize: "17px", lineHeight: "1.75", color: "var(--ink-light)", margin: "0" }}>
                 You see every update in your case log. You don't have to deal with any of it.
@@ -333,7 +335,7 @@ export default function LandingPage() {
                 {
                   n: "01",
                   title: "Case review",
-                  body: "We evaluate your documents, timeline, and the landlord's compliance with § 47a-21. If the claim isn't strong, we'll tell you directly.",
+                  body: "Tribune evaluates your documents, timeline, and the landlord's compliance with § 47a-21. If the claim isn't strong, Tribune tells you directly.",
                 },
                 {
                   n: "02",
@@ -342,13 +344,13 @@ export default function LandingPage() {
                 },
                 {
                   n: "03",
-                  title: "We read the response and adapt",
-                  body: "Holdouts test you with vague rebuttals, lowball offers, and silence. We know what each one means and answer it specifically — every round adding to the record and to what they stand to lose.",
+                  title: "Tribune reads the response and adapts",
+                  body: "Holdouts test you with vague rebuttals, lowball offers, and silence. Tribune knows what each one means and answers it specifically — every round adding to the record and to what they stand to lose.",
                 },
                 {
                   n: "04",
                   title: "Small claims if needed",
-                  body: "Most cases resolve before this point. For holdouts, we prepare the complete filing package. You show up once. Filing fees are typically under $75.",
+                  body: "For holdouts, Tribune prepares the complete filing package. You show up once. You pay the court's filing fee at cost; Tribune adds no markup.",
                 },
               ].map((stage, i) => (
                 <div key={i} className={s.narrativeStage} data-reveal style={{ "--i": i } as React.CSSProperties}>
@@ -377,36 +379,36 @@ export default function LandingPage() {
             <div className={s.pricingFig}>15%</div>
             <h2 className={s.pricingHead}>No recovery, no fee.</h2>
             <p className={s.pricingBody}>
-              Tribune charges 15% of what we recover — paid after the money hits your account. If we recover nothing, you owe nothing.
+              Tribune charges 15% of what you recover — paid after the money hits your account. If you recover nothing, you owe nothing.
             </p>
             <div className={s.pricingVs}>
               <div className={s.pricingVsCol}>
                 <span className={s.pricingVsLabel}>Attorney</span>
-                <span className={s.pricingVsVal}><s>$250–400/hr</s></span>
-                <span className={s.pricingVsNote}>3–6 hrs typical · $800–2,400+ before recovery</span>
+                <span className={s.pricingVsVal}><s>Hourly</s></span>
+                <span className={s.pricingVsNote}>Billed for time, whether or not you recover</span>
               </div>
               <span className={s.pricingVsDivider}>vs</span>
               <div className={s.pricingVsCol}>
                 <span className={s.pricingVsLabel}>Tribune</span>
                 <span className={s.pricingVsValGood}>15% of recovery</span>
-                <span className={s.pricingVsNote}>$0 if we recover nothing</span>
+                <span className={s.pricingVsNote}>$0 if you recover nothing</span>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* WHO WE ARE */}
+      {/* ABOUT */}
       <section className={s.sectionCream}>
         <div className={s.wrap}>
           <p className={s.label} data-reveal>06 / About</p>
           <div className={s.aboutWrap} data-reveal>
             <h2 className={s.aboutH2}>Built at Yale.</h2>
             <p className={s.aboutBody}>
-              We've been through this — bogus deductions, holdout landlords, the whole thing. After researching the statute and learning how bad landlords actually operate, we built Tribune to make what we figured out available to every Connecticut tenant.
+              Tribune grew out of firsthand experience with bogus deductions and holdout landlords. It turns research into the statute, and into how deposit disputes actually play out, into a service available to every Connecticut tenant.
             </p>
             <p className={s.aboutFine}>
-              Tribune is a legal-information and document-preparation service — not a law firm, and nothing here is legal advice. We handle the research, drafting, and correspondence; you authorize what goes out. If a case would be better with an attorney, we'll tell you directly.
+              Tribune is a legal-information and document-preparation service — not a law firm, and nothing here is legal advice. Tribune handles the research, drafting, and correspondence; you authorize what goes out. If a case would be better with an attorney, Tribune tells you directly.
             </p>
           </div>
         </div>
@@ -419,13 +421,13 @@ export default function LandingPage() {
           <h2 className={s.h2} data-reveal>Common questions.</h2>
           <div className={s.faqCols}>
             {[
-              { q: "Are you a law firm?", a: "No. Tribune is a document-preparation and legal-information service. You authorize what goes out — we research, draft, and handle the correspondence. If your case needs a lawyer, we'll tell you." },
+              { q: "Are you a law firm?", a: "No. Tribune is a document-preparation and legal-information service. You authorize what goes out — Tribune researches, drafts, and handles the correspondence. If your case needs a lawyer, Tribune tells you." },
               { q: "Why not just send a letter myself?", a: "You can — and if your landlord is reasonable, it might work. Most aren't. They stall because they're betting you'll give up, and a one-off letter from a tenant who won't follow through is a bet they're happy to take. Tribune doesn't give up, knows every move they'll try, and adapts each response to your specific case. You stop being one tenant guessing at the rules." },
-              { q: "What does it cost?", a: "15% of what we recover, paid after money hits your account. If we recover nothing, you pay nothing. Hard costs are pass-through and disclosed up front." },
-              { q: "Do I have to deal with my landlord?", a: "No. Tribune handles all correspondence. The entire negotiation runs through us — you see updates but you're completely out of the conversation." },
-              { q: "My landlord sent a deduction list. Still a case?", a: "Often yes. Deductions must be itemized, specific, documented, and exclude normal wear and tear. Most don't meet that standard." },
-              { q: "What if my landlord ignores the letters?", a: "Every ignored deadline raises the statutory exposure and strengthens the record. For holdouts, we prepare the small-claims package ready to file." },
-              { q: "How long does this take?", a: "Most matters resolve in 4–8 weeks. Small claims adds time but is straightforward — filing fees are typically under $75." },
+              { q: "What does it cost?", a: "15% of what you recover, paid after money hits your account. If you recover nothing, you pay nothing. Hard costs like certified mail and court filing fees are passed through at cost, with no markup, and disclosed up front." },
+              { q: "Do I have to deal with my landlord?", a: "No. Tribune handles all correspondence. The entire negotiation runs through Tribune — you see updates but you're completely out of the conversation." },
+              { q: "My landlord sent a deduction list. Still a case?", a: "Often yes. The statute requires a written statement itemizing the nature and amount of the damages, delivered on time. Tribune checks the list against that requirement." },
+              { q: "What if my landlord ignores the letters?", a: "Every ignored deadline raises the statutory exposure and strengthens the record. For holdouts, Tribune prepares the small-claims package ready to file." },
+              { q: "How long does this take?", a: "It depends on how your landlord responds. Each letter gives the landlord a set window to reply, and you see every step in your case log. If a case goes to small claims, the court sets the schedule." },
             ].map((f, i) => (
               <details key={i} className={s.faqItem} data-reveal>
                 <summary className={s.faqQ}>{f.q}</summary>
@@ -450,7 +452,7 @@ export default function LandingPage() {
                 {cta.heroLabel}
               </Link>
               <p className={s.finalMicro}>
-                Takes about 10 minutes · No credit card · No commitment unless we recover
+                Takes about 10 minutes · No credit card · No fee unless you recover
               </p>
               <p className={s.finalFine}>
                 Tribune provides legal-information and document-preparation services for Connecticut tenants. Not a law firm. All correspondence signed by the tenant.

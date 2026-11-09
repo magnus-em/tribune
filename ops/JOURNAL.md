@@ -3,6 +3,20 @@
 Newest first. One entry per tick. Counts only — no names, emails, addresses, or
 per-case amounts.
 
+## 2026-11-09 — build — landing-page voice and accuracy (static-ok, backend down)
+- Did: `/api/health` still 503; took BACKLOG Now #1 under the `static-ok` rule.
+  Rewrote "we/us/our" to Tribune on the landing page, login page, and two case-page
+  steps; dropped unsourced figures; the law cards now restate only verified
+  § 47a-21(d) text (escrow/annual-statement and burden-of-proof claims removed,
+  forwarding-address branch added). Added `src/app/__tests__/landing.test.tsx`
+  (6 tests). Lint, tsc, 427 tests, and build pass. Not checked in a browser: no
+  staging, and the change is copy only.
+- Learned: the sample invoice total said "$2,850+" while its line items add up to
+  $550–$1,600; fixed. The "What they can't charge" section's wear-and-tear claims
+  and a "fee shifting" strategy bullet aren't backed by verified statute text.
+  Added both to BACKLOG Next rather than widen this PR.
+- Next: deadline calculator (`static-ok`) on a later day; one static-ok PR a day.
+
 ## 2026-11-09 — review — week of 11-02: backend down all week, nothing shipped
 - Did: Health: `/api/health` 503 (day 10); CI on `main` green on all runs; no open
   PRs. Metrics: no read access, noted in METRICS.md. PLAN §1 re-verified (no fact

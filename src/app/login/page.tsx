@@ -111,10 +111,10 @@ function AuthPageInner() {
           <span className={s.heroSym}>§</span>
           <h1 className={s.heroH}>
             Get your deposit back.<br />
-            <em>We handle the rest.</em>
+            <em>Tribune handles the rest.</em>
           </h1>
           <p className={s.heroSub}>
-            CT § 47a-21 specialists. Tribune prepares every letter, manages every response, and takes 15% only if you recover.
+            Built on CT § 47a-21. Tribune prepares every letter, manages every response, and takes 15% only if you recover.
           </p>
         </div>
 
@@ -124,7 +124,7 @@ function AuthPageInner() {
             <span className={s.proofVal}>15% of recovery</span>
           </div>
           <div className={s.proofItem}>
-            <span className={s.proofLabel}>If we recover nothing</span>
+            <span className={s.proofLabel}>If you recover nothing</span>
             <span className={s.proofVal}>You pay nothing</span>
           </div>
           <div className={s.proofItem}>
@@ -149,7 +149,7 @@ function AuthPageInner() {
           </h2>
           <p className={s.formSub}>
             {mode === "signup"
-              ? "Takes about 5 minutes. Upload your lease and we'll fill in most of the form."
+              ? "Takes about 5 minutes. Upload your lease and Tribune fills in most of the form."
               : "Sign in to check your case status and updates."}
           </p>
 

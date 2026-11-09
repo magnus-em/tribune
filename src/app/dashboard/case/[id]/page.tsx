@@ -286,7 +286,7 @@ export default function CaseDetailPage() {
         variant: "required" as const,
         title: "Upload your lease to begin",
         description:
-          "Tribune cannot review your case until we have a copy of your lease agreement. Use the \"Upload Lease\" button in Case Readiness below.",
+          "Tribune cannot review your case until it has a copy of your lease agreement. Use the \"Upload Lease\" button in Case Readiness below.",
       };
     }
     if (letterReady) {

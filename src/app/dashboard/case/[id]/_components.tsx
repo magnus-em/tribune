@@ -642,7 +642,7 @@ function tenantLetterTactics(letterNumber?: number): string[] {
       ];
     case 2:
       return [
-        "Escalation: raise their cost of inaction without raising ours. The longer they stall, the more leverage we accumulate.",
+        "Escalation: raise their cost of inaction without raising yours. The longer they stall, the more leverage your case accumulates.",
         "Reframe their last reply against the statute — every defense they offered gets priced and compared to the cost of just paying.",
         "Name the next step explicitly: Small Claims filing, fee shifting, and the public record. Removes any ambiguity about where this is going.",
         "Time pressure tightens. 7-day window, not 14. Each round shortens the reply runway.",
@@ -1094,7 +1094,7 @@ export function LandlordIntroStep({
       <div className="p-4 space-y-4">
         <p className="text-sm text-muted-foreground">
           Send this one email to your landlord from your own inbox. It tells them to expect
-          our messages and authorizes us to handle the rest. After this,{" "}
+          messages from Tribune and authorizes Tribune to handle the rest. After this,{" "}
           <span className="font-medium text-foreground">Tribune takes over all correspondence.</span>
         </p>
 
@@ -1467,7 +1467,7 @@ export function RecoveryStep({
         </p>
       </div>
       <p className="text-xs text-muted-foreground">
-        If you receive money from your landlord, report it here so we can close your case and calculate the Tribune fee.
+        If you receive money from your landlord, report it here so Tribune can close your case and calculate the Tribune fee.
       </p>
 
       {refundMode === null && (

@@ -474,6 +474,8 @@ export default function LandingPage() {
             <a href="#charges">What they can't charge</a>
             <a href="#how">How it works</a>
             <a href="#faq">FAQ</a>
+            <Link href="/guides/connecticut-security-deposit-law">CT deposit law guide</Link>
+            <Link href="/tools/deposit-deadline">Deadline calculator</Link>
           </div>
           <p className={s.footerFine}>© 2026 Tribune Services, Inc. · Not a law firm · Connecticut only</p>
         </div>

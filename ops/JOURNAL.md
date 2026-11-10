@@ -3,6 +3,24 @@
 Newest first. One entry per tick. Counts only — no names, emails, addresses, or
 per-case amounts.
 
+## 2026-11-10 — build — deposit deadline calculator (static-ok, backend down)
+- Did: `/api/health` still 503; no open PRs. Took BACKLOG Now #1 under the
+  one-`static-ok`-PR-a-day rule. New `/tools/deposit-deadline`: pure date math
+  in `src/lib/deadline-calculator.ts` (21 days from tenancy end, 15 from the
+  landlord receiving the forwarding address in writing, later wins), a client
+  form that stores nothing, the verified § 47a-21(d) quote, a limits list, and
+  the disclaimer. 18 new tests, including runs under three time zones. Lint, tsc,
+  440 tests, and build pass. Checked in a local browser at phone width (dev
+  server with placeholder Supabase env): both branches compute, no console
+  errors, no horizontal scroll.
+- Learned: the verified text doesn't say how days are counted (weekends,
+  holidays, mail receipt), so the page states that rather than adjust. Local
+  `next start` 500s on every page without Supabase env (middleware); `next dev`
+  with placeholder values works for checking static pages.
+- Next: no `static-ok` item left in Now, so build ticks idle while the backend is
+  down. The review tick (11-16) can move a Next `static-ok` item (landing "What
+  they can't charge") up. Digest "Legal changes": this calculator.
+
 ## 2026-11-09 — build — landing-page voice and accuracy (static-ok, backend down)
 - Did: `/api/health` still 503; took BACKLOG Now #1 under the `static-ok` rule.
   Rewrote "we/us/our" to Tribune on the landing page, login page, and two case-page

@@ -172,6 +172,13 @@ export default function ConnecticutDepositLawGuide() {
             The statute says the deposit is delivered to the tenant or former
             tenant at that forwarding address.
           </p>
+          <p style={proseStyle}>
+            To work out the dates for your tenancy, use the{" "}
+            <Link href="/tools/deposit-deadline" style={{ color: "var(--blue)" }}>
+              deposit deadline calculator
+            </Link>
+            .
+          </p>
         </div>
       </section>
 
@@ -306,6 +313,7 @@ export default function ConnecticutDepositLawGuide() {
             <Link href={INTAKE_HREF}>Open a case</Link>
             <Link href="/">Home</Link>
             <Link href="/moved-out">Moved out this summer</Link>
+            <Link href="/tools/deposit-deadline">Deadline calculator</Link>
             <Link href="/contact">Contact</Link>
           </div>
           <p className={s.footerFine} data-testid="disclaimer">

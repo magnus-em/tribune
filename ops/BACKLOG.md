@@ -28,21 +28,16 @@ stands between today and the first paid recovery:
   `SUPABASE_SERVICE_ROLE_KEY`). Without them sign-up emails, letters, and
   notifications don't send.
 - 🔴 Magnus posts `ops/outreach/posts.md`, after the two items above (see digest).
-Item 1 stays first: it is what a tenant arriving from those posts reads and
-uses, and it needs no backend, so it's `static-ok`. Once `/api/health` is 200,
-build ticks take items in order as usual.
+No Now item is `static-ok` any more (the calculator shipped 11-10), so while it's
+down build ticks have nothing to take; the next review decides whether a Next
+`static-ok` item moves up. Once `/api/health` is 200, build ticks take items in
+order as usual.
 
-1. `static-ok` ⚖️ Deadline calculator at `/tools/deposit-deadline`: move-out date in, the
-   § 47a-21 return deadline out, with a link to start a case. This is what a
-   tenant searches for the week the deposit doesn't arrive. Only verified
-   statute text (LEGAL_REVIEW_47a-21.md). If the forwarding-address branch can't
-   be computed from verified text, say so on the page rather than guess. Pure
-   client-side math; no backend, no data stored.
-2. ⚖️ More guide pages, answering questions tenants actually search ("landlord
+1. ⚖️ More guide pages, answering questions tenants actually search ("landlord
    kept my security deposit CT", "itemized list of damages CT", "security
    deposit interest CT"). Then New Haven, Hartford, Bridgeport, Stamford pages,
    only where there's something specific to say. Only verified statute text.
-3. Invoice email: the late-payment notice states 1.5%/month interest and credit
+2. Invoice email: the late-payment notice states 1.5%/month interest and credit
    reporting "per your service agreement". Check the service agreement actually
    says that; if not, drop it (unbacked claims to a tenant).
 
@@ -105,6 +100,16 @@ build ticks take items in order as usual.
 
 ## Done
 
+- 2026-11-10 — ⚖️ Deposit deadline calculator at `/tools/deposit-deadline`
+  (`static-ok`): tenancy end date in, § 47a-21(d) deadline out. Pure
+  `computeDepositDeadline()` in `src/lib/deadline-calculator.ts`: tenancy end +
+  21, optional landlord-received forwarding-address date + 15, the later wins.
+  With no forwarding date the page labels the 21-day date the *earliest possible*
+  deadline and gives the date after which a forwarding notice would move it later.
+  Calendar days only; the page says it doesn't adjust for weekends/holidays, say
+  how a court counts days, decide compliance, or compute interest. Quotes the
+  verified deadline text; runs in the browser, stores nothing. In the sitemap;
+  linked from the guide, landing, and /moved-out. 18 tests (lib + page).
 - 2026-11-09 — ⚖️ Landing-page voice and accuracy (`static-ok`): Tribune is the
   actor throughout `/`, `/login`, `LandlordIntroStep`, `RecoveryStep`, and the
   lease-missing notice. Dropped the "4–8 weeks", "under $75", "$250–400/hr",

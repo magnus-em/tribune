@@ -263,6 +263,7 @@ export default function MovedOutPage() {
             <Link href={INTAKE_HREF}>Open a case</Link>
             <Link href="/">Home</Link>
             <Link href="/guides/connecticut-security-deposit-law">CT deposit law guide</Link>
+            <Link href="/tools/deposit-deadline">Deadline calculator</Link>
             <Link href="/contact">Contact</Link>
           </div>
           <p className={s.footerFine} data-testid="disclaimer">

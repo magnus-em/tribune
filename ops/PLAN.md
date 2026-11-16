@@ -37,12 +37,12 @@ This file is the agent's north star. Every loop tick reads it first.
 
 ---
 
-## 1. Where things stand (verified 2026-11-09)
+## 1. Where things stand (verified 2026-11-16)
 
 | Area | State |
 |---|---|
-| Prod | **Backend down since 2026-10-31** (still 503 on 11-09, day 10). The Supabase project is paused; `/api/health` returns 503 (`auth` and `db` false). Nobody can sign in or start a case. Only Magnus can restore it (SETUP Part A, first item). The static homepage still loads. |
-| Product | Built end to end on `main` but not yet deployed or exercised on a real case: intake with residential question, auto-triage, tenant approve-and-send for Letters 1–3, follow-up cron and reminder, landlord-reply panel, admin exception queue, `/moved-out` and the CT law guide, SEO basics, daily `/api/health` keep-alive. |
+| Prod | **Backend down since 2026-10-31** (still 503 on 11-16, day 17). Supabase's restore window for a paused free project is ~90 days (~late January 2027). The Supabase project is paused; `/api/health` returns 503 (`auth` and `db` false). Nobody can sign in or start a case. Only Magnus can restore it (SETUP Part A, first item). The static homepage still loads. |
+| Product | Built end to end on `main` but not yet deployed or exercised on a real case: intake with residential question, auto-triage, tenant approve-and-send for Letters 1–3, follow-up cron and reminder, landlord-reply panel, admin exception queue, `/moved-out`, the CT law guide, the `/tools/deposit-deadline` calculator, SEO basics, daily `/api/health` keep-alive. The public pages (landing, guide, calculator, `/moved-out`) are live and return 200 (checked 11-16); deploys still work. |
 | Inbound email | `reply.usetribune.org` MX → Resend inbound. **Unverified:** Resend webhook and `RESEND_WEBHOOK_SECRET` in Vercel. |
 | Prod env vars | **Unknown.** SETUP Part A not done (Resend, `CRON_SECRET`, `SUPABASE_SERVICE_ROLE_KEY`, Google OAuth publishing, Supabase SMTP). |
 | Real usage | **Unknown.** No read-only role yet; with the backend paused there is none. |
@@ -53,8 +53,9 @@ This file is the agent's north star. Every loop tick reads it first.
 **What blocks the first paid recovery, in order:** (1) restore the Supabase
 project; (2) the rest of SETUP Part A so sign-up, letters, and notifications
 actually send; (3) tenants: Magnus posts the drafted outreach. Code is not the
-bottleneck. Unchanged 11-02 → 11-09: no setup item done, E-006 unanswered. While
-down, the loop ships only public pages that need no backend (LOOP.md, `static-ok`).
+bottleneck. Unchanged 11-02 → 11-16: no setup item done, E-006 unanswered, no reply to
+three digests. While down, the loop ships only public pages that need no backend
+(LOOP.md, `static-ok`); two such items are queued in BACKLOG Now.
 
 ---
 

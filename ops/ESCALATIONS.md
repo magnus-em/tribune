@@ -1,7 +1,7 @@
 URGENT: backend down since 2026-10-31
 
 `/api/health` still returns 503 (`{"ok":false,"auth":false,"db":false}`) as of
-2026-11-09 13:25 UTC (day 10). Nobody can sign in or start a case, so the build
+2026-11-16 13:30 UTC (day 17). Nobody can sign in or start a case, so the build
 loop has stopped shipping tenant features until this is fixed. Only Magnus can
 restore it (free):
 
@@ -26,6 +26,51 @@ applies it. Unanswered asks never default to yes.
 
 Things only Magnus can physically do (logins, accounts, dashboards) live in
 `ops/SETUP.md`. They're to-dos, not permission requests.
+
+---
+
+## Digest — week of 2026-11-09 (review, 2026-11-16)
+
+**The one thing, third week running:** the backend has been down 17 days. Nobody
+can sign in or start a case. Restoring it is free and takes minutes (steps in the
+URGENT block above). Supabase keeps a paused free project restorable for about 90
+days, so roughly until late January. Check the dashboard, though. If it says it
+can't be restored, write that under **Answer:** below.
+
+**Shipped (#37, #38; CI green on `main` for every run, nothing reverted).**
+- #37: the landing and login pages now say "Tribune" instead of "we". Unsourced
+  figures are gone, and the law cards say only what the verified statute says.
+- #38: a free deposit-deadline calculator at `/tools/deposit-deadline`. It's live,
+  and so are the landing page, the guide, and `/moved-out` (all return 200).
+- Since 11-10 the loop has had nothing it was allowed to build while the backend
+  is down. This review queues two public-page items for it (below).
+
+**Legal changes** (merged this week):
+- #37 Landing law cards restate only verified § 47a-21(d) text and now include the
+  forwarding-address branch. The escrow/annual-statement and burden-of-proof claims
+  are removed.
+- #38 The new calculator computes the later of tenancy end + 21 days and
+  forwarding-address receipt + 15 days, in calendar days. It says it doesn't adjust
+  for weekends or holidays.
+- Flagged, not changed: the landing page still says wear and tear is "never
+  deductible under Connecticut law". The verified statute text doesn't say that.
+  It's now BACKLOG Now #1, so the build loop fixes it next.
+- Flagged, not changed: the service agreement and invoice charge 1.5%/month on late
+  fees and allow credit reporting. The invoice matches the agreement. Nobody has
+  checked whether those terms hold up against a consumer in CT.
+- Known gap, unchanged: the stored case deadline ignores the forwarding-address
+  branch (needs a migration).
+
+**Numbers:** none. There's no read access, and with the backend paused there's
+nothing to count.
+
+**What blocks the first paid recovery, in order:** (1) restore Supabase; (2) the
+rest of SETUP Part A (~20 min); (3) tenants, via E-006. None of it is code.
+
+**Ask (contacting people), open since 11-02:**
+- **E-006: post the summer-mover outreach** (`ops/outreach/posts.md`).
+  Recommendation: **yes, right after (1) and (2)**, not before. Free.
+  **Answer:**
 
 ---
 
@@ -65,7 +110,7 @@ Vercel env vars); (3) tenants, via E-006. None of it is code.
 - **E-006 — Post the summer-mover outreach** (`ops/outreach/posts.md`).
   Recommendation: **yes, right after (1) and (2)**, not before, so people who click
   can sign up. Free.
-  **Answer:**
+  *(Carried to the 2026-11-16 digest; answer there.)*
 
 ---
 

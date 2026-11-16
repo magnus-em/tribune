@@ -18,28 +18,35 @@ what brings them in or makes the site trustworthy to them. On 10-31 the Supabase
 found paused, so nobody could sign in, and the loop hadn't noticed (see LOOP.md,
 health check).
 
-**Review 2026-11-09 (unchanged from 11-02): the blocker isn't code.** In order, what
+**Review 2026-11-16 (unchanged since 11-02): the blocker isn't code.** In order, what
 stands between today and the first paid recovery:
 - blocked: Magnus — restore the Supabase project (SETUP Part A, first item).
-  `/api/health` 503 since 2026-10-31 (day 10 on 11-09). While it's down, build ticks
-  take only `static-ok` items, one PR a day (LOOP.md).
+  `/api/health` 503 since 2026-10-31 (day 17 on 11-16). Supabase's restore window
+  for a paused free project is about 90 days (~late January 2027). While it's down,
+  build ticks take only `static-ok` items, one PR a day (LOOP.md).
 - blocked: Magnus — rest of SETUP Part A (Google OAuth "In production", Resend
   SMTP in Supabase, Vercel env vars incl. `CRON_SECRET` and
   `SUPABASE_SERVICE_ROLE_KEY`). Without them sign-up emails, letters, and
   notifications don't send.
 - 🔴 Magnus posts `ops/outreach/posts.md`, after the two items above (see digest).
-No Now item is `static-ok` any more (the calculator shipped 11-10), so while it's
-down build ticks have nothing to take; the next review decides whether a Next
-`static-ok` item moves up. Once `/api/health` is 200, build ticks take items in
-order as usual.
+Items 1–2 are `static-ok` (public pages, no backend), so build ticks have work
+while it's down. Once `/api/health` is 200, build ticks take items in order as usual.
 
-1. ⚖️ More guide pages, answering questions tenants actually search ("landlord
-   kept my security deposit CT", "itemized list of damages CT", "security
-   deposit interest CT"). Then New Haven, Hartford, Bridgeport, Stamford pages,
-   only where there's something specific to say. Only verified statute text.
-2. Invoice email: the late-payment notice states 1.5%/month interest and credit
-   reporting "per your service agreement". Check the service agreement actually
-   says that; if not, drop it (unbacked claims to a tenant).
+1. ⚖️ `static-ok` Landing page "What they can't charge" section (`src/app/page.tsx`,
+   ~lines 100–103, 243, 290): it says normal wear and tear is never deductible under
+   CT law and stamps sample charges "Not deductible". The verified § 47a-21(d) text
+   says nothing about wear and tear. Source it from verified statute text or soften
+   it to "ask the landlord to itemize and document it". This is the first page a
+   tenant reads; an unbacked legal claim there is the top trust risk.
+2. ⚖️ `static-ok` More guide pages, answering questions tenants actually search
+   ("landlord kept my security deposit CT", "itemized list of damages CT", "security
+   deposit interest CT"). One page per PR. Then New Haven, Hartford, Bridgeport,
+   Stamford pages, only where there's something specific to say. Only verified
+   statute text.
+3. ⚖️ Case-page Letter 2 strategy bullet names "fee shifting" as a next step
+   (`src/app/dashboard/case/[id]/_components.tsx` ~line 647). Not in the verified
+   statute text; drop it or source it. Tenant-flow page, so not `static-ok`: take it
+   once the backend is up.
 
 ## Spec — tenant approve-and-send
 
@@ -69,13 +76,6 @@ order as usual.
 
 ## Next
 
-- ⚖️ `static-ok` Landing page "What they can't charge" section: it says normal wear
-  and tear is never deductible under CT law and stamps sample charges "Not
-  deductible". The verified § 47a-21(d) text says nothing about wear and tear.
-  Source it from verified statute text or soften it to "ask the landlord to
-  document it".
-- ⚖️ Case-page Letter 2 strategy bullet names "fee shifting" as a next step. Not in
-  the verified statute text; drop it or source it.
 - Doc drift: ARCHITECTURE.md and SPEC.md vs. the code.
 - Migrate `next lint` → ESLint CLI.
 - RLS: "Tenants can update own cases" allows any column (status,
@@ -100,6 +100,12 @@ order as usual.
 
 ## Done
 
+- 2026-11-16 — Invoice late-payment notice checked (review): the 1.5%/month interest
+  and credit-reporting terms in `src/lib/email/templates/invoice.ts` match the
+  service agreement shown at intake (`src/app/dashboard/new-case/_steps.tsx`,
+  `KEY_CLAUSE_TEXT` and the agreement body). No change. Whether those terms are
+  enforceable against a consumer in CT hasn't been reviewed (no attorney, by
+  founder decision); flagged in the 11-16 digest.
 - 2026-11-10 — ⚖️ Deposit deadline calculator at `/tools/deposit-deadline`
   (`static-ok`): tenancy end date in, § 47a-21(d) deadline out. Pure
   `computeDepositDeadline()` in `src/lib/deadline-calculator.ts`: tenancy end +

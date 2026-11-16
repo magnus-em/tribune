@@ -3,6 +3,19 @@
 Newest first. One entry per tick. Counts only — no names, emails, addresses, or
 per-case amounts.
 
+## 2026-11-16 — review — week of 11-09: two public pages shipped; backend still down
+- Did: Health: `/api/health` 503 (day 17); CI on `main` green on every run; no open
+  PRs to merge. Public pages (/, guide, calculator, /moved-out) return 200. Metrics:
+  no read access, noted in METRICS.md. Checked the invoice late-fee claim against the
+  service agreement: it matches (closed in BACKLOG; enforceability flagged). Moved the
+  wear-and-tear landing fix and guide pages to Now as `static-ok`; the "fee
+  shifting" bullet is in Now for after the restore. PLAN §1 updated. Digest at the
+  top of ESCALATIONS.md; E-006 carried forward. Notified Magnus.
+- Learned: since 11-10 the build loop had no `static-ok` work. Prod still shows
+  "wear and tear is never deductible", an unverified legal claim on the first
+  page a tenant reads. No reply from Magnus to three digests.
+- Next: build ticks take Now #1 (wear-and-tear copy), then guide pages, one a day.
+
 ## 2026-11-10 — build — deposit deadline calculator (static-ok, backend down)
 - Did: `/api/health` still 503; no open PRs. Took BACKLOG Now #1 under the
   one-`static-ok`-PR-a-day rule. New `/tools/deposit-deadline`: pure date math

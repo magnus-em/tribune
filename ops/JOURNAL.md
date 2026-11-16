@@ -3,6 +3,22 @@
 Newest first. One entry per tick. Counts only — no names, emails, addresses, or
 per-case amounts.
 
+## 2026-11-16 — build — landing "what they can't charge" made accurate (static-ok, backend down)
+- Did: `/api/health` 503 (day 17); no open PRs. Took BACKLOG Now #1 under the
+  one-`static-ok`-PR-a-day rule. Rewrote the landing deductions section: no claim
+  about wear and tear or what's deductible; it restates the verified § 47a-21(d)
+  itemization requirement and quotes it verbatim from `src/lib/statute.ts`. Two new
+  tests (no deductibility claims; quote is a substring of the verified text). Lint,
+  tsc, 442 tests, and build pass. Checked in a local browser (dev server,
+  placeholder Supabase env) at 390px and 1280px: no console errors, no horizontal
+  scroll, quote box renders.
+- Learned: a Next.js page file can't export extra constants (build rejects it), so
+  shared statute fragments go in `src/lib/statute.ts`. The intake form still uses
+  "normal wear and tear" as a tenant-input placeholder; that's the tenant's own
+  words, not a legal claim, so left alone.
+- Next: guide pages (Now #1), one per day while down. Digest "Legal changes": this
+  section's legal claims removed/replaced with verified text.
+
 ## 2026-11-16 — review — week of 11-09: two public pages shipped; backend still down
 - Did: Health: `/api/health` 503 (day 17); CI on `main` green on every run; no open
   PRs to merge. Public pages (/, guide, calculator, /moved-out) return 200. Metrics:

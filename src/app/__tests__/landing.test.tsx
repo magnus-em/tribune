@@ -1,5 +1,6 @@
 import { render } from "@testing-library/react";
 import LandingPage from "../page";
+import { STATUTE_DEADLINE_QUOTE, STATUTE_ITEMIZATION_QUOTE } from "@/lib/statute";
 
 jest.mock("@/lib/supabase/client", () => ({
   createClient: () => ({
@@ -55,5 +56,17 @@ describe("landing page", () => {
 
   it("carries the information-not-advice disclaimer", () => {
     expect(renderText()).toMatch(/not a law firm, and nothing here is legal advice/);
+  });
+
+  it("claims nothing about which charges are deductible", () => {
+    const text = renderText();
+    expect(text).not.toMatch(/never deductible|not deductible|can't charge|cannot charge/i);
+    expect(text).not.toMatch(/wear and tear/i);
+    expect(text).not.toMatch(/void under/i);
+  });
+
+  it("quotes the itemization requirement verbatim from the verified statute text", () => {
+    expect(STATUTE_DEADLINE_QUOTE).toContain(STATUTE_ITEMIZATION_QUOTE);
+    expect(renderText()).toContain(STATUTE_ITEMIZATION_QUOTE);
   });
 });

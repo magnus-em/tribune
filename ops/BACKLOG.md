@@ -29,21 +29,15 @@ stands between today and the first paid recovery:
   `SUPABASE_SERVICE_ROLE_KEY`). Without them sign-up emails, letters, and
   notifications don't send.
 - 🔴 Magnus posts `ops/outreach/posts.md`, after the two items above (see digest).
-Items 1–2 are `static-ok` (public pages, no backend), so build ticks have work
+Item 1 is `static-ok` (public pages, no backend), so build ticks have work
 while it's down. Once `/api/health` is 200, build ticks take items in order as usual.
 
-1. ⚖️ `static-ok` Landing page "What they can't charge" section (`src/app/page.tsx`,
-   ~lines 100–103, 243, 290): it says normal wear and tear is never deductible under
-   CT law and stamps sample charges "Not deductible". The verified § 47a-21(d) text
-   says nothing about wear and tear. Source it from verified statute text or soften
-   it to "ask the landlord to itemize and document it". This is the first page a
-   tenant reads; an unbacked legal claim there is the top trust risk.
-2. ⚖️ `static-ok` More guide pages, answering questions tenants actually search
+1. ⚖️ `static-ok` More guide pages, answering questions tenants actually search
    ("landlord kept my security deposit CT", "itemized list of damages CT", "security
    deposit interest CT"). One page per PR. Then New Haven, Hartford, Bridgeport,
    Stamford pages, only where there's something specific to say. Only verified
    statute text.
-3. ⚖️ Case-page Letter 2 strategy bullet names "fee shifting" as a next step
+2. ⚖️ Case-page Letter 2 strategy bullet names "fee shifting" as a next step
    (`src/app/dashboard/case/[id]/_components.tsx` ~line 647). Not in the verified
    statute text; drop it or source it. Tenant-flow page, so not `static-ok`: take it
    once the backend is up.
@@ -100,6 +94,15 @@ while it's down. Once `/api/health` is 200, build ticks take items in order as u
 
 ## Done
 
+- 2026-11-16 — ⚖️ Landing "What they can't charge" section (`static-ok`): removed
+  the unverified claims that wear and tear is "never deductible", the "Not
+  deductible" stamps, "Most deduction lists don't hold up", and "Potentially void
+  under § 47a-21". The section is now "What they have to itemize": it restates the
+  verified § 47a-21(d) itemization requirement, says the statute text doesn't list
+  which charges count as damages, and each example line shows what an itemized
+  statement would state. The rule box quotes the (d) text verbatim
+  (`STATUTE_ITEMIZATION_QUOTE` in `src/lib/statute.ts`, tested as a substring of
+  the verified deadline quote). Nav and hero links renamed. Two new landing tests.
 - 2026-11-16 — Invoice late-payment notice checked (review): the 1.5%/month interest
   and credit-reporting terms in `src/lib/email/templates/invoice.ts` match the
   service agreement shown at intake (`src/app/dashboard/new-case/_steps.tsx`,

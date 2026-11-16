@@ -4,6 +4,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { STATUTE_ITEMIZATION_QUOTE } from "@/lib/statute";
 import s from "./landing.module.css";
 
 function DepositCalculator() {
@@ -95,13 +96,18 @@ function useCaseCta() {
   return cta;
 }
 
+// Example line items. The statute text Tribune has verified (LEGAL_REVIEW_47a-21.md)
+// requires a written statement itemizing the nature and amount of damages; it does
+// not say which kinds of charge are or aren't deductible, so this section claims
+// nothing about that.
 const CHARGES = [
-  { item: "Painting / paint touch-ups", amount: "$200–$500", reason: "Normal paint fading is the landlord's cost." },
-  { item: "Carpet cleaning", amount: "$150–$400", reason: "Routine soiling from normal use is wear and tear." },
-  { item: "General cleaning", amount: "$100–$350", reason: "Cleaning between tenants is a cost of being a landlord." },
-  { item: "Scuffs / marks on walls", amount: "$50–$200", reason: "Furniture touches walls. That's everyday living." },
-  { item: "Nail holes", amount: "$50–$150", reason: "Hanging pictures is normal wear and tear." },
+  { item: "Painting / paint touch-ups", amount: "$200–$500", reason: "Which walls, what damage, and what it cost." },
+  { item: "Carpet cleaning", amount: "$150–$400", reason: "What damage the cleaning was for, and the amount." },
+  { item: "General cleaning", amount: "$100–$350", reason: "What was left behind, and what it cost to deal with." },
+  { item: "Scuffs / marks on walls", amount: "$50–$200", reason: "Where they are, and what the repair cost." },
+  { item: "Nail holes", amount: "$50–$150", reason: "How many, where, and what the repair cost." },
 ];
+
 
 // Restates only CGS § 47a-21(d) as quoted in LEGAL_REVIEW_47a-21.md
 // (see src/lib/statute.ts). The numbers are card labels, not subsections.
@@ -139,7 +145,7 @@ export default function LandingPage() {
         <div className={s.navInner}>
           <span className={s.navLogo}>Tribune</span>
           <div className={s.navLinks}>
-            <a href="#charges">What they can't charge</a>
+            <a href="#charges">What they have to itemize</a>
             <a href="#law">Your rights</a>
             <a href="#how">How it works</a>
             <a href="#faq">FAQ</a>
@@ -174,7 +180,7 @@ export default function LandingPage() {
                 {cta.heroLabel}
               </Link>
               <a href="#charges" className={s.btnOutline}>
-                See what they can't charge
+                See what they have to itemize
               </a>
             </div>
           </div>
@@ -235,12 +241,12 @@ export default function LandingPage() {
       {/* THAT'S NOT DAMAGE — THE INVOICE */}
       <section className={s.sectionInvoice} id="charges">
         <div className={s.wrap}>
-          <p className={s.label} data-reveal>02 / What They Can't Charge</p>
+          <p className={s.label} data-reveal>02 / What They Have to Itemize</p>
           <h2 className={s.h2} data-reveal>
-            Most deduction lists<br />don't hold up.
+            Every deduction<br />has to be itemized.
           </h2>
           <p className={s.dek} data-reveal>
-            Under Connecticut law, normal wear and tear is never deductible. Landlords charge for it anyway — because most tenants don't push back.
+            Connecticut law lets a landlord deduct for damages it suffered, but only with a written statement itemizing the nature and amount of those damages. Tribune checks each line of a deduction list against that requirement. The statute text doesn't list which kinds of charge count as damages.
           </p>
 
           <div className={s.invoice} data-reveal>
@@ -257,7 +263,7 @@ export default function LandingPage() {
             <div className={s.invoiceCols}>
               <span>Item charged</span>
               <span className={s.invoiceColAmt}>Amount</span>
-              <span>Verdict</span>
+              <span>An itemized statement shows</span>
             </div>
             {CHARGES.map((c, i) => (
               <div
@@ -268,7 +274,7 @@ export default function LandingPage() {
                 <span className={s.invoiceItem}>{c.item}</span>
                 <span className={s.invoiceAmt}>{c.amount}</span>
                 <div className={s.invoiceVerdict}>
-                  <span className={s.stamp}>Not deductible</span>
+                  <span className={s.stamp}>Itemized?</span>
                   <span className={s.stampReason}>{c.reason}</span>
                 </div>
               </div>
@@ -279,15 +285,15 @@ export default function LandingPage() {
               </p>
               <div className={s.invoiceFootTotal}>
                 <span className={s.invoiceFootLabel}>Total claimed</span>
-                <span className={s.invoiceFootAmt}><s>$550–$1,600</s></span>
-                <span className={s.invoiceFootVerdict}>Potentially void under § 47a-21</span>
+                <span className={s.invoiceFootAmt}>$550–$1,600</span>
+                <span className={s.invoiceFootVerdict}>Nature and amount, line by line</span>
               </div>
             </div>
           </div>
 
           <blockquote className={s.ruleBox} data-reveal>
-            <span className={s.ruleBoxLabel}>The rule</span>
-            <p>If it happened because someone <em>lived</em> there — not because they <em>abused</em> it — it's wear and tear. Landlords don't get to charge you for the passage of time.</p>
+            <span className={s.ruleBoxLabel}>The rule · § 47a-21(d)</span>
+            <p>&ldquo;{STATUTE_ITEMIZATION_QUOTE}.&rdquo;</p>
           </blockquote>
         </div>
       </section>
@@ -471,7 +477,7 @@ export default function LandingPage() {
           </div>
           <div className={s.footerLinks}>
             <Link href={cta.href}>{cta.footerLabel}</Link>
-            <a href="#charges">What they can't charge</a>
+            <a href="#charges">What they have to itemize</a>
             <a href="#how">How it works</a>
             <a href="#faq">FAQ</a>
             <Link href="/guides/connecticut-security-deposit-law">CT deposit law guide</Link>

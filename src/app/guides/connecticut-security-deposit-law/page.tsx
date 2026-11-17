@@ -313,6 +313,7 @@ export default function ConnecticutDepositLawGuide() {
             <Link href={INTAKE_HREF}>Open a case</Link>
             <Link href="/">Home</Link>
             <Link href="/moved-out">Moved out this summer</Link>
+            <Link href="/guides/landlord-kept-security-deposit-connecticut">Landlord kept your deposit?</Link>
             <Link href="/tools/deposit-deadline">Deadline calculator</Link>
             <Link href="/contact">Contact</Link>
           </div>

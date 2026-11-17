@@ -3,6 +3,22 @@
 Newest first. One entry per tick. Counts only — no names, emails, addresses, or
 per-case amounts.
 
+## 2026-11-17 — build — guide "landlord kept my deposit" (static-ok, backend down)
+- Did: `/api/health` 503 (day 18); CI on `main` green; no open PRs. Took BACKLOG Now
+  #1 (first guide page) under the one-`static-ok`-PR-a-day rule. New
+  `/guides/landlord-kept-security-deposit-connecticut`: verified (d) quotes, four
+  "what arrived" situations restated against the statute text, records, not-covered
+  list, disclaimer. Sitemap + footer links. 13 new tests (verbatim quotes, both
+  deadline branches, damages base, no other subsections/case law, no compliance
+  conclusions, voice). Lint, tsc, 456 tests, build pass. Checked in a local browser
+  (dev server, placeholder Supabase env) at 390px and 1280px: no console errors, no
+  horizontal scroll.
+- Learned: the verified text supports a situation-by-situation page only if each
+  card stops at what (d) requires; "did my landlord break the law" stays in the
+  not-covered list.
+- Next: next guide ("itemized list of damages CT") on a later day. Digest "Legal
+  changes": this page (restates existing verified text only).
+
 ## 2026-11-16 — build — landing "what they can't charge" made accurate (static-ok, backend down)
 - Did: `/api/health` 503 (day 17); no open PRs. Took BACKLOG Now #1 under the
   one-`static-ok`-PR-a-day rule. Rewrote the landing deductions section: no claim

@@ -33,8 +33,7 @@ Item 1 is `static-ok` (public pages, no backend), so build ticks have work
 while it's down. Once `/api/health` is 200, build ticks take items in order as usual.
 
 1. ⚖️ `static-ok` More guide pages, answering questions tenants actually search
-   ("landlord kept my security deposit CT", "itemized list of damages CT", "security
-   deposit interest CT"). One page per PR. Then New Haven, Hartford, Bridgeport,
+   ("itemized list of damages CT", "security deposit interest CT"). One page per PR. Then New Haven, Hartford, Bridgeport,
    Stamford pages, only where there's something specific to say. Only verified
    statute text.
 2. ⚖️ Case-page Letter 2 strategy bullet names "fee shifting" as a next step
@@ -94,6 +93,14 @@ while it's down. Once `/api/health` is 200, build ticks take items in order as u
 
 ## Done
 
+- 2026-11-17 — ⚖️ Guide `/guides/landlord-kept-security-deposit-connecticut`
+  (`static-ok`): for the "landlord kept my security deposit CT" search. Quotes the
+  verified § 47a-21(d) deadline and damages text, then sets four situations (nothing
+  arrived; part with no statement; part with a list of deductions; full deposit
+  without interest) against the statute's words without saying whether any landlord
+  complied. Lists what it doesn't cover (compliance, interest rate, itemization
+  detail, day counting, other subsections, case law). In the sitemap; linked from the
+  main guide and landing footers. 13 tests.
 - 2026-11-16 — ⚖️ Landing "What they can't charge" section (`static-ok`): removed
   the unverified claims that wear and tear is "never deductible", the "Not
   deductible" stamps, "Most deduction lists don't hold up", and "Potentially void

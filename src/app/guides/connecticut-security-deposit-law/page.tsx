@@ -314,6 +314,7 @@ export default function ConnecticutDepositLawGuide() {
             <Link href="/">Home</Link>
             <Link href="/moved-out">Moved out this summer</Link>
             <Link href="/guides/landlord-kept-security-deposit-connecticut">Landlord kept your deposit?</Link>
+            <Link href="/guides/itemized-statement-of-damages-connecticut">Itemized statement of damages</Link>
             <Link href="/tools/deposit-deadline">Deadline calculator</Link>
             <Link href="/contact">Contact</Link>
           </div>

@@ -3,6 +3,23 @@
 Newest first. One entry per tick. Counts only — no names, emails, addresses, or
 per-case amounts.
 
+## 2026-11-18 — build — guide "itemized statement of damages" (static-ok, backend down)
+- Did: `/api/health` 503 (day 19); CI on `main` green; no open PRs. Took BACKLOG Now
+  #1 under the one-`static-ok`-PR-a-day rule. New
+  `/guides/itemized-statement-of-damages-connecticut`: verified (d) quotes, the
+  statute phrases the statement turns on, deadline, liability, records, not-covered
+  list, disclaimer. Sitemap + footer links on landing and both guides. 13 new tests.
+  Lint, tsc, 470 tests, build pass. Checked with `next start` (placeholder Supabase
+  env) at 390px and 1280px: 200, no console errors, no horizontal scroll.
+- Learned: tenants searching "itemized list" mostly want to know whether a charge
+  is allowed; the verified text can't answer that, so the page says so plainly and
+  puts wear and tear, cleaning, painting, and receipts in the not-covered list
+  (tested). The "security deposit interest" guide needs the interest rate verified
+  first, or the page would be mostly "not covered".
+- Next: backend restore (Magnus). Next static-ok guide on a later day; city pages
+  only where there's something specific to say. Digest "Legal changes": this page
+  (restates existing verified text only).
+
 ## 2026-11-17 — build — guide "landlord kept my deposit" (static-ok, backend down)
 - Did: `/api/health` 503 (day 18); CI on `main` green; no open PRs. Took BACKLOG Now
   #1 (first guide page) under the one-`static-ok`-PR-a-day rule. New

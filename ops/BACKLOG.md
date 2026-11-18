@@ -33,7 +33,8 @@ Item 1 is `static-ok` (public pages, no backend), so build ticks have work
 while it's down. Once `/api/health` is 200, build ticks take items in order as usual.
 
 1. ⚖️ `static-ok` More guide pages, answering questions tenants actually search
-   ("itemized list of damages CT", "security deposit interest CT"). One page per PR. Then New Haven, Hartford, Bridgeport,
+   ("security deposit interest CT": only once the interest rate is verified text;
+   until then there's little to say). One page per PR. Then New Haven, Hartford, Bridgeport,
    Stamford pages, only where there's something specific to say. Only verified
    statute text.
 2. ⚖️ Case-page Letter 2 strategy bullet names "fee shifting" as a next step
@@ -93,6 +94,17 @@ while it's down. Once `/api/health` is 200, build ticks take items in order as u
 
 ## Done
 
+- 2026-11-18 — ⚖️ Guide `/guides/itemized-statement-of-damages-connecticut`
+  (`static-ok`): for the "itemized list of damages CT" search. Quotes the verified
+  § 47a-21(d) itemization fragment, deadline, and damages text; cards restate each
+  statute phrase the statement turns on ("a written statement", "itemizing the
+  nature and amount of such damages", "together with", "at such forwarding
+  address", the deadline). Says the verified text doesn't say how detailed a
+  statement must be or which charges count. Not covered: compliance, detail, wear
+  and tear/cleaning/painting, receipts/estimates/photos, interest rate, day
+  counting, other subsections, case law. In the sitemap; linked from the landing
+  and both guide footers. 13 tests (incl. every card phrase is a substring of the
+  verified text; no charge or attachment claims outside the not-covered list).
 - 2026-11-17 — ⚖️ Guide `/guides/landlord-kept-security-deposit-connecticut`
   (`static-ok`): for the "landlord kept my security deposit CT" search. Quotes the
   verified § 47a-21(d) deadline and damages text, then sets four situations (nothing

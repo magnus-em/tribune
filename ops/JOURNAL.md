@@ -3,6 +3,23 @@
 Newest first. One entry per tick. Counts only — no names, emails, addresses, or
 per-case amounts.
 
+## 2026-11-19 — build — guide "forwarding address" (static-ok, backend down)
+- Did: `/api/health` 503 (day 20); CI on `main` green; no open PRs. Took BACKLOG Now
+  #1 under the one-`static-ok`-PR-a-day rule. New
+  `/guides/security-deposit-forwarding-address-connecticut`: verified (d) quote,
+  phrase cards (each tested as verbatim), two worked deadline examples computed with
+  the calculator's function, damages quote, records, not-covered list, disclaimer.
+  Sitemap + links from landing, guides, calculator. 15 new tests. Lint, tsc, 486
+  tests, build pass. Checked with `next start` (placeholder Supabase env) at 390px
+  and 1280px: 200, no console errors, no horizontal scroll.
+- Learned: the forwarding-address question tenants ask most ("what if I never gave
+  one?") isn't answered by the verified text; the page puts it in the not-covered
+  list (tested that it isn't asserted elsewhere). The remaining guide ideas (interest,
+  city pages) have little verified text to stand on; the review tick may want to
+  decide whether item 1 is exhausted.
+- Next: backend restore (Magnus). Digest "Legal changes": this page (restates
+  existing verified text and existing calculator math only).
+
 ## 2026-11-18 — build — guide "itemized statement of damages" (static-ok, backend down)
 - Did: `/api/health` 503 (day 19); CI on `main` green; no open PRs. Took BACKLOG Now
   #1 under the one-`static-ok`-PR-a-day rule. New

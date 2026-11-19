@@ -340,6 +340,7 @@ export default function LandlordKeptDepositGuide() {
             <Link href="/">Home</Link>
             <Link href="/guides/connecticut-security-deposit-law">CT deposit law guide</Link>
             <Link href="/guides/itemized-statement-of-damages-connecticut">Itemized statement of damages</Link>
+            <Link href="/guides/security-deposit-forwarding-address-connecticut">Forwarding address</Link>
             <Link href="/tools/deposit-deadline">Deadline calculator</Link>
             <Link href="/contact">Contact</Link>
           </div>

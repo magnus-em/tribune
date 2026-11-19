@@ -201,6 +201,7 @@ export default function DepositDeadlinePage() {
             <Link href={INTAKE_HREF}>Open a case</Link>
             <Link href="/">Home</Link>
             <Link href="/guides/connecticut-security-deposit-law">CT deposit law guide</Link>
+            <Link href="/guides/security-deposit-forwarding-address-connecticut">Forwarding address</Link>
             <Link href="/contact">Contact</Link>
           </div>
           <p className={s.footerFine} data-testid="disclaimer">

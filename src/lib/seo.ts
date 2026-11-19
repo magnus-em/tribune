@@ -26,6 +26,7 @@ export const PUBLIC_ROUTES: ReadonlyArray<{
   { path: "/guides/connecticut-security-deposit-law", changeFrequency: "monthly", priority: 0.7 },
   { path: "/guides/landlord-kept-security-deposit-connecticut", changeFrequency: "monthly", priority: 0.7 },
   { path: "/guides/itemized-statement-of-damages-connecticut", changeFrequency: "monthly", priority: 0.7 },
+  { path: "/guides/security-deposit-forwarding-address-connecticut", changeFrequency: "monthly", priority: 0.7 },
   { path: "/tools/deposit-deadline", changeFrequency: "monthly", priority: 0.7 },
 ];
 

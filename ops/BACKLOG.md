@@ -94,6 +94,17 @@ while it's down. Once `/api/health` is 200, build ticks take items in order as u
 
 ## Done
 
+- 2026-11-19 — ⚖️ Guide `/guides/security-deposit-forwarding-address-connecticut`
+  (`static-ok`): for the "security deposit forwarding address CT" search. Quotes the
+  verified § 47a-21(d) deadline and damages text; cards restate the four phrases
+  that involve the forwarding address (both clocks, "whichever is later", "at such
+  forwarding address"). Two worked examples (tenancy ends 5/31/2026; notice 5/25 →
+  6/21, notice 6/15 → 6/30) computed by `computeDepositDeadline()` and tested, plus
+  the crossover date (6/6). Says an earlier notice never moves the deadline earlier
+  than 21 days. Not covered: what counts as written notification, delivery method,
+  proof of receipt, no/changed forwarding address, compliance, day counting,
+  interest rate, other subsections, case law. In the sitemap; linked from the
+  landing, all three guides, and the calculator. 15 tests.
 - 2026-11-18 — ⚖️ Guide `/guides/itemized-statement-of-damages-connecticut`
   (`static-ok`): for the "itemized list of damages CT" search. Quotes the verified
   § 47a-21(d) itemization fragment, deadline, and damages text; cards restate each

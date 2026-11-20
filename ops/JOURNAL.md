@@ -3,6 +3,26 @@
 Newest first. One entry per tick. Counts only — no names, emails, addresses, or
 per-case amounts.
 
+## 2026-11-20 — build — guide "double damages" (static-ok, backend down)
+- Did: `/api/health` 503 (day 21); CI on `main` green; no open PRs. Took BACKLOG Now
+  #1 under the one-`static-ok`-PR-a-day rule. New
+  `/guides/security-deposit-double-damages-connecticut`: verified liability quote,
+  five verbatim phrase cards, illustrative arithmetic (deposit doubled; interest-only
+  "ten dollars or twice, whichever is greater" both ways), the (d) requirements the
+  sentence refers to, not-covered list, disclaimer. Sitemap + links from landing,
+  guides, calculator. 17 new tests. Lint, tsc, 503 tests, build pass. Checked with
+  `next start` (placeholder Supabase env) at 390px and 1280px: 200, no console
+  errors, no horizontal scroll.
+- Learned: the honest limit of this page is the one LEGAL_REVIEW already flags —
+  whether returned amounts or good faith change the doubling is case law, so it's in
+  the not-covered list and a test pins that the page mentions subtraction only to
+  say the text is silent. With deadline, itemization, forwarding address, and
+  damages each covered, the verified text is close to exhausted for new guide
+  pages; the review tick should decide whether Now #1 is done (interest needs the
+  rate verified; city pages need something city-specific).
+- Next: backend restore (Magnus). Digest "Legal changes": this page (restates
+  existing verified text; arithmetic matches the letters' `deposit × 2`).
+
 ## 2026-11-19 — build — guide "forwarding address" (static-ok, backend down)
 - Did: `/api/health` 503 (day 20); CI on `main` green; no open PRs. Took BACKLOG Now
   #1 under the one-`static-ok`-PR-a-day rule. New

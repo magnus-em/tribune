@@ -94,6 +94,18 @@ while it's down. Once `/api/health` is 200, build ticks take items in order as u
 
 ## Done
 
+- 2026-11-20 — ⚖️ Guide `/guides/security-deposit-double-damages-connecticut`
+  (`static-ok`): for the "security deposit double damages CT" search. Quotes the
+  verified § 47a-21(d) liability sentence; five phrase cards, each a verbatim
+  fragment (tested). Illustrative arithmetic, labeled as made up: $1,400 deposit →
+  $2,800; interest-only violation with $3 / $8 interest → $10 / $16 ("whichever is
+  greater", both branches tested). Says the figure is measured against the deposit
+  paid, not the amount kept, and that the verified text is silent on subtracting
+  amounts returned (the case-law question LEGAL_REVIEW flags). Not covered:
+  liability in a given case, amounts returned/good faith, how a court computes an
+  award, court procedure and filing limits, interest rate, day counting, other
+  subsections, case law. In the sitemap; linked from the landing, all four guides,
+  and the calculator. 17 tests.
 - 2026-11-19 — ⚖️ Guide `/guides/security-deposit-forwarding-address-connecticut`
   (`static-ok`): for the "security deposit forwarding address CT" search. Quotes the
   verified § 47a-21(d) deadline and damages text; cards restate the four phrases

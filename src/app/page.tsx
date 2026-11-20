@@ -484,6 +484,7 @@ export default function LandingPage() {
             <Link href="/guides/landlord-kept-security-deposit-connecticut">Landlord kept your deposit?</Link>
             <Link href="/guides/itemized-statement-of-damages-connecticut">Itemized statement of damages</Link>
             <Link href="/guides/security-deposit-forwarding-address-connecticut">Forwarding address</Link>
+            <Link href="/guides/security-deposit-double-damages-connecticut">Double damages</Link>
             <Link href="/tools/deposit-deadline">Deadline calculator</Link>
           </div>
           <p className={s.footerFine}>© 2026 Tribune Services, Inc. · Not a law firm · Connecticut only</p>

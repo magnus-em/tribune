@@ -361,6 +361,7 @@ export default function ItemizedStatementGuide() {
             <Link href="/guides/connecticut-security-deposit-law">CT deposit law guide</Link>
             <Link href="/guides/landlord-kept-security-deposit-connecticut">Landlord kept your deposit?</Link>
             <Link href="/guides/security-deposit-forwarding-address-connecticut">Forwarding address</Link>
+            <Link href="/guides/security-deposit-double-damages-connecticut">Double damages</Link>
             <Link href="/tools/deposit-deadline">Deadline calculator</Link>
             <Link href="/contact">Contact</Link>
           </div>

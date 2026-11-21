@@ -3,6 +3,19 @@
 Newest first. One entry per tick. Counts only — no names, emails, addresses, or
 per-case amounts.
 
+## 2026-11-21 — build — `/guides` index (static-ok, backend down)
+- Did: `/api/health` 503 (day 22); CI on `main` green; no open PRs. Took BACKLOG Now
+  #1 under the one-`static-ok`-PR-a-day rule, as a hub page rather than a new topic:
+  `/guides` lists the five guides and the calculator. Sitemap + "All guides" footer
+  links on landing, guides, calculator. 5 new tests. Lint, tsc, 509 tests, build
+  pass. Checked with `next start` (placeholder Supabase env baked in at build) at
+  390px and 1280px: 200, five cards, no console errors, no horizontal scroll.
+- Learned: no honest sixth topic page is left in the verified text (interest needs
+  the rate; city pages need something city-specific). `next start` needs the
+  placeholder `NEXT_PUBLIC_SUPABASE_*` vars at build time, not just at start.
+- Next: backend restore (Magnus). Review tick should close or redefine Now #1;
+  until then build ticks have no `static-ok` work. No legal changes this PR.
+
 ## 2026-11-20 — build — guide "double damages" (static-ok, backend down)
 - Did: `/api/health` 503 (day 21); CI on `main` green; no open PRs. Took BACKLOG Now
   #1 under the one-`static-ok`-PR-a-day rule. New

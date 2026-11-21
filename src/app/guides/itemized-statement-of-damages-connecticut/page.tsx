@@ -358,6 +358,7 @@ export default function ItemizedStatementGuide() {
           <div className={s.footerLinks}>
             <Link href={INTAKE_HREF}>Open a case</Link>
             <Link href="/">Home</Link>
+            <Link href="/guides">All guides</Link>
             <Link href="/guides/connecticut-security-deposit-law">CT deposit law guide</Link>
             <Link href="/guides/landlord-kept-security-deposit-connecticut">Landlord kept your deposit?</Link>
             <Link href="/guides/security-deposit-forwarding-address-connecticut">Forwarding address</Link>

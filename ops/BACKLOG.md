@@ -94,6 +94,15 @@ while it's down. Once `/api/health` is 200, build ticks take items in order as u
 
 ## Done
 
+- 2026-11-21 — `/guides` index (`static-ok`): one page listing all five guides and
+  the deadline calculator, each with a one-line note on which part of § 47a-21(d)
+  it reads (no legal claims of its own; list lives in `src/lib/guides.ts`). In
+  the sitemap; "All guides" linked from the landing, every guide, and the
+  calculator footers. 5 tests, incl. every guide route under `src/app/guides` is
+  listed and every link is a real sitemap page. Taken instead of a sixth topic
+  page: the verified (d) text is now covered by deadline, forwarding address,
+  itemization, and damages pages; interest needs the rate verified, and no
+  city-specific text is verified. Review tick: decide whether Now #1 is done.
 - 2026-11-20 — ⚖️ Guide `/guides/security-deposit-double-damages-connecticut`
   (`static-ok`): for the "security deposit double damages CT" search. Quotes the
   verified § 47a-21(d) liability sentence; five phrase cards, each a verbatim

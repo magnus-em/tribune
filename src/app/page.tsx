@@ -149,6 +149,7 @@ export default function LandingPage() {
             <a href="#law">Your rights</a>
             <a href="#how">How it works</a>
             <a href="#faq">FAQ</a>
+            <Link href="/guides">All guides</Link>
             <Link href="/guides/connecticut-security-deposit-law">CT deposit law guide</Link>
           </div>
           <Link href={cta.href} className={s.navCta}>
@@ -480,6 +481,7 @@ export default function LandingPage() {
             <a href="#charges">What they have to itemize</a>
             <a href="#how">How it works</a>
             <a href="#faq">FAQ</a>
+            <Link href="/guides">All guides</Link>
             <Link href="/guides/connecticut-security-deposit-law">CT deposit law guide</Link>
             <Link href="/guides/landlord-kept-security-deposit-connecticut">Landlord kept your deposit?</Link>
             <Link href="/guides/itemized-statement-of-damages-connecticut">Itemized statement of damages</Link>

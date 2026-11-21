@@ -23,6 +23,7 @@ export const PUBLIC_ROUTES: ReadonlyArray<{
 }> = [
   { path: "/", changeFrequency: "weekly", priority: 1 },
   { path: "/moved-out", changeFrequency: "monthly", priority: 0.8 },
+  { path: "/guides", changeFrequency: "monthly", priority: 0.7 },
   { path: "/guides/connecticut-security-deposit-law", changeFrequency: "monthly", priority: 0.7 },
   { path: "/guides/landlord-kept-security-deposit-connecticut", changeFrequency: "monthly", priority: 0.7 },
   { path: "/guides/itemized-statement-of-damages-connecticut", changeFrequency: "monthly", priority: 0.7 },

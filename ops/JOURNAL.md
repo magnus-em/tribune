@@ -3,6 +3,19 @@
 Newest first. One entry per tick. Counts only — no names, emails, addresses, or
 per-case amounts.
 
+## 2026-11-23 — build — Now #1a: pure `letterDeadline()` (test-ok, backend down)
+- Did: `/api/health` 503 (day 24); CI on `main` green; no open PRs. Took BACKLOG Now
+  #1a under the one-`test-ok`-PR-a-day rule. Added `letterDeadline()` and
+  `letterDeadlinePassed()` in `src/lib/letters/deadline.ts`, which reuse
+  `computeDepositDeadline()` with no new date math. 9 tests. Lint, tsc, 518 tests,
+  and the build pass. No UI, so no browser check.
+- Learned: like the stored column, the tenancy branch counts from `move_out_date`.
+  The verified text says "termination of a tenancy", which may not be the same
+  day. The helper keeps the existing convention and flags it rather than guessing.
+- Next: Now #1b on a later day: record the forwarding-notice attestation, block
+  Letter 1 until it's answered, and switch Letter 1 and triage to `letterDeadline`.
+  Legal change for the digest: a new deadline helper, not yet used by any letter.
+
 ## 2026-11-23 — review — week of 11-16: six public pages shipped; backend still down; Letter 1 deadline defect found
 - Did: Health: `/api/health` 503 (day 24); CI on `main` green on every run; no open
   PRs to merge. The public pages (/, /guides, the guides, the calculator, /moved-out,

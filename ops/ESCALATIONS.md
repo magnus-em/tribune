@@ -1,7 +1,7 @@
 URGENT: backend down since 2026-10-31
 
 `/api/health` still returns 503 (`{"ok":false,"auth":false,"db":false}`) as of
-2026-11-16 13:30 UTC (day 17). Nobody can sign in or start a case, so the build
+2026-11-23 13:30 UTC (day 24). Nobody can sign in or start a case, so the build
 loop has stopped shipping tenant features until this is fixed. Only Magnus can
 restore it (free):
 
@@ -26,6 +26,57 @@ applies it. Unanswered asks never default to yes.
 
 Things only Magnus can physically do (logins, accounts, dashboards) live in
 `ops/SETUP.md`. They're to-dos, not permission requests.
+
+---
+
+## Digest — week of 2026-11-16 (review, 2026-11-23)
+
+**The one thing, fourth week running:** the backend has been down 24 days. Nobody
+can sign in or start a case. Restoring it is free and takes minutes (steps in the
+URGENT block above). The restore window runs to about late January. If the
+dashboard says it can't be restored, or you've decided not to restore it, write
+that under **Answer:** below and the loop will plan around it.
+
+**Shipped (#40–#45; CI green on `main` for every run, nothing reverted, no open PRs).**
+Six public pages, all live (200): the corrected landing section, four guides
+(landlord kept the deposit; itemized statement; forwarding address; double
+damages), and a `/guides` index. That covers what the verified statute text
+supports, so the guide work is done for now.
+
+**Legal changes** (merged this week):
+- #40 Landing: removed "wear and tear is never deductible", the "Not deductible"
+  stamps, and "potentially void". The section now quotes the verified § 47a-21(d)
+  itemization text.
+- #41 New guide, landlord kept the deposit: verified (d) quotes; four situations
+  set against the text, with no conclusion about compliance.
+- #42 New guide, itemized statement: verified (d) quotes. It says the text doesn't
+  define how detailed a statement must be or which charges count.
+- #43 New guide, forwarding address: both deadline branches, with worked dates
+  from the calculator's own function.
+- #44 New guide, double damages: the liability sentence and example arithmetic
+  (deposit × 2, interest-only "$10 or twice"). Whether amounts returned reduce the
+  doubling is listed as not covered.
+- #45 `/guides` index: links only, no new legal claims.
+- **Found this review, not yet fixed:** Letter 1 tells the landlord "That deadline
+  was <date>, and it has passed." The date is move-out + 21 days and ignores the
+  forwarding-address branch, so for some tenants the date is wrong and may not have
+  passed yet. No letter has gone out (backend down), and the fix needs no
+  migration. It's now BACKLOG Now #1. The case page's description of the letters
+  is also wrong in places ("14-day window", "fee shifting", "court summons"). That's
+  Now #2.
+
+**Numbers:** none. There's no read access, and with the backend paused there's
+nothing to count.
+
+**What blocks the first paid recovery, in order:** (1) restore Supabase; (2) the
+rest of SETUP Part A (~20 min); (3) tenants, via E-006. Meanwhile the loop fixes
+the two letter items above, one PR a day, so the first letter is right when
+sign-in works.
+
+**Ask (contacting people), open since 11-02:**
+- **E-006: post the summer-mover outreach** (`ops/outreach/posts.md`).
+  Recommendation: **yes, right after (1) and (2)**, not before. Free.
+  **Answer:**
 
 ---
 
@@ -70,7 +121,7 @@ rest of SETUP Part A (~20 min); (3) tenants, via E-006. None of it is code.
 **Ask (contacting people), open since 11-02:**
 - **E-006: post the summer-mover outreach** (`ops/outreach/posts.md`).
   Recommendation: **yes, right after (1) and (2)**, not before. Free.
-  **Answer:**
+  *(Carried to the 2026-11-23 digest; answer there.)*
 
 ---
 

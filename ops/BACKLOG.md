@@ -18,29 +18,57 @@ what brings them in or makes the site trustworthy to them. On 10-31 the Supabase
 found paused, so nobody could sign in, and the loop hadn't noticed (see LOOP.md,
 health check).
 
-**Review 2026-11-16 (unchanged since 11-02): the blocker isn't code.** In order, what
-stands between today and the first paid recovery:
+**Review 2026-11-23: the blocker still isn't code.** In order, what stands
+between today and the first paid recovery:
 - blocked: Magnus — restore the Supabase project (SETUP Part A, first item).
-  `/api/health` 503 since 2026-10-31 (day 17 on 11-16). Supabase's restore window
-  for a paused free project is about 90 days (~late January 2027). While it's down,
-  build ticks take only `static-ok` items, one PR a day (LOOP.md).
+  `/api/health` 503 since 2026-10-31 (day 24 on 11-23). Supabase's restore window
+  for a paused free project is about 90 days (~late January 2027).
 - blocked: Magnus — rest of SETUP Part A (Google OAuth "In production", Resend
   SMTP in Supabase, Vercel env vars incl. `CRON_SECRET` and
   `SUPABASE_SERVICE_ROLE_KEY`). Without them sign-up emails, letters, and
   notifications don't send.
 - 🔴 Magnus posts `ops/outreach/posts.md`, after the two items above (see digest).
-Item 1 is `static-ok` (public pages, no backend), so build ticks have work
-while it's down. Once `/api/health` is 200, build ticks take items in order as usual.
 
-1. ⚖️ `static-ok` More guide pages, answering questions tenants actually search
-   ("security deposit interest CT": only once the interest rate is verified text;
-   until then there's little to say). One page per PR. Then New Haven, Hartford, Bridgeport,
-   Stamford pages, only where there's something specific to say. Only verified
-   statute text.
-2. ⚖️ Case-page Letter 2 strategy bullet names "fee shifting" as a next step
-   (`src/app/dashboard/case/[id]/_components.tsx` ~line 647). Not in the verified
-   statute text; drop it or source it. Tenant-flow page, so not `static-ok`: take it
-   once the backend is up.
+Before the first real letter goes out, the letters must not state a wrong fact in
+the tenant's name. Items 1 and 2 fix the two places where they can. Both are
+`test-ok` (LOOP.md): no backend needed, so build ticks take them while it's down,
+one PR a day.
+
+1. ⚖️ `test-ok` **Letter 1 can state a wrong deadline date.** It tells the landlord
+   "That deadline was <date>, and it has passed", and the date is the stored
+   `statutory_deadline` (move-out + 21). It ignores the "15 days after the
+   forwarding address" branch that the same paragraph recites. Example: move-out
+   6/1, landlord gets the forwarding address 6/15, real deadline 6/30. A tenant who
+   starts on 6/25 passes triage (`deadline_passed` reads the stored date), and
+   Letter 1 says 6/22 "has passed". Fix without a migration, in slices:
+   a. Pure: `letterDeadline(caseRow, forwardingNoticeDate | null)` reusing
+      `computeDepositDeadline()`. Tests for both branches and the crossover.
+   b. Record the date the landlord got the forwarding address in writing (or "not
+      given / don't know") as a tenant-visible system message with
+      `dispatch_metadata.attestation = "forwarding_notice"`, the same pattern as the
+      residential answer. `prepareLetterDispatch` blocks Letter 1 until it's
+      answered. Letter 1 uses the computed date; triage's `deadline_passed` uses
+      it too, so Letter 1 can't go out before the real deadline. If the answer is
+      "don't know", the letter doesn't state a specific date as passed. It recites
+      the rule and the 21-day date as the earliest the deadline could be (wording
+      from verified text only; flag it in the PR).
+   c. The approval-panel question (a small change to the existing panel, like the
+      residential confirm). The stored `statutory_deadline` column stays as-is
+      until the migration in Next.
+2. ⚖️ `test-ok` **The case page misdescribes the letters.** `tenantLetterTactics()`
+   (`src/app/dashboard/case/[id]/_components.tsx` ~line 634) says Letter 1 sets a
+   "14-day reply window" (the letter says 10 business days), "silence converts into
+   the next round automatically" (every letter needs the tenant's approval),
+   "document the deadline they already missed", Letter 2 names "fee shifting" (not
+   in the letter or the verified text), and Letter 3 promises "the court summons"
+   (Tribune doesn't file anything). Rewrite the bullets to say only what each
+   template actually says, in Tribune's voice, as information. Move them to a lib
+   module with a test that every number and claim in them appears in that letter's
+   template. This replaces the old "fee shifting" item.
+3. Guide pages (old Now #1): **done for now.** Five guides, the calculator, and the
+   `/guides` index cover the verified § 47a-21(d) text. An interest guide waits on
+   a verified interest rate. City pages wait on something city-specific to say.
+   Don't add more topic pages from the same text.
 
 ## Spec — tenant approve-and-send
 
@@ -76,9 +104,16 @@ while it's down. Once `/api/health` is 200, build ticks take items in order as u
   `current_letter_number`, amounts). Narrow it — a column-limited policy or a
   trigger — so tenant writes go only through the server actions. Needs a
   migration (see the migration note below).
-- ⚖️ Capture the forwarding-address date and correct the deadline math. Needs an
-  additive migration — blocked: cloud ticks can't apply migrations. Write it, and an
-  interactive session applies it.
+- ⚖️ Store the forwarding-address date in a column and correct the stored
+  `statutory_deadline` (after Now #1, which fixes the letter without a migration).
+  Needs an additive migration — blocked: cloud ticks can't apply migrations. Write
+  it, and an interactive session applies it.
+- ⚖️ Letter 3 says "I will not write again. The next document you receive from this
+  matter will be a summons." The tenant signs that. It holds only if the tenant
+  actually files, and Tribune doesn't file. #4 removed the "no further demand"
+  wording from Letters 2 and 3, but this line stayed. Decide whether to soften it to
+  the letter's own "I intend to file". Flag the wording choice in the PR. No
+  verified text covers it.
 - Weekly metrics — blocked: read-only role (SETUP Part B).
 - Staging + Playwright E2E — blocked: staging project (SETUP Part B).
 
@@ -94,6 +129,11 @@ while it's down. Once `/api/health` is 200, build ticks take items in order as u
 
 ## Done
 
+- 2026-11-23 — Review: the guide-pages item is closed (five guides, the calculator,
+  and the index cover the verified (d) text). Letter 1's deadline defect and the
+  case-page tactics bullets are queued as `test-ok` Now #1–2; Letter 3's
+  "summons" line is in Next. LOOP.md now allows `test-ok` items while the backend
+  is down.
 - 2026-11-21 — `/guides` index (`static-ok`): one page listing all five guides and
   the deadline calculator, each with a one-line note on which part of § 47a-21(d)
   it reads (no legal claims of its own; list lives in `src/lib/guides.ts`). In

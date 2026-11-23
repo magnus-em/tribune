@@ -41,8 +41,10 @@ one PR a day.
    6/1, landlord gets the forwarding address 6/15, real deadline 6/30. A tenant who
    starts on 6/25 passes triage (`deadline_passed` reads the stored date), and
    Letter 1 says 6/22 "has passed". Fix without a migration, in slices:
-   a. Pure: `letterDeadline(caseRow, forwardingNoticeDate | null)` reusing
-      `computeDepositDeadline()`. Tests for both branches and the crossover.
+   a. ~~Pure: `letterDeadline(caseRow, forwardingNoticeDate | null)` reusing
+      `computeDepositDeadline()`. Tests for both branches and the crossover.~~
+      Done 2026-11-23 (`src/lib/letters/deadline.ts`, plus
+      `letterDeadlinePassed()`). Not wired in yet; slice b does that.
    b. Record the date the landlord got the forwarding address in writing (or "not
       given / don't know") as a tenant-visible system message with
       `dispatch_metadata.attestation = "forwarding_notice"`, the same pattern as the
@@ -129,6 +131,14 @@ one PR a day.
 
 ## Done
 
+- 2026-11-23 — ⚖️ Now #1a (`test-ok`): pure `letterDeadline(caseRow,
+  forwardingNoticeDate | null)` in `src/lib/letters/deadline.ts` maps a case onto
+  `computeDepositDeadline()` (later of move-out + 21 and notice + 15; null date →
+  move-out + 21 flagged `forwarding_unknown`). `letterDeadlinePassed()` returns
+  true/false, or null when only the earliest possible date has passed, so a letter
+  can't call an unknown deadline passed. 9 tests (the BACKLOG 6/1 → 6/30 example,
+  early notice, crossover, unknown, invalid dates). Nothing calls it yet; Letter 1
+  and triage switch in slice b.
 - 2026-11-23 — Review: the guide-pages item is closed (five guides, the calculator,
   and the index cover the verified (d) text). Letter 1's deadline defect and the
   case-page tactics bullets are queued as `test-ok` Now #1–2; Letter 3's

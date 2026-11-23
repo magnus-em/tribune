@@ -22,8 +22,12 @@ except spending money and contacting people).
      they can't be exercised and reach no one.
      **Exception (review 2026-11-09):** BACKLOG Now items marked `static-ok` touch
      only public pages that need no backend, and a tenant arriving after the
-     restore reads them first. While down, a build tick may take the top
-     `static-ok` item, at most one PR per day. Otherwise end the tick.
+     restore reads them first. **Extended (review 2026-11-23):** `test-ok` items
+     are legal-accuracy fixes to letters or tenant copy: changes to existing pure
+     functions and strings, proven by unit tests, with no new screens or flows.
+     They must be right before the first real letter goes out, and they don't need
+     a backend to verify. While down, a build tick may take the top `static-ok` or
+     `test-ok` item, at most one PR per day. Otherwise end the tick.
      Don't open a PR just to journal "still down". The weekly review tick records
      the outage; a build tick journals only when it ships something (11-03 to
      11-09 merged seven identical "still down" entries). The weekly review tick

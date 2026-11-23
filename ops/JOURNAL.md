@@ -3,6 +3,24 @@
 Newest first. One entry per tick. Counts only — no names, emails, addresses, or
 per-case amounts.
 
+## 2026-11-23 — review — week of 11-16: six public pages shipped; backend still down; Letter 1 deadline defect found
+- Did: Health: `/api/health` 503 (day 24); CI on `main` green on every run; no open
+  PRs to merge. The public pages (/, /guides, the guides, the calculator, /moved-out,
+  /login) return 200. Metrics: no read access, noted in METRICS.md. Closed the
+  guide-pages item (the verified text is covered). Read the letter templates against
+  the tenant flow and found that Letter 1 states the stored move-out + 21 date "has
+  passed". The stored date ignores the forwarding-address branch, and triage gates
+  on the same date. That's now Now #1. The case page's letter "tactics" bullets
+  contradict the templates; that's Now #2. Both are `test-ok`, a new LOOP.md class
+  (legal-accuracy fixes provable by unit tests) that build ticks may take while the
+  backend is down. Letter 3's "summons" line is in Next to be decided. PLAN §1
+  updated. Digest at the top of ESCALATIONS.md; E-006 carried forward. Notified
+  Magnus.
+- Learned: the "known gap" in the stored deadline wasn't only a missed reminder. It
+  puts a possibly false date into Letter 1 in the tenant's name, and it lets Letter
+  1 go out before the real deadline. No reply from Magnus to four digests.
+- Next: build ticks take Now #1a (pure `letterDeadline`), one `test-ok` PR a day.
+
 ## 2026-11-21 — build — `/guides` index (static-ok, backend down)
 - Did: `/api/health` 503 (day 22); CI on `main` green; no open PRs. Took BACKLOG Now
   #1 under the one-`static-ok`-PR-a-day rule, as a hub page rather than a new topic:

@@ -37,25 +37,27 @@ This file is the agent's north star. Every loop tick reads it first.
 
 ---
 
-## 1. Where things stand (verified 2026-11-16)
+## 1. Where things stand (verified 2026-11-23)
 
 | Area | State |
 |---|---|
-| Prod | **Backend down since 2026-10-31** (still 503 on 11-16, day 17). Supabase's restore window for a paused free project is ~90 days (~late January 2027). The Supabase project is paused; `/api/health` returns 503 (`auth` and `db` false). Nobody can sign in or start a case. Only Magnus can restore it (SETUP Part A, first item). The static homepage still loads. |
-| Product | Built end to end on `main` but not yet deployed or exercised on a real case: intake with residential question, auto-triage, tenant approve-and-send for Letters 1–3, follow-up cron and reminder, landlord-reply panel, admin exception queue, `/moved-out`, the CT law guide, the `/tools/deposit-deadline` calculator, SEO basics, daily `/api/health` keep-alive. The public pages (landing, guide, calculator, `/moved-out`) are live and return 200 (checked 11-16); deploys still work. |
+| Prod | **Backend down since 2026-10-31** (still 503 on 11-23, day 24). Supabase's restore window for a paused free project is ~90 days (~late January 2027). The Supabase project is paused; `/api/health` returns 503 (`auth` and `db` false). Nobody can sign in or start a case. Only Magnus can restore it (SETUP Part A, first item). The static homepage still loads. |
+| Product | Built end to end on `main` but not yet deployed or exercised on a real case: intake with residential question, auto-triage, tenant approve-and-send for Letters 1–3, follow-up cron and reminder, landlord-reply panel, admin exception queue, `/moved-out`, five CT deposit guides and a `/guides` index, the `/tools/deposit-deadline` calculator, SEO basics, daily `/api/health` keep-alive. The public pages are live and return 200 (checked 11-23); deploys still work. **Known letter defect:** Letter 1 can state a wrong deadline date as passed (it ignores the forwarding-address branch). BACKLOG Now #1 fixes it before the first real letter. |
 | Inbound email | `reply.usetribune.org` MX → Resend inbound. **Unverified:** Resend webhook and `RESEND_WEBHOOK_SECRET` in Vercel. |
 | Prod env vars | **Unknown.** SETUP Part A not done (Resend, `CRON_SECRET`, `SUPABASE_SERVICE_ROLE_KEY`, Google OAuth publishing, Supabase SMTP). |
 | Real usage | **Unknown.** No read-only role yet; with the backend paused there is none. |
 | Acquisition | Outreach drafts in `ops/outreach/posts.md`; not posted. No tenants have been invited. |
 | Code health | CI (`check`: lint, typecheck, unit, build) green on `main`. No E2E, no staging. |
-| Legal | LEGAL_REVIEW + UPL_POSTURE written. No attorney review, by founder decision (2026-10-30). |
+| Legal | LEGAL_REVIEW + UPL_POSTURE written. No attorney review, by founder decision (2026-10-30). The public pages now restate only verified § 47a-21(d) text. Two tenant-flow gaps are queued as `test-ok` (BACKLOG Now #1–2). |
 
 **What blocks the first paid recovery, in order:** (1) restore the Supabase
 project; (2) the rest of SETUP Part A so sign-up, letters, and notifications
-actually send; (3) tenants: Magnus posts the drafted outreach. Code is not the
-bottleneck. Unchanged 11-02 → 11-16: no setup item done, E-006 unanswered, no reply to
-three digests. While down, the loop ships only public pages that need no backend
-(LOOP.md, `static-ok`); two such items are queued in BACKLOG Now.
+actually send; (3) tenants: Magnus posts the drafted outreach. Unchanged
+11-02 → 11-23: no setup item done, E-006 unanswered, no reply to four digests.
+Code isn't the bottleneck, but one code item must land before the first letter:
+Letter 1's deadline date (BACKLOG Now #1). The public-page work is done. While
+the backend is down the loop takes `test-ok` legal-accuracy fixes, one PR a day
+(LOOP.md).
 
 ---
 

@@ -5,6 +5,7 @@ import { parseDateOnly } from "@/lib/utils/case";
 import { MAX_LETTER_NUMBER, MIN_LETTER_NUMBER } from "@/lib/constants";
 import { generateDemandLetter, type LetterData } from "./templates";
 import { followUpBlockMessage, followUpOffer, replyFollowUpOffer } from "./follow-up";
+import { caseLetterDeadline, forwardingNoticeAnswer, type ForwardingNoticeAnswer } from "./deadline";
 
 /**
  * Tenant approve-and-send — the pure half.
@@ -36,6 +37,7 @@ export type DispatchBlockReason =
   | "status"
   | "no_landlord_email"
   | "no_forwarding_address"
+  | "forwarding_notice"
   | "triage"
   | "cooldown";
 
@@ -94,14 +96,22 @@ export function isDispatchPaused(value: string | undefined): boolean {
 /**
  * The same LetterData the admin page builds, from the case row and profile.
  * The tenant's forwarding address is where the landlord is told to send payment.
+ *
+ * Legal content. The deadline a letter states is `caseLetterDeadline()`, from
+ * the tenant's forwarding-notice answer, not the stored `statutory_deadline`
+ * (move-out + 21 only). With no notice date (or no answer), the letter recites
+ * the 21-day date as the earliest the deadline could be and doesn't call it a
+ * passed deadline.
  */
 export function buildLetterData(
   caseRow: LetterCase,
   profile: LetterProfile,
   landlordResponded: boolean,
+  forwardingNotice: ForwardingNoticeAnswer | null,
   now: Date = new Date()
 ): LetterData {
-  const deadline = parseDateOnly(caseRow.statutory_deadline);
+  const d = caseLetterDeadline(caseRow, forwardingNotice);
+  const deadline = parseDateOnly(d.deadline);
   return {
     tenantName: profile.full_name,
     tenantAddress: caseRow.forwarding_address ?? "",
@@ -117,7 +127,8 @@ export function buildLetterData(
     depositAmountCents: caseRow.deposit_amount_cents,
     amountWithheldCents: caseRow.amount_withheld_cents,
     depositReturnedCents: caseRow.deposit_returned_cents,
-    statutoryDeadline: caseRow.statutory_deadline,
+    statutoryDeadline: d.deadline,
+    deadlineIsEarliestPossible: d.forwarding_unknown,
     daysOverdue: Math.max(0, differenceInDays(now, deadline)),
     itemizedDeductionsReceived: caseRow.itemized_deductions_received,
     landlordResponded,
@@ -213,6 +224,14 @@ export function prepareLetterDispatch(input: DispatchInput): DispatchPlan {
     return block("no_forwarding_address", "Tribune needs your forwarding address to send this letter.");
   }
 
+  // Letters state the § 47a-21(d) deadline, which turns on when the landlord
+  // received the forwarding address in writing. No letter is prepared until
+  // the tenant has answered that question.
+  const forwardingNotice = forwardingNoticeAnswer(input.messages);
+  if (forwardingNotice === null) {
+    return block("forwarding_notice", FORWARDING_NOTICE_NEED_MESSAGE);
+  }
+
   const triage = triageCase(
     {
       property_address: caseRow.property_address,
@@ -222,6 +241,7 @@ export function prepareLetterDispatch(input: DispatchInput): DispatchPlan {
       statutory_deadline: caseRow.statutory_deadline,
       has_lease: input.hasLease,
       residential: residentialAnswer(input.messages),
+      forwarding_notice: forwardingNotice,
     },
     now
   );
@@ -246,7 +266,7 @@ export function prepareLetterDispatch(input: DispatchInput): DispatchPlan {
   );
   const body = generateDemandLetter(
     letterNumber,
-    buildLetterData(caseRow, input.profile, landlordResponded, now),
+    buildLetterData(caseRow, input.profile, landlordResponded, forwardingNotice, now),
     previousLetterDates
   );
   return { ok: true, title: letterTitle(letterNumber, caseRow.property_address), body };
@@ -285,6 +305,9 @@ export function nextLetterToOffer(
 // What the tenant checks to record the residential answer on the case page.
 export const RESIDENTIAL_STATEMENT =
   "I rented this property as my home. It was not an office, store, or other business space.";
+
+export const FORWARDING_NOTICE_NEED_MESSAGE =
+  "Under Connecticut law the deadline to return a security deposit can depend on when the landlord received your forwarding address in writing. Tell Tribune that date, or that you didn't give it in writing or don't know, before your letter can be prepared.";
 
 export const RESIDENTIAL_NEED_MESSAGE =
   "Tribune serves residential tenants only. Confirm that you rented this property as your home before your letter can be prepared.";

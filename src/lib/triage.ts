@@ -2,6 +2,7 @@ import { differenceInCalendarDays, startOfDay } from "date-fns";
 import type { Case, CaseMessage } from "@/lib/types/database";
 import type { Json } from "@/lib/types/supabase";
 import { parseDateOnly } from "@/lib/utils/case";
+import { caseLetterDeadline, type ForwardingNoticeAnswer } from "@/lib/letters/deadline";
 
 /**
  * Intake triage — a pure, deterministic read of a case's facts.
@@ -13,10 +14,12 @@ import { parseDateOnly } from "@/lib/utils/case";
  * (property clearly outside Connecticut, or the tenant said the tenancy wasn't
  * residential). Anything uncertain is `review`.
  *
- * This does NOT compute the statutory deadline. It compares the stored
- * `statutory_deadline` to today. The forwarding-address branch of § 47a-21
- * (15 days after the landlord receives it, if later) isn't captured yet, so a
- * stored deadline can be earlier than the real one (BACKLOG: forwarding-address date).
+ * `deadline_passed` compares today to `caseLetterDeadline()`: the § 47a-21(d)
+ * deadline from the tenant's forwarding-notice answer ("fifteen days after
+ * receiving written notification of such tenant's forwarding address,
+ * whichever is later"), never earlier than the stored `statutory_deadline`.
+ * With no answer on record the check is `unknown`, so the case goes to review
+ * and no letter goes out before the tenant answers.
  */
 
 export type TriageVerdict = "accept" | "decline" | "review";
@@ -57,6 +60,12 @@ export type TriageInput = Pick<
    * before intake asked, or the record failed to save).
    */
   residential: boolean | null;
+  /**
+   * The tenant's answer to "when did the landlord receive your forwarding
+   * address in writing?", from `forwardingNoticeAnswer()`. null when none is
+   * on record.
+   */
+  forwarding_notice: ForwardingNoticeAnswer | null;
 };
 
 /**
@@ -172,14 +181,27 @@ export function triageCase(input: TriageInput, today: Date = new Date()): Triage
     detail: withheld ? "Part of the deposit is withheld" : "Nothing withheld",
   });
 
-  const deadlinePassed = differenceInCalendarDays(day, parseDateOnly(input.statutory_deadline)) > 0;
-  checks.push({
-    id: "deadline_passed",
-    status: deadlinePassed ? "pass" : "fail",
-    detail: deadlinePassed
-      ? "Stored statutory deadline has passed"
-      : "Stored statutory deadline hasn't passed yet",
-  });
+  if (input.forwarding_notice === null) {
+    checks.push({
+      id: "deadline_passed",
+      status: "unknown",
+      detail: "No answer on record for when the landlord received the forwarding address",
+    });
+  } else {
+    const d = caseLetterDeadline(input, input.forwarding_notice);
+    const deadlinePassed = differenceInCalendarDays(day, parseDateOnly(d.deadline)) > 0;
+    checks.push({
+      id: "deadline_passed",
+      status: deadlinePassed ? "pass" : "fail",
+      detail: d.forwarding_unknown
+        ? deadlinePassed
+          ? `21 days after move-out (${d.deadline}) has passed; forwarding-address date not known, so the deadline may be later`
+          : `21 days after move-out (${d.deadline}) hasn't passed yet`
+        : deadlinePassed
+          ? `Statutory deadline (${d.deadline}) has passed`
+          : `Statutory deadline (${d.deadline}) hasn't passed yet`,
+    });
+  }
 
   checks.push({
     id: "lease_on_file",

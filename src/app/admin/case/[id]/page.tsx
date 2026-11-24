@@ -92,6 +92,7 @@ import {
   type LetterData,
 } from "@/lib/letters/templates";
 import { buildLetterData as buildCaseLetterData } from "@/lib/letters/approve-and-send";
+import { forwardingNoticeAnswer } from "@/lib/letters/deadline";
 
 // ─── Admin Event Card ─────────────────────────────────────────────────────────
 
@@ -386,6 +387,7 @@ function TriagePanel({
     ...caseData,
     has_lease: hasLease,
     residential: residentialAnswer(messages),
+    forwarding_notice: forwardingNoticeAnswer(messages),
   });
 
   return (
@@ -566,7 +568,8 @@ function AdminWritePanel({
     return buildCaseLetterData(
       caseData,
       profile,
-      messages.some((m) => m.message_type === "landlord_reply" || m.message_type === "tenant_landlord_reply")
+      messages.some((m) => m.message_type === "landlord_reply" || m.message_type === "tenant_landlord_reply"),
+      forwardingNoticeAnswer(messages)
     );
   }
 

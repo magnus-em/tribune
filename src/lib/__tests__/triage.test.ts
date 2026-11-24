@@ -18,6 +18,7 @@ const base: TriageInput = {
   statutory_deadline: '2026-09-21',
   has_lease: true,
   residential: true,
+  forwarding_notice: { answer: 'date', notice_date: '2026-08-31' },
 };
 
 const status = (input: TriageInput, id: TriageCheckId) =>
@@ -193,4 +194,42 @@ describe('residentialAnswer', () => {
   ])('ignores %s', (_label, m) => {
     expect(residentialAnswer([m])).toBeNull();
   });
+});
+
+describe('triageCase — forwarding-notice branch of § 47a-21(d)', () => {
+  // BACKLOG Now #1: move-out 6/1, landlord got the forwarding address 6/15,
+  // real deadline 6/30; the stored date is 6/22.
+  const june = {
+    ...base,
+    move_out_date: '2026-06-01',
+    statutory_deadline: '2026-06-22',
+  };
+  const on = (y: number, m: number, d: number) => new Date(y, m - 1, d);
+  const deadlineStatus = (input: TriageInput, day: Date) =>
+    triageCase(input, day).checks.find((c) => c.id === 'deadline_passed')?.status;
+
+  test('no answer on record: the deadline check is unknown and the case goes to review', () => {
+    const input = { ...june, forwarding_notice: null };
+    expect(deadlineStatus(input, on(2026, 7, 15))).toBe('unknown');
+    expect(triageCase(input, on(2026, 7, 15)).verdict).toBe('review');
+  });
+
+  test('a late notice keeps the case out until the real deadline has passed', () => {
+    const input = { ...june, forwarding_notice: { answer: 'date', notice_date: '2026-06-15' } } as const;
+    expect(deadlineStatus(input, on(2026, 6, 25))).toBe('fail');
+    expect(deadlineStatus(input, on(2026, 6, 30))).toBe('fail');
+    expect(deadlineStatus(input, on(2026, 7, 1))).toBe('pass');
+  });
+
+  test.each(['unknown', 'not_given'] as const)(
+    '"%s" passes once move-out + 21 has passed, and says the deadline may be later',
+    (answer) => {
+      const input = { ...june, forwarding_notice: { answer, notice_date: null } };
+      expect(deadlineStatus(input, on(2026, 6, 22))).toBe('fail');
+      expect(deadlineStatus(input, on(2026, 6, 23))).toBe('pass');
+      expect(triageCase(input, on(2026, 6, 23)).checks.find((c) => c.id === 'deadline_passed')?.detail).toMatch(
+        /may be later/
+      );
+    }
+  );
 });

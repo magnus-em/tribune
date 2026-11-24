@@ -9,6 +9,7 @@ import {
 } from '../approve-and-send';
 import { generateLetter1 } from '../templates';
 import { residentialAttestationMetadata } from '../../triage';
+import { forwardingNoticeAttestationMetadata } from '../deadline';
 
 // Local-time "now" so date-only comparisons don't depend on the runner's TZ.
 const now = new Date(2026, 9, 31, 12); // 2026-10-31 noon
@@ -42,10 +43,22 @@ const residential = {
   created_at: '2026-09-01T12:00:00.000Z',
 };
 
+// The tenant's answer to when the landlord received the forwarding address in
+// writing. With none on record no letter is prepared, so every eligible
+// fixture carries it. Notice on move-out day: the deadline stays move-out + 21.
+const forwardingNotice = {
+  message_type: 'system' as const,
+  dispatch_metadata: forwardingNoticeAttestationMetadata(
+    { answer: 'date', notice_date: '2026-08-31' },
+    '2026-09-01T12:00:00.000Z'
+  ),
+  created_at: '2026-09-01T12:00:00.000Z',
+};
+
 const base: DispatchInput = {
   caseRow,
   profile: { full_name: 'Sam Tenant', email: 'tenant@example.com', phone: null },
-  messages: [residential],
+  messages: [residential, forwardingNotice],
   actions: [],
   hasLease: true,
   letterNumber: 1,
@@ -143,7 +156,7 @@ describe('prepareLetterDispatch — kill switch', () => {
 describe('prepareLetterDispatch — rate limit', () => {
   test(`a dispatch within ${DISPATCH_COOLDOWN_DAYS} days blocks the send (letter message)`, () => {
     const messages = [{ message_type: 'tribune_letter' as const, dispatch_metadata: { sent_at: daysAgo(4.9) }, created_at: daysAgo(4.9) }];
-    expect(reason({ ...base, messages: [residential, ...messages] })).toBe('cooldown');
+    expect(reason({ ...base, messages: [residential, forwardingNotice, ...messages] })).toBe('cooldown');
   });
 
   test(`a dispatch within ${DISPATCH_COOLDOWN_DAYS} days blocks the send (audit log)`, () => {
@@ -165,7 +178,7 @@ describe('prepareLetterDispatch — rate limit', () => {
     const messages = [{ message_type: 'tribune_letter' as const, dispatch_metadata: null, created_at: daysAgo(1) }];
     const actions = [{ action_type: 'resolution_reported' as const, metadata: { sent_at: daysAgo(1) }, created_at: daysAgo(1) }];
     expect(lastDispatchAt(messages, actions)).toBeNull();
-    expect(reason({ ...base, messages: [residential, ...messages], actions })).toBe('ok');
+    expect(reason({ ...base, messages: [residential, forwardingNotice, ...messages], actions })).toBe('ok');
   });
 
   test('lastDispatchAt returns the most recent dispatch', () => {
@@ -187,7 +200,7 @@ describe('prepareLetterDispatch — server-side regeneration', () => {
   test('the body is exactly the Letter 1 template built from the case row', () => {
     const plan = prepareLetterDispatch(base);
     if (!plan.ok) throw new Error(plan.reason);
-    expect(plan.body).toBe(generateLetter1(buildLetterData(caseRow, base.profile, false, now)));
+    expect(plan.body).toBe(generateLetter1(buildLetterData(caseRow, base.profile, false, { answer: 'date', notice_date: '2026-08-31' }, now)));
     expect(plan.title).toBe('Demand Letter 1 — 789 Elm Ave, New Haven, CT 06511');
   });
 
@@ -262,7 +275,7 @@ describe('prepareLetterDispatch — Letters 2 and 3 follow the follow-up schedul
 
   test('only a pure wait carries availableOn', () => {
     const messages = [{ message_type: 'landlord_reply' as const, dispatch_metadata: null, created_at: '2026-10-05T12:00:00.000Z' }];
-    const replied = prepareLetterDispatch({ ...awaiting(1, 2), messages: [residential, ...messages] });
+    const replied = prepareLetterDispatch({ ...awaiting(1, 2), messages: [residential, forwardingNotice, ...messages] });
     expect(replied.ok).toBe(false);
     if (!replied.ok) expect(replied.availableOn).toBeUndefined();
     const ready = prepareLetterDispatch(awaiting(1, 2));
@@ -271,7 +284,7 @@ describe('prepareLetterDispatch — Letters 2 and 3 follow the follow-up schedul
 
   test('a landlord reply since the last letter stops the offer', () => {
     const messages = [{ message_type: 'landlord_reply' as const, dispatch_metadata: null, created_at: '2026-10-05T12:00:00.000Z' }];
-    expect(reason({ ...awaiting(1, 2), messages: [residential, ...messages] })).toBe('letter_not_offered');
+    expect(reason({ ...awaiting(1, 2), messages: [residential, forwardingNotice, ...messages] })).toBe('letter_not_offered');
   });
 
   test('a reported recovery stops the offer', () => {
@@ -314,7 +327,7 @@ describe('prepareLetterDispatch — the next letter after a landlord reply', () 
     ...withCase({ status: 'landlord_responded', current_letter_number }),
     letterNumber,
     actions,
-    messages: [residential, ...messages],
+    messages: [residential, forwardingNotice, ...messages],
   });
 
   test('Letter 2 is offered after a reply, without the 10-business-day wait', () => {
@@ -373,7 +386,7 @@ describe('prepareLetterDispatch — the next letter after a landlord reply', () 
 
 describe('prepareLetterDispatch — residential tenancy', () => {
   test('no residential answer on record blocks the send (triage review)', () => {
-    expect(reason({ ...base, messages: [] })).toBe('triage');
+    expect(reason({ ...base, messages: [forwardingNotice] })).toBe('triage');
   });
 
   test('a recorded "not residential" answer blocks the send', () => {
@@ -382,10 +395,65 @@ describe('prepareLetterDispatch — residential tenancy', () => {
       dispatch_metadata: residentialAttestationMetadata(false, '2026-09-02T12:00:00.000Z'),
       created_at: '2026-09-02T12:00:00.000Z',
     };
-    expect(reason({ ...base, messages: [residential, notResidential] })).toBe('triage');
+    expect(reason({ ...base, messages: [residential, forwardingNotice, notResidential] })).toBe('triage');
   });
 
   test('the residential marker is not a dispatch and starts no cooldown', () => {
     expect(lastDispatchAt([residential], [])).toBeNull();
+  });
+});
+
+describe('prepareLetterDispatch — forwarding-notice answer (§ 47a-21(d) deadline)', () => {
+  beforeAll(() => {
+    jest.useFakeTimers();
+    jest.setSystemTime(now);
+  });
+  afterAll(() => jest.useRealTimers());
+
+  const answered = (answer: Parameters<typeof forwardingNoticeAttestationMetadata>[0]) => ({
+    message_type: 'system' as const,
+    dispatch_metadata: forwardingNoticeAttestationMetadata(answer, '2026-09-02T12:00:00.000Z'),
+    created_at: '2026-09-02T12:00:00.000Z',
+  });
+
+  test('no answer on record blocks every letter before triage', () => {
+    expect(reason({ ...base, messages: [residential] })).toBe('forwarding_notice');
+  });
+
+  test('the block message asks for the date and offers "not in writing / don\'t know"', () => {
+    const plan = prepareLetterDispatch({ ...base, messages: [residential] });
+    expect(plan.ok).toBe(false);
+    if (!plan.ok) {
+      expect(plan.message).toMatch(/forwarding address in writing/);
+      expect(plan.message).toMatch(/don't know/);
+      expect(plan.message).toMatch(/Tribune/);
+    }
+  });
+
+  test('BACKLOG example: a late notice keeps Letter 1 from going out before the real deadline', () => {
+    // move-out 10/1 → stored 10/22; notice received 10/20 → real deadline 11/4.
+    const row = { move_out_date: '2026-10-01', lease_end_date: '2026-10-01', statutory_deadline: '2026-10-22' };
+    const late = answered({ answer: 'date', notice_date: '2026-10-20' });
+    expect(reason({ ...withCase(row), messages: [residential, late] })).toBe('triage');
+    const after = { ...withCase(row), messages: [residential, late], now: new Date(2026, 10, 5, 12) };
+    const plan = prepareLetterDispatch(after);
+    if (!plan.ok) throw new Error(plan.reason);
+    expect(plan.body).toContain('That deadline was November 4, 2026, and it has passed.');
+    expect(plan.body).not.toContain('October 22, 2026');
+  });
+
+  test.each(['unknown', 'not_given'] as const)(
+    '"%s": Letter 1 recites the 21-day date as the earliest possible deadline',
+    (answer) => {
+      const plan = prepareLetterDispatch({ ...base, messages: [residential, answered({ answer, notice_date: null })] });
+      if (!plan.ok) throw new Error(plan.reason);
+      expect(plan.body).toContain('Twenty-one (21) days after the termination of the tenancy was September 21, 2026.');
+      expect(plan.body).toContain('That is the earliest the deadline could have been');
+      expect(plan.body).not.toContain('and it has passed');
+    }
+  );
+
+  test('the forwarding-notice marker is not a dispatch and starts no cooldown', () => {
+    expect(lastDispatchAt([forwardingNotice], [])).toBeNull();
   });
 });

@@ -3,6 +3,25 @@
 Newest first. One entry per tick. Counts only — no names, emails, addresses, or
 per-case amounts.
 
+## 2026-11-24 — build — Now #1b: letters and triage use the forwarding-notice deadline (test-ok, backend down)
+- Did: `/api/health` 503 (day 25); CI on `main` green; no open PRs. Took BACKLOG
+  Now #1b under the one-`test-ok`-PR-a-day rule, sized to the pure half. Added
+  the forwarding-notice attestation (metadata builder + reader) and
+  `caseLetterDeadline()` in `src/lib/letters/deadline.ts`. Letters 1–3 and
+  triage now use the computed deadline. With no notice date the letters recite
+  the 21-day date as the earliest possible deadline, using only the verified
+  (d) wording. `prepareLetterDispatch` blocks with `forwarding_notice` until
+  answered. Admin page passes the answer too. 30 new tests; lint, tsc, 548
+  tests, build pass. No UI change, so no browser check.
+- Learned: Letters 2 and 3 also stated the stored date ("closed on", "has
+  passed"), not just Letter 1. All three are fixed. "Not given in writing" is
+  treated like "don't know" (no forwarding branch date). The verified text
+  doesn't say what happens to the 15-day branch when no written notice was
+  given, so the letters don't claim the deadline either way. Flagged in the PR.
+- Next: Now #1c, the tenant's question on the case page. Until it lands, no
+  letter can be prepared. Legal change for the digest: Letters 1–3 deadline
+  wording and triage's deadline check.
+
 ## 2026-11-23 — build — Now #1a: pure `letterDeadline()` (test-ok, backend down)
 - Did: `/api/health` 503 (day 24); CI on `main` green; no open PRs. Took BACKLOG Now
   #1a under the one-`test-ok`-PR-a-day rule. Added `letterDeadline()` and

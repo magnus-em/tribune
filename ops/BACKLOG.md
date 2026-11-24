@@ -45,18 +45,20 @@ one PR a day.
       `computeDepositDeadline()`. Tests for both branches and the crossover.~~
       Done 2026-11-23 (`src/lib/letters/deadline.ts`, plus
       `letterDeadlinePassed()`). Not wired in yet; slice b does that.
-   b. Record the date the landlord got the forwarding address in writing (or "not
-      given / don't know") as a tenant-visible system message with
-      `dispatch_metadata.attestation = "forwarding_notice"`, the same pattern as the
-      residential answer. `prepareLetterDispatch` blocks Letter 1 until it's
-      answered. Letter 1 uses the computed date; triage's `deadline_passed` uses
-      it too, so Letter 1 can't go out before the real deadline. If the answer is
-      "don't know", the letter doesn't state a specific date as passed. It recites
-      the rule and the 21-day date as the earliest the deadline could be (wording
-      from verified text only; flag it in the PR).
-   c. The approval-panel question (a small change to the existing panel, like the
-      residential confirm). The stored `statutory_deadline` column stays as-is
-      until the migration in Next.
+   b. ~~Record/read the forwarding-notice answer; letters and triage use the
+      computed date; `prepareLetterDispatch` blocks until answered.~~ Done
+      2026-11-24 (pure half; see Done). **Until c lands, no letter can be
+      prepared** (the block has no tenant-side way to clear it yet).
+   c. The tenant answers on the case page: a server action that writes the
+      system message with `forwardingNoticeAttestationMetadata()` (same pattern
+      as `confirmResidential`), and an `approvalPanelState` need for the
+      `forwarding_notice` block reason (date picker, "I didn't give it in
+      writing", "I don't know"; message `FORWARDING_NOTICE_NEED_MESSAGE`). A
+      small change to the existing panel, like the residential confirm. The
+      stored `statutory_deadline` column stays as-is until the migration in
+      Next. Also: the tenant timeline (`case-timeline.tsx`) and the
+      case-submitted email still show the stored move-out + 21 date as "the
+      deadline"; relabel them in the same slice or the next.
 2. ⚖️ `test-ok` **The case page misdescribes the letters.** `tenantLetterTactics()`
    (`src/app/dashboard/case/[id]/_components.tsx` ~line 634) says Letter 1 sets a
    "14-day reply window" (the letter says 10 business days), "silence converts into
@@ -131,6 +133,16 @@ one PR a day.
 
 ## Done
 
+- 2026-11-24 — ⚖️ Now #1b (`test-ok`): the tenant's forwarding-notice answer
+  (`date` / `not_given` / `unknown`) is stored as a system message
+  (`dispatch_metadata.attestation = "forwarding_notice"`) and read by
+  `forwardingNoticeAnswer()`. `caseLetterDeadline()` = `letterDeadline()`,
+  never earlier than the stored column. Letters 1–3 state that date; with no
+  notice date they recite the 21-day date as the earliest possible deadline and
+  both branches with "whichever is later", and don't call it passed. Triage's
+  `deadline_passed` uses it (`unknown` → review with no answer).
+  `prepareLetterDispatch` blocks every letter with `forwarding_notice` until
+  answered. 30 new tests. The tenant can't answer yet: slice c.
 - 2026-11-23 — ⚖️ Now #1a (`test-ok`): pure `letterDeadline(caseRow,
   forwardingNoticeDate | null)` in `src/lib/letters/deadline.ts` maps a case onto
   `computeDepositDeadline()` (later of move-out + 21 and notice + 15; null date →

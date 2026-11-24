@@ -37,7 +37,12 @@ export interface LetterData {
   depositReturnedCents: number;
 
   // Dates
+  // The § 47a-21(d) deadline (see buildLetterData). When
+  // `deadlineIsEarliestPossible` is true the forwarding-notice date isn't known,
+  // so this is only the 21-day date, and the letters must not state it as a
+  // deadline that has passed.
   statutoryDeadline: string;
+  deadlineIsEarliestPossible?: boolean;
   daysOverdue: number;
 
   // Case context
@@ -87,13 +92,13 @@ RE: Security Deposit Demand — ${fullPropertyAddress}
 
 Dear ${data.landlordName}:
 
-I rented ${fullPropertyAddress} under a lease from ${formatDate(data.leaseStartDate)} to ${formatDate(data.leaseEndDate)} and vacated on ${formatDate(data.moveOutDate)}. Under Connecticut General Statutes § 47a-21(d), you were required, not later than twenty-one (21) days after the termination of the tenancy (or fifteen (15) days after receiving written notice of my forwarding address, whichever is later), to deliver either the full security deposit with accrued interest, or the balance with a written statement itemizing the nature and amount of any damages. That deadline was ${statutoryDeadlineFormatted}, and it has passed.
+I rented ${fullPropertyAddress} under a lease from ${formatDate(data.leaseStartDate)} to ${formatDate(data.leaseEndDate)} and vacated on ${formatDate(data.moveOutDate)}. Under Connecticut General Statutes § 47a-21(d), you were required, not later than twenty-one (21) days after the termination of the tenancy (or fifteen (15) days after receiving written notice of my forwarding address, whichever is later), to deliver either the full security deposit with accrued interest, or the balance with a written statement itemizing the nature and amount of any damages. ${data.deadlineIsEarliestPossible ? `Twenty-one (21) days after the termination of the tenancy was ${statutoryDeadlineFormatted}. That is the earliest the deadline could have been; if you received written notice of my forwarding address later, the deadline was fifteen (15) days after you received it.` : `That deadline was ${statutoryDeadlineFormatted}, and it has passed.`}
 
 THE FACTS:
 • Deposit paid: ${depositAmount}
 • Amount returned: ${amountReturned}
 • Amount still withheld: ${amountWithheld}
-• Statutory deadline: ${statutoryDeadlineFormatted}
+${data.deadlineIsEarliestPossible ? `• Twenty-one days after termination of the tenancy: ${statutoryDeadlineFormatted}` : `• Statutory deadline: ${statutoryDeadlineFormatted}`}
 
 ${data.itemizedDeductionsReceived ? "You provided a deduction statement, but it does not comply with the itemization requirements of § 47a-21(d). General categories such as “cleaning” or “damages,” without the specific nature and amount of each charge, do not satisfy the statute." : "You did not deliver a written statement itemizing the nature and amount of any damages, as § 47a-21(d) requires. Failing to do so within the statutory period is itself a violation of the subsection."}
 
@@ -127,6 +132,9 @@ export function generateLetter2(data: LetterData, firstLetterDate: string): stri
   const depositAmount = formatMoney(data.depositAmountCents);
   const amountWithheld = formatMoney(data.amountWithheldCents);
   const potentialDamages = formatMoney(data.depositAmountCents * 2);
+  const statutoryPeriodSentence = data.deadlineIsEarliestPossible
+    ? `Under Connecticut General Statutes § 47a-21(d), the statutory period ended twenty-one (21) days after the termination of the tenancy, on ${formatDate(data.statutoryDeadline)}, or fifteen (15) days after you received written notice of my forwarding address, whichever is later.`
+    : `The statutory period under Connecticut General Statutes § 47a-21(d) closed on ${formatDate(data.statutoryDeadline)}.`;
 
   const landlordAddressLine = data.landlordAddress
     ? `${data.landlordAddress}\n`
@@ -143,8 +151,8 @@ Dear ${data.landlordName}:
 I delivered a demand for the return of my security deposit on ${firstLetterFormatted}. ${data.landlordResponded ? "Your response did not resolve the matter, and the withheld amount remains unpaid." : "You did not respond."} I am writing again before filing.
 
 ${data.itemizedDeductionsReceived
-  ? `The statutory period under Connecticut General Statutes § 47a-21(d) closed on ${formatDate(data.statutoryDeadline)}. You did not return the withheld amount of ${amountWithheld}, and the deduction statement you provided does not meet the itemization requirements of § 47a-21(d).`
-  : `The statutory period under Connecticut General Statutes § 47a-21(d) closed on ${formatDate(data.statutoryDeadline)}. You did not return the withheld amount of ${amountWithheld}, and you did not deliver a written statement itemizing the nature and amount of any damages as the statute requires. Each omission is a violation of the subsection.`}
+  ? `${statutoryPeriodSentence} You did not return the withheld amount of ${amountWithheld}, and the deduction statement you provided does not meet the itemization requirements of § 47a-21(d).`
+  : `${statutoryPeriodSentence} You did not return the withheld amount of ${amountWithheld}, and you did not deliver a written statement itemizing the nature and amount of any damages as the statute requires. Each omission is a violation of the subsection.`}
 
 WHAT THE STATUTE PROVIDES
 • Security deposit withheld: ${amountWithheld}
@@ -201,7 +209,7 @@ This is my final notice before filing.
 I sent demand letters on ${firstLetterFormatted} and ${secondLetterFormatted}. You have not returned ${amountWithheld}.${data.landlordResponded ? "" : " You have not responded."}
 
 VIOLATION
-Under Connecticut General Statutes § 47a-21(d), you were required to return my deposit or deliver a written statement itemizing the nature and amount of any damages within the statutory period. That deadline — ${formatDate(data.statutoryDeadline)} — has passed. ${data.itemizedDeductionsReceived ? "You did not return the withheld amount, and the deduction statement you provided does not meet the itemization requirements of the statute." : "You did neither."}
+Under Connecticut General Statutes § 47a-21(d), you were required to return my deposit or deliver a written statement itemizing the nature and amount of any damages within the statutory period. ${data.deadlineIsEarliestPossible ? `That period ended twenty-one (21) days after the termination of the tenancy, on ${formatDate(data.statutoryDeadline)}, or fifteen (15) days after you received written notice of my forwarding address, whichever is later.` : `That deadline — ${formatDate(data.statutoryDeadline)} — has passed.`} ${data.itemizedDeductionsReceived ? "You did not return the withheld amount, and the deduction statement you provided does not meet the itemization requirements of the statute." : "You did neither."}
 
 NOTICE OF INTENT TO FILE
 Unless ${amountWithheld} is received within five (5) business days of the date of this letter, I intend to file in Connecticut Small Claims Court and seek:

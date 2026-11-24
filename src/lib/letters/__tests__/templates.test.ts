@@ -282,4 +282,46 @@ describe('Letter Templates', () => {
       expect(letter).toContain('Amount returned: $0.00');
     });
   });
+
+  describe('deadline with no forwarding-notice date (earliest possible only)', () => {
+    const earliest: LetterData = { ...mockLetterData, deadlineIsEarliestPossible: true };
+    const letters = () => [
+      generateLetter1(earliest),
+      generateLetter2(earliest, firstLetterDate),
+      generateLetter3(earliest, firstLetterDate, secondLetterDate),
+    ];
+
+    test('no letter states the 21-day date as a deadline that passed or closed', () => {
+      for (const letter of letters()) {
+        expect(letter).toContain('January 30, 2025');
+        expect(letter).not.toMatch(/That deadline was January 30, 2025, and it has passed/);
+        expect(letter).not.toMatch(/closed on January 30, 2025/);
+        expect(letter).not.toMatch(/That deadline — January 30, 2025 — has passed/);
+        expect(letter).not.toContain('Statutory deadline: January 30, 2025');
+      }
+    });
+
+    test('each letter recites both branches with "whichever is later"', () => {
+      for (const letter of letters()) {
+        expect(letter).toMatch(/twenty-one \(21\) days after (the )?termination of the tenancy/);
+        expect(letter).toMatch(/fifteen \(15\) days after (you )?receiv(ed|ing) written notice of my forwarding address/);
+        expect(letter).toContain('whichever is later');
+      }
+    });
+
+    test('Letter 1 calls the 21-day date the earliest the deadline could have been', () => {
+      const letter = generateLetter1(earliest);
+      expect(letter).toContain('Twenty-one (21) days after the termination of the tenancy was January 30, 2025.');
+      expect(letter).toContain('That is the earliest the deadline could have been');
+      expect(letter).toContain('• Twenty-one days after termination of the tenancy: January 30, 2025');
+    });
+
+    test('with a known deadline the letters still state it as passed', () => {
+      expect(generateLetter1(mockLetterData)).toContain('That deadline was January 30, 2025, and it has passed.');
+      expect(generateLetter2(mockLetterData, firstLetterDate)).toContain('closed on January 30, 2025.');
+      expect(generateLetter3(mockLetterData, firstLetterDate, secondLetterDate)).toContain(
+        'That deadline — January 30, 2025 — has passed.'
+      );
+    });
+  });
 });

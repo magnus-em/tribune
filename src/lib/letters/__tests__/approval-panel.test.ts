@@ -3,6 +3,7 @@ import {
   nextLetterToOffer,
   parseContactDetail,
   RESIDENTIAL_NEED_MESSAGE,
+  FORWARDING_NOTICE_NEED_MESSAGE,
   type DispatchPlan,
 } from '../approve-and-send';
 
@@ -23,6 +24,19 @@ describe('approvalPanelState', () => {
   it('asks for the forwarding address when it is missing', () => {
     const state = approvalPanelState(blocked('no_forwarding_address'), true, true);
     expect(state).toMatchObject({ kind: 'needs', need: 'forwarding_address' });
+  });
+
+  it('asks the tenant when the landlord received the forwarding address', () => {
+    expect(approvalPanelState(blocked('forwarding_notice'), true, true)).toEqual({
+      kind: 'needs',
+      need: 'forwarding_notice',
+      message: FORWARDING_NOTICE_NEED_MESSAGE,
+    });
+  });
+
+  it('the forwarding-notice message speaks as Tribune and gives no advice', () => {
+    expect(FORWARDING_NOTICE_NEED_MESSAGE).toMatch(/Tell Tribune/);
+    expect(FORWARDING_NOTICE_NEED_MESSAGE).not.toMatch(/\b(we|us|our|I|should)\b/);
   });
 
   it('asks for the lease when triage blocks and no lease is on file', () => {

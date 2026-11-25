@@ -277,7 +277,12 @@ export function prepareLetterDispatch(input: DispatchInput): DispatchPlan {
 // Blockers the tenant can clear on the case page. Everything else (status,
 // triage for reasons other than the lease or a missing residential answer, the
 // kill switch) waits on Tribune.
-export type TenantFixableNeed = "landlord_email" | "forwarding_address" | "lease" | "residential";
+export type TenantFixableNeed =
+  | "landlord_email"
+  | "forwarding_address"
+  | "lease"
+  | "residential"
+  | "forwarding_notice";
 
 export type ApprovalPanelState =
   | { kind: "ready"; title: string; body: string }
@@ -336,6 +341,8 @@ export function approvalPanelState(
       return { kind: "needs", need: "landlord_email", message: plan.message };
     case "no_forwarding_address":
       return { kind: "needs", need: "forwarding_address", message: plan.message };
+    case "forwarding_notice":
+      return { kind: "needs", need: "forwarding_notice", message: FORWARDING_NOTICE_NEED_MESSAGE };
     case "triage":
       if (!hasLease) {
         return {

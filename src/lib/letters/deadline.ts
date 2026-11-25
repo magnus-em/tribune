@@ -1,4 +1,6 @@
+import { format } from "date-fns";
 import { computeDepositDeadline } from "@/lib/deadline-calculator";
+import { parseDateOnly } from "@/lib/utils/case";
 import type { Case, CaseMessage } from "@/lib/types/database";
 
 /**
@@ -159,4 +161,41 @@ export function caseLetterDeadline(
   if (!d) return { deadline: caseRow.statutory_deadline, forwarding_unknown: true };
   const deadline = caseRow.statutory_deadline > d.deadline ? caseRow.statutory_deadline : d.deadline;
   return { deadline, forwarding_unknown: d.forwarding_unknown };
+}
+
+/**
+ * Validate the tenant's forwarding-notice answer from the case page before it's
+ * recorded. `today` is yyyy-MM-dd. A "date" answer needs a real calendar date
+ * that isn't in the future; the other two answers carry no date (any date sent
+ * with them is dropped).
+ */
+export function parseForwardingNoticeInput(
+  answer: string,
+  noticeDate: string | null | undefined,
+  today: string
+): { ok: true; value: ForwardingNoticeAnswer } | { ok: false; message: string } {
+  if (answer === "not_given" || answer === "unknown") {
+    return { ok: true, value: { answer, notice_date: null } };
+  }
+  if (answer !== "date") return { ok: false, message: "Choose one of the answers." };
+  const date = noticeDate?.trim() ?? "";
+  if (!isIsoDate(date)) return { ok: false, message: "Enter the date the landlord received it." };
+  if (date > today) return { ok: false, message: "That date is in the future. Enter the date the landlord received it." };
+  return { ok: true, value: { answer: "date", notice_date: date } };
+}
+
+/** The tenant-visible timeline entry for a recorded answer. */
+export function forwardingNoticeMessage(answer: ForwardingNoticeAnswer): { title: string; body: string } {
+  const title = "Forwarding address notice recorded";
+  switch (answer.answer) {
+    case "date":
+      return {
+        title,
+        body: `You told Tribune your landlord received your forwarding address in writing on ${format(parseDateOnly(answer.notice_date!), "MMMM d, yyyy")}.`,
+      };
+    case "not_given":
+      return { title, body: "You told Tribune you didn't give your landlord your forwarding address in writing." };
+    case "unknown":
+      return { title, body: "You told Tribune you don't know when your landlord received your forwarding address in writing." };
+  }
 }

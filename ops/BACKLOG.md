@@ -49,16 +49,13 @@ one PR a day.
       computed date; `prepareLetterDispatch` blocks until answered.~~ Done
       2026-11-24 (pure half; see Done). **Until c lands, no letter can be
       prepared** (the block has no tenant-side way to clear it yet).
-   c. The tenant answers on the case page: a server action that writes the
-      system message with `forwardingNoticeAttestationMetadata()` (same pattern
-      as `confirmResidential`), and an `approvalPanelState` need for the
-      `forwarding_notice` block reason (date picker, "I didn't give it in
-      writing", "I don't know"; message `FORWARDING_NOTICE_NEED_MESSAGE`). A
-      small change to the existing panel, like the residential confirm. The
-      stored `statutory_deadline` column stays as-is until the migration in
-      Next. Also: the tenant timeline (`case-timeline.tsx`) and the
-      case-submitted email still show the stored move-out + 21 date as "the
-      deadline"; relabel them in the same slice or the next.
+   c. ~~The tenant answers on the case page.~~ Done 2026-11-25 (see Done).
+      Letters can be prepared again once the tenant answers.
+   d. Relabel the stored move-out + 21 date where the tenant sees it as "the
+      deadline": the tenant timeline (`case-timeline.tsx`) and the
+      case-submitted email. Use `caseLetterDeadline()` where the answer is
+      known; otherwise say it's the earliest the deadline could be. The stored
+      `statutory_deadline` column stays as-is until the migration in Next.
 2. ⚖️ `test-ok` **The case page misdescribes the letters.** `tenantLetterTactics()`
    (`src/app/dashboard/case/[id]/_components.tsx` ~line 634) says Letter 1 sets a
    "14-day reply window" (the letter says 10 business days), "silence converts into
@@ -133,6 +130,14 @@ one PR a day.
 
 ## Done
 
+- 2026-11-25 — ⚖️ Now #1c (`test-ok`): the tenant answers the forwarding-notice
+  question on the case page. `approvalPanelState` maps the `forwarding_notice`
+  block to a `needs` state; `LetterApprovalStep` shows three choices (a date,
+  "I didn't give it in writing", "I don't know") and a date field. Server action
+  `recordForwardingNotice` validates with `parseForwardingNoticeInput` (real
+  date, not in the future) and writes the system message with
+  `forwardingNoticeAttestationMetadata()` under the tenant session. Refuses
+  if an answer is already on record. No new deadline math.
 - 2026-11-24 — ⚖️ Now #1b (`test-ok`): the tenant's forwarding-notice answer
   (`date` / `not_given` / `unknown`) is stored as a system message
   (`dispatch_metadata.attestation = "forwarding_notice"`) and read by

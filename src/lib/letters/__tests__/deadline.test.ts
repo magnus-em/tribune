@@ -4,6 +4,8 @@ import {
   forwardingNoticeAttestationMetadata,
   letterDeadline,
   letterDeadlinePassed,
+  parseForwardingNoticeInput,
+  forwardingNoticeMessage,
   FORWARDING_NOTICE_ATTESTATION_KIND,
 } from "@/lib/letters/deadline";
 import { computeDepositDeadline } from "@/lib/deadline-calculator";
@@ -188,5 +190,70 @@ describe("caseLetterDeadline", () => {
       deadline: "2026-06-22",
       forwarding_unknown: true,
     });
+  });
+});
+
+describe("parseForwardingNoticeInput", () => {
+  const today = "2026-11-25";
+
+  it("accepts a past date", () => {
+    expect(parseForwardingNoticeInput("date", "2026-06-15", today)).toEqual({
+      ok: true,
+      value: { answer: "date", notice_date: "2026-06-15" },
+    });
+  });
+
+  it("accepts today", () => {
+    expect(parseForwardingNoticeInput("date", today, today).ok).toBe(true);
+  });
+
+  it("rejects a future date", () => {
+    expect(parseForwardingNoticeInput("date", "2026-11-26", today).ok).toBe(false);
+  });
+
+  it.each([null, undefined, "", "2026-02-30", "06/15/2026", "2026-6-15"])("rejects date %p", (d) => {
+    expect(parseForwardingNoticeInput("date", d, today).ok).toBe(false);
+  });
+
+  it.each(["not_given", "unknown"] as const)("%s carries no date, even if one is sent", (a) => {
+    expect(parseForwardingNoticeInput(a, "2026-06-15", today)).toEqual({
+      ok: true,
+      value: { answer: a, notice_date: null },
+    });
+  });
+
+  it.each(["", "yes", "DATE"])("rejects unknown answer %p", (a) => {
+    expect(parseForwardingNoticeInput(a, "2026-06-15", today).ok).toBe(false);
+  });
+
+  it("round-trips through the attestation: the recorded answer drives the letter deadline", () => {
+    const parsed = parseForwardingNoticeInput("date", "2026-06-15", today);
+    if (!parsed.ok) throw new Error("expected ok");
+    const meta = forwardingNoticeAttestationMetadata(parsed.value, "2026-11-25T12:00:00Z");
+    const answer = forwardingNoticeAnswer([
+      { message_type: "system", dispatch_metadata: meta, created_at: "2026-11-25T12:00:00Z" },
+    ]);
+    expect(answer).toEqual({ answer: "date", notice_date: "2026-06-15" });
+    expect(
+      caseLetterDeadline({ move_out_date: "2026-06-01", statutory_deadline: "2026-06-22" }, answer)
+    ).toEqual({ deadline: "2026-06-30", forwarding_unknown: false });
+  });
+});
+
+describe("forwardingNoticeMessage", () => {
+  it("states the date the tenant gave, in the tenant's timeline", () => {
+    expect(forwardingNoticeMessage({ answer: "date", notice_date: "2026-06-15" }).body).toContain(
+      "June 15, 2026"
+    );
+  });
+
+  it.each([
+    { answer: "date", notice_date: "2026-06-15" },
+    { answer: "not_given", notice_date: null },
+    { answer: "unknown", notice_date: null },
+  ] as const)("speaks as Tribune, not a person ($answer)", (a) => {
+    const m = forwardingNoticeMessage(a);
+    expect(m.body).toMatch(/Tribune/);
+    expect(`${m.title} ${m.body}`).not.toMatch(/\b(we|us|our|I)\b/);
   });
 });

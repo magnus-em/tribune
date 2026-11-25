@@ -23,6 +23,7 @@ import {
   approveAndSendLetter,
   updateLetterContactDetail,
   confirmResidentialTenancy,
+  recordForwardingNotice,
 } from "./actions";
 import {
   approvalPanelState,
@@ -202,6 +203,18 @@ export default function CaseDetailPage() {
       toast.error(result.error);
     } else {
       trackEvent("residential_confirmed");
+      toast.success("Saved.");
+      loadData();
+    }
+  }
+
+  async function handleAnswerForwardingNotice(answer: string, noticeDate: string | null) {
+    const result = await recordForwardingNotice(caseId, answer, noticeDate);
+    if (result.error) {
+      toast.error(result.error);
+    } else {
+      // The kind of answer only; never the date.
+      trackEvent("forwarding_notice_answered", { answer });
       toast.success("Saved.");
       loadData();
     }
@@ -543,6 +556,7 @@ export default function CaseDetailPage() {
           onApprove={handleApproveLetter}
           onSaveDetail={handleSaveDetail}
           onConfirmResidential={handleConfirmResidential}
+          onAnswerForwardingNotice={handleAnswerForwardingNotice}
         />
       )}
 

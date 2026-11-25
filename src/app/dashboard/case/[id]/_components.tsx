@@ -39,6 +39,7 @@ import { formatCents, parseDateOnly } from "@/lib/utils/case";
 import type { Case, CaseMessage, CaseAction } from "@/lib/types/database";
 import { CONTINGENCY_PCT, REVIEW_SLA } from "@/lib/constants";
 import { Checkbox } from "@/components/ui/checkbox";
+import type { ForwardingNoticeKind } from "@/lib/letters/deadline";
 import {
   APPROVAL_STATEMENT,
   RESIDENTIAL_STATEMENT,
@@ -1251,18 +1252,90 @@ function ResidentialConfirmForm({
   );
 }
 
+export const FORWARDING_NOTICE_OPTIONS: { value: ForwardingNoticeKind; label: string }[] = [
+  { value: "date", label: "My landlord received it in writing on this date" },
+  { value: "not_given", label: "I didn't give it in writing" },
+  { value: "unknown", label: "I don't know" },
+];
+
+function ForwardingNoticeForm({
+  message,
+  onAnswer,
+}: {
+  message: string;
+  onAnswer: (answer: string, noticeDate: string | null) => Promise<void>;
+}) {
+  const [answer, setAnswer] = useState<ForwardingNoticeKind | null>(null);
+  const [noticeDate, setNoticeDate] = useState("");
+  const [saving, setSaving] = useState(false);
+  const ready = answer !== null && (answer !== "date" || noticeDate !== "");
+
+  async function handleSave() {
+    if (!answer) return;
+    setSaving(true);
+    await onAnswer(answer, answer === "date" ? noticeDate : null);
+    setSaving(false);
+  }
+
+  return (
+    <div className="space-y-3">
+      <p className="text-sm text-muted-foreground">{message}</p>
+      <fieldset className="space-y-2">
+        <legend className="sr-only">When your landlord received your forwarding address</legend>
+        {FORWARDING_NOTICE_OPTIONS.map((o) => (
+          <div key={o.value} className="flex items-start gap-2">
+            <input
+              type="radio"
+              id={`forwarding_notice_${o.value}`}
+              name="forwarding_notice"
+              value={o.value}
+              checked={answer === o.value}
+              onChange={() => setAnswer(o.value)}
+              className="mt-1"
+            />
+            <Label htmlFor={`forwarding_notice_${o.value}`} className="text-sm font-normal leading-snug">
+              {o.label}
+            </Label>
+          </div>
+        ))}
+      </fieldset>
+      {answer === "date" && (
+        <div className="space-y-1.5">
+          <Label htmlFor="forwarding_notice_received_on">Date your landlord received it</Label>
+          <Input
+            id="forwarding_notice_received_on"
+            type="date"
+            value={noticeDate}
+            max={format(new Date(), "yyyy-MM-dd")}
+            onChange={(e) => setNoticeDate(e.target.value)}
+          />
+        </div>
+      )}
+      <p className="text-xs text-muted-foreground">
+        Tribune uses this answer to state the deadline in your letter. It can&apos;t be changed
+        here once saved.
+      </p>
+      <Button size="sm" onClick={handleSave} disabled={!ready || saving}>
+        {saving ? "Saving…" : "Save"}
+      </Button>
+    </div>
+  );
+}
+
 export function LetterApprovalStep({
   letterNumber,
   state,
   onApprove,
   onSaveDetail,
   onConfirmResidential,
+  onAnswerForwardingNotice,
 }: {
   letterNumber: number;
   state: ApprovalPanelState;
   onApprove: () => Promise<void>;
   onSaveDetail: (field: ContactDetailField, value: string) => Promise<void>;
   onConfirmResidential: () => Promise<void>;
+  onAnswerForwardingNotice: (answer: string, noticeDate: string | null) => Promise<void>;
 }) {
   const [approved, setApproved] = useState(false);
   const [sending, setSending] = useState(false);
@@ -1301,6 +1374,8 @@ export function LetterApprovalStep({
         ) : state.kind === "needs" ? (
           state.need === "residential" ? (
             <ResidentialConfirmForm message={state.message} onConfirm={onConfirmResidential} />
+          ) : state.need === "forwarding_notice" ? (
+            <ForwardingNoticeForm message={state.message} onAnswer={onAnswerForwardingNotice} />
           ) : (
             state.need !== "lease" && (
               <ContactDetailForm field={state.need} message={state.message} onSave={onSaveDetail} />

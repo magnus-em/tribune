@@ -10,6 +10,12 @@ import { renderCaseUpdateEmail } from "@/lib/email/templates/case-update";
 import { renderLandlordLetterEmail } from "@/lib/email/templates/landlord-letter";
 import { residentialAnswer, residentialAttestationMetadata } from "@/lib/triage";
 import {
+  forwardingNoticeAnswer,
+  forwardingNoticeAttestationMetadata,
+  forwardingNoticeMessage,
+  parseForwardingNoticeInput,
+} from "@/lib/letters/deadline";
+import {
   APPROVAL_STATEMENT,
   parseContactDetail,
   prepareLetterDispatch,
@@ -561,6 +567,51 @@ export async function confirmResidentialTenancy(caseId: string) {
     body: "You confirmed that you rented this property as your home.",
     created_by: user.id,
     dispatch_metadata: residentialAttestationMetadata(true, new Date().toISOString()),
+  });
+  if (error) return { error: "Tribune couldn't save that. Try again." };
+
+  revalidatePath(`/admin/case/${caseId}`);
+  revalidatePath(`/dashboard/case/${caseId}`);
+  return { success: true };
+}
+
+/**
+ * Record when the landlord received the tenant's forwarding address in writing
+ * (or that it wasn't given in writing, or the tenant doesn't know). Letters
+ * state the § 47a-21(d) deadline from this answer, and none is prepared until
+ * it's on record. Runs under the tenant session: RLS proves ownership and
+ * allows `system` message inserts. Refuses if an answer is already on record,
+ * so a deadline a sent letter relied on can't be changed here.
+ */
+export async function recordForwardingNotice(
+  caseId: string,
+  answer: string,
+  noticeDate: string | null
+) {
+  const parsed = parseForwardingNoticeInput(answer, noticeDate, format(new Date(), "yyyy-MM-dd"));
+  if (!parsed.ok) return { error: parsed.message };
+
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const [{ data: caseRow }, { data: messages }] = await Promise.all([
+    supabase.from("cases").select("id, tenant_id").eq("id", caseId).single(),
+    supabase.from("case_messages").select("message_type, dispatch_metadata, created_at").eq("case_id", caseId),
+  ]);
+  if (!caseRow || caseRow.tenant_id !== user.id) return { error: "Not authorized" };
+  if (forwardingNoticeAnswer(messages ?? []) !== null) {
+    return { error: "Tribune already has your answer for this case." };
+  }
+
+  const { title, body } = forwardingNoticeMessage(parsed.value);
+  const { error } = await supabase.from("case_messages").insert({
+    case_id: caseId,
+    message_type: "system",
+    title,
+    body,
+    created_by: user.id,
+    dispatch_metadata: forwardingNoticeAttestationMetadata(parsed.value, new Date().toISOString()),
   });
   if (error) return { error: "Tribune couldn't save that. Try again." };
 

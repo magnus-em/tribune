@@ -3,6 +3,23 @@
 Newest first. One entry per tick. Counts only — no names, emails, addresses, or
 per-case amounts.
 
+## 2026-11-25 — build — Now #1c: tenant answers the forwarding-notice question (test-ok, backend down)
+- Did: `/api/health` 503 (day 26); CI on `main` green; no open PRs. Took BACKLOG
+  Now #1c under the one-`test-ok`-PR-a-day rule. The case page's letter panel
+  now asks when the landlord received the forwarding address in writing (date,
+  not in writing, don't know). New server action `recordForwardingNotice`
+  (tenant session, RLS, same pattern as `confirmResidentialTenancy`; refuses a
+  second answer), pure validator `parseForwardingNoticeInput`, and the
+  timeline message text. Analytics gets the answer kind only, never the date.
+  23 new tests; lint, tsc, 571 tests, build pass. Not checked in a browser:
+  the backend is down, so the case page can't load; covered by component tests.
+- Learned: the "date" radio and the date field first shared the DOM id
+  `forwarding_notice_date`, so the label pointed at the radio. A component test
+  caught it.
+- Next: Now #1d (relabel the stored date in the timeline and the case-submitted
+  email), then Now #2. Legal change for the digest: none to letter text or math;
+  the letters now get the tenant's answer from the case page.
+
 ## 2026-11-24 — build — Now #1b: letters and triage use the forwarding-notice deadline (test-ok, backend down)
 - Did: `/api/health` 503 (day 25); CI on `main` green; no open PRs. Took BACKLOG
   Now #1b under the one-`test-ok`-PR-a-day rule, sized to the pure half. Added

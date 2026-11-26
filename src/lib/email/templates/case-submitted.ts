@@ -1,17 +1,23 @@
 import { REVIEW_SLA } from "@/lib/constants";
 import { escapeHtml } from "@/lib/email/escape";
+import { DEADLINE_RULE_SUMMARY } from "@/lib/letters/deadline";
 
 export interface CaseSubmittedEmailProps {
   tenantName: string;
   caseId: string;
-  statutoryDeadline: string; // e.g. "Jun 21, 2026"
+  /**
+   * Move-out + 21, formatted (e.g. "Jun 21, 2026"). At submission Tribune
+   * doesn't yet know when the landlord received the forwarding address, so
+   * this is only the earliest the deadline could be, and the email says so.
+   */
+  earliestDeadline: string;
   siteUrl: string;
 }
 
 export function renderCaseSubmittedEmail({
   tenantName,
   caseId,
-  statutoryDeadline,
+  earliestDeadline,
   siteUrl,
 }: CaseSubmittedEmailProps): string {
   const caseUrl = `${siteUrl}/dashboard/case/${encodeURIComponent(caseId)}`;
@@ -35,10 +41,11 @@ export function renderCaseSubmittedEmail({
     </p>
 
     <div style="background-color: white; border-left: 4px solid #3b82f6; padding: 16px; margin: 20px 0;">
-      <p style="margin: 0 0 8px; font-size: 13px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.04em;">Your landlord's legal deadline</p>
-      <p style="margin: 0; font-size: 18px; font-weight: 600; color: #1f2937;">${escapeHtml(statutoryDeadline)}</p>
+      <p style="margin: 0 0 8px; font-size: 13px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.04em;">Earliest your landlord's deadline could be</p>
+      <p style="margin: 0; font-size: 18px; font-weight: 600; color: #1f2937;">${escapeHtml(earliestDeadline)}</p>
       <p style="margin: 8px 0 0; color: #6b7280; font-size: 14px;">
-        Under CT § 47a-21. Tribune aims to send a demand letter before this date.
+        ${escapeHtml(DEADLINE_RULE_SUMMARY)} Tribune will ask when your landlord received your
+        forwarding address in writing and uses your answer to state the deadline.
       </p>
     </div>
 

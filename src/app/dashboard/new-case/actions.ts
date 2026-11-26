@@ -366,7 +366,7 @@ export async function createCase(formData: FormData): Promise<{
             html: renderCaseSubmittedEmail({
               tenantName: data.full_name,
               caseId,
-              statutoryDeadline: format(statutoryDeadline, "MMM d, yyyy"),
+              earliestDeadline: format(statutoryDeadline, "MMM d, yyyy"),
               siteUrl,
             }),
           });

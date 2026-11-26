@@ -3,6 +3,23 @@
 Newest first. One entry per tick. Counts only — no names, emails, addresses, or
 per-case amounts.
 
+## 2026-11-26 — build — Now #1d: tenant-facing deadline relabeled (test-ok, backend down)
+- Did: `/api/health` 503 (day 27); CI on `main` green; no open PRs. Took BACKLOG
+  Now #1d under the one-`test-ok`-PR-a-day rule. Added `tenantDeadlineDisplay()`
+  (exact deadline vs. "Earliest possible deadline"), `letterSentDeadlineTitle()`,
+  and `DEADLINE_RULE_SUMMARY` to `src/lib/letters/deadline.ts`. Wired into the
+  case page Claim Summary, the letter-sent banner and header "Deadline passed"
+  note (both now count days only against an exact deadline), `CaseTimeline`
+  (no longer says "Landlord failed to return deposit"), and the case-submitted
+  email. 18 new tests; lint, tsc, 589 tests, build pass. Not checked in a
+  browser: the backend is down, so the case page can't load.
+- Learned: `CaseTimeline` isn't rendered anywhere today (only its test), but it
+  was fixed anyway so it can't come back wrong. The intake review step has the
+  same defect plus a "send by" promise; queued as Now #1e.
+- Next: Now #1e (intake review step), then Now #2. Legal change for the digest:
+  tenant-facing deadline wording (case page, timeline, case-submitted email);
+  no letter text or deadline math changed.
+
 ## 2026-11-25 — build — Now #1c: tenant answers the forwarding-notice question (test-ok, backend down)
 - Did: `/api/health` 503 (day 26); CI on `main` green; no open PRs. Took BACKLOG
   Now #1c under the one-`test-ok`-PR-a-day rule. The case page's letter panel

@@ -65,7 +65,7 @@ const TEMPLATES: TemplateCase[] = [
       renderCaseSubmittedEmail({
         tenantName: v,
         caseId: CASE_ID,
-        statutoryDeadline: v,
+        earliestDeadline: v,
         siteUrl: SITE,
       }),
   },

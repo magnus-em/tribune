@@ -39,7 +39,11 @@ import { formatCents, parseDateOnly } from "@/lib/utils/case";
 import type { Case, CaseMessage, CaseAction } from "@/lib/types/database";
 import { CONTINGENCY_PCT, REVIEW_SLA } from "@/lib/constants";
 import { Checkbox } from "@/components/ui/checkbox";
-import type { ForwardingNoticeKind } from "@/lib/letters/deadline";
+import {
+  DEADLINE_RULE_SUMMARY,
+  type ForwardingNoticeKind,
+  type TenantDeadlineDisplay,
+} from "@/lib/letters/deadline";
 import {
   APPROVAL_STATEMENT,
   RESIDENTIAL_STATEMENT,
@@ -341,8 +345,10 @@ export function getStatusHeadline(status: string, hasLease: boolean): string {
 
 export function ClaimSummary({
   caseData,
+  deadline: deadlineDisplay,
 }: {
   caseData: Case;
+  deadline: TenantDeadlineDisplay;
 }) {
   const originalReturnedCents =
     caseData.deposit_amount_cents - caseData.amount_withheld_cents;
@@ -351,7 +357,7 @@ export function ClaimSummary({
     caseData.deposit_returned_cents - originalReturnedCents
   );
   const tribFee = Math.round((recoveredCents * caseData.contingency_pct) / 100);
-  const deadline = parseDateOnly(caseData.statutory_deadline);
+  const deadline = parseDateOnly(deadlineDisplay.date);
 
   return (
     <div className="border bg-card overflow-hidden">
@@ -390,8 +396,11 @@ export function ClaimSummary({
           <p className="font-semibold">{tribFee > 0 ? formatCents(tribFee) : "—"}</p>
         </div>
         <div className="col-span-2">
-          <p className="text-muted-foreground text-xs">Statutory deadline</p>
+          <p className="text-muted-foreground text-xs">{deadlineDisplay.label}</p>
           <p className="font-semibold">{format(deadline, "MMMM d, yyyy")}</p>
+          {!deadlineDisplay.exact && (
+            <p className="text-muted-foreground text-xs mt-1">{DEADLINE_RULE_SUMMARY}</p>
+          )}
         </div>
       </div>
       </div>

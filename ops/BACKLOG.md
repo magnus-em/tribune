@@ -51,11 +51,15 @@ one PR a day.
       prepared** (the block has no tenant-side way to clear it yet).
    c. ~~The tenant answers on the case page.~~ Done 2026-11-25 (see Done).
       Letters can be prepared again once the tenant answers.
-   d. Relabel the stored move-out + 21 date where the tenant sees it as "the
-      deadline": the tenant timeline (`case-timeline.tsx`) and the
-      case-submitted email. Use `caseLetterDeadline()` where the answer is
-      known; otherwise say it's the earliest the deadline could be. The stored
-      `statutory_deadline` column stays as-is until the migration in Next.
+   d. ~~Relabel the stored date in the timeline and the case-submitted
+      email.~~ Done 2026-11-26 (see Done). Also covered the case page's
+      Claim Summary and letter-sent banner.
+   e. The intake review step (`src/app/dashboard/new-case/_steps.tsx` ~line
+      550) still shows move-out + 21 as "Your landlord's legal deadline",
+      says it "appears to have passed", and promises "Tribune aims to send the
+      first demand letter by <date>". At intake the forwarding-notice answer
+      isn't known: label it as the earliest possible deadline with
+      `DEADLINE_RULE_SUMMARY`, drop the send-by promise, and test it.
 2. ⚖️ `test-ok` **The case page misdescribes the letters.** `tenantLetterTactics()`
    (`src/app/dashboard/case/[id]/_components.tsx` ~line 634) says Letter 1 sets a
    "14-day reply window" (the letter says 10 business days), "silence converts into
@@ -129,6 +133,15 @@ one PR a day.
   classification (🔴 if it needs a paid API)
 
 ## Done
+
+- 2026-11-26 — ⚖️ Now #1d (`test-ok`): the tenant no longer sees move-out + 21
+  as "the deadline" unless the forwarding-notice answer makes it so. New pure
+  `tenantDeadlineDisplay()` (built on `caseLetterDeadline()`, so it matches
+  the letters), `letterSentDeadlineTitle()`, and `DEADLINE_RULE_SUMMARY` in
+  `src/lib/letters/deadline.ts`. Used by the case page's Claim Summary and
+  letter-sent banner, `CaseTimeline`, and the case-submitted email (now
+  "Earliest your landlord's deadline could be", with the (d) rule; dropped
+  "aims to send a demand letter before this date").
 
 - 2026-11-25 — ⚖️ Now #1c (`test-ok`): the tenant answers the forwarding-notice
   question on the case page. `approvalPanelState` maps the `forwarding_notice`

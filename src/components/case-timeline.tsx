@@ -1,7 +1,13 @@
 import { format } from "date-fns";
+import { parseDateOnly } from "@/lib/utils/case";
 import { CheckCircle2, Circle, Clock, FileText, Mail, MessageSquare, AlertCircle } from "lucide-react";
 import { type CaseMessage, type CaseAction } from "@/lib/types/database";
 import { STATUTE_DAYS } from "@/lib/constants";
+import {
+  DEADLINE_RULE_SUMMARY,
+  letterDeadlinePassed,
+  type TenantDeadlineDisplay,
+} from "@/lib/letters/deadline";
 
 interface TimelineEvent {
   id: string;
@@ -16,8 +22,11 @@ interface TimelineEvent {
 interface CaseTimelineProps {
   messages: CaseMessage[];
   actions: CaseAction[];
-  statutoryDeadline: string;
+  /** From `tenantDeadlineDisplay()`, never the raw stored `statutory_deadline`. */
+  deadline: TenantDeadlineDisplay;
   moveOutDate: string;
+  /** yyyy-MM-dd; defaults to the local date. */
+  today?: string;
 }
 
 function getIcon(icon: TimelineEvent["icon"]) {
@@ -40,7 +49,7 @@ function getIcon(icon: TimelineEvent["icon"]) {
   }
 }
 
-export function CaseTimeline({ messages, actions, statutoryDeadline, moveOutDate }: CaseTimelineProps) {
+export function CaseTimeline({ messages, actions, deadline, moveOutDate, today }: CaseTimelineProps) {
   // Combine messages and actions into timeline events
   const events: TimelineEvent[] = [];
 
@@ -54,16 +63,24 @@ export function CaseTimeline({ messages, actions, statutoryDeadline, moveOutDate
     variant: "default",
   });
 
-  // Add statutory deadline milestone
-  const deadlinePassed = new Date(statutoryDeadline) < new Date();
+  // Add deadline milestone. With no forwarding-notice date on record, the
+  // stored move-out + 21 date is only the earliest the deadline could be.
+  const passed = letterDeadlinePassed(
+    { deadline: deadline.date, forwarding_unknown: !deadline.exact },
+    today ?? format(new Date(), "yyyy-MM-dd")
+  );
   events.push({
     id: "deadline",
     type: "milestone",
-    date: statutoryDeadline,
-    title: `Statutory deadline (${STATUTE_DAYS} days)`,
-    description: deadlinePassed ? "Landlord failed to return deposit" : "Landlord must return deposit by this date",
-    icon: deadlinePassed ? "alert" : "clock",
-    variant: deadlinePassed ? "warning" : "default",
+    date: deadline.date,
+    title: deadline.exact ? deadline.label : `${deadline.label} (${STATUTE_DAYS} days after move-out)`,
+    description: !deadline.exact
+      ? DEADLINE_RULE_SUMMARY
+      : passed
+        ? "This deadline has passed."
+        : "Under CT § 47a-21(d), by this date the landlord must deliver the full deposit plus accrued interest, or the balance after deductions with a written statement itemizing the damages.",
+    icon: passed ? "alert" : "clock",
+    variant: passed ? "warning" : "default",
   });
 
   // Add messages
@@ -138,7 +155,10 @@ export function CaseTimeline({ messages, actions, statutoryDeadline, moveOutDate
                   )}
                 </div>
                 <time className="text-xs text-muted-foreground whitespace-nowrap">
-                  {format(new Date(event.date), "MMM d, yyyy")}
+                  {format(
+                    /^\d{4}-\d{2}-\d{2}$/.test(event.date) ? parseDateOnly(event.date) : new Date(event.date),
+                    "MMM d, yyyy"
+                  )}
                 </time>
               </div>
             </div>

@@ -62,7 +62,10 @@ export function letterDeadline(
  * - null: no forwarding date, and only the earliest possible date has passed.
  *   The real deadline may be later, so neither answer can be stated.
  */
-export function letterDeadlinePassed(d: LetterDeadline, today: string): boolean | null {
+export function letterDeadlinePassed(
+  d: Pick<LetterDeadline, "deadline" | "forwarding_unknown">,
+  today: string
+): boolean | null {
   const passed = today > d.deadline;
   if (!passed) return false;
   return d.forwarding_unknown ? null : true;
@@ -198,4 +201,56 @@ export function forwardingNoticeMessage(answer: ForwardingNoticeAnswer): { title
     case "unknown":
       return { title, body: "You told Tribune you don't know when your landlord received your forwarding address in writing." };
   }
+}
+
+// ── How the tenant sees the deadline ─────────────────────────────────────────
+
+/**
+ * Plain-language restatement of the verified § 47a-21(d) deadline clause
+ * ("twenty-one days after termination of a tenancy or fifteen days after
+ * receiving written notification of such tenant's forwarding address, whichever
+ * is later"). Shown wherever the tenant sees an earliest-possible date.
+ */
+export const DEADLINE_RULE_SUMMARY =
+  "Under CT § 47a-21(d), the deadline is 21 days after the tenancy ends or 15 days after the landlord receives the tenant's forwarding address in writing, whichever is later.";
+
+export type TenantDeadlineDisplay = {
+  /** yyyy-MM-dd */
+  date: string;
+  /** true when the date is the deadline; false when it's only the earliest it could be. */
+  exact: boolean;
+  label: string;
+};
+
+/**
+ * The deadline as the tenant sees it (case page, timeline, emails). Uses
+ * `caseLetterDeadline()`, so it matches what the letters say. With no
+ * forwarding-notice date on record the date is labeled as the earliest the
+ * deadline could be, never as "the deadline".
+ */
+export function tenantDeadlineDisplay(
+  caseRow: Pick<Case, "move_out_date" | "statutory_deadline">,
+  notice: ForwardingNoticeAnswer | null
+): TenantDeadlineDisplay {
+  const d = caseLetterDeadline(caseRow, notice);
+  return d.forwarding_unknown
+    ? { date: d.deadline, exact: false, label: "Earliest possible deadline" }
+    : { date: d.deadline, exact: true, label: "Statutory deadline" };
+}
+
+/**
+ * Banner title on the case page once a letter has gone out. `today` is
+ * yyyy-MM-dd. Counts days only against an exact deadline; with only an
+ * earliest-possible date it states no count, since the real deadline may be
+ * later.
+ */
+export function letterSentDeadlineTitle(d: TenantDeadlineDisplay, today: string): string {
+  if (!d.exact) return "Tribune sent your letter";
+  const days = Math.round(
+    (parseDateOnly(today).getTime() - parseDateOnly(d.date).getTime()) / 86_400_000
+  );
+  const plural = (n: number) => `${n} day${n !== 1 ? "s" : ""}`;
+  if (days > 0) return `Tribune sent your letter. The deadline passed ${plural(days)} ago`;
+  if (days === 0) return "Tribune sent your letter. Today is the deadline";
+  return `Tribune sent your letter. ${plural(-days)} left before the deadline`;
 }

@@ -7,6 +7,9 @@ import {
   parseForwardingNoticeInput,
   forwardingNoticeMessage,
   FORWARDING_NOTICE_ATTESTATION_KIND,
+  tenantDeadlineDisplay,
+  letterSentDeadlineTitle,
+  DEADLINE_RULE_SUMMARY,
 } from "@/lib/letters/deadline";
 import { computeDepositDeadline } from "@/lib/deadline-calculator";
 
@@ -255,5 +258,86 @@ describe("forwardingNoticeMessage", () => {
     const m = forwardingNoticeMessage(a);
     expect(m.body).toMatch(/Tribune/);
     expect(`${m.title} ${m.body}`).not.toMatch(/\b(we|us|our|I)\b/);
+  });
+});
+
+describe("tenantDeadlineDisplay (Now #1d)", () => {
+  const row = { move_out_date: "2026-06-01", statutory_deadline: "2026-06-22" };
+
+  it("no answer on record → earliest possible, not the deadline", () => {
+    expect(tenantDeadlineDisplay(row, null)).toEqual({
+      date: "2026-06-22",
+      exact: false,
+      label: "Earliest possible deadline",
+    });
+  });
+
+  it("'not given' and 'unknown' answers stay earliest possible", () => {
+    for (const answer of ["not_given", "unknown"] as const) {
+      expect(tenantDeadlineDisplay(row, { answer, notice_date: null }).exact).toBe(false);
+    }
+  });
+
+  it("BACKLOG example: notice 6/15 → deadline 6/30, labeled as the deadline", () => {
+    expect(tenantDeadlineDisplay(row, { answer: "date", notice_date: "2026-06-15" })).toEqual({
+      date: "2026-06-30",
+      exact: true,
+      label: "Statutory deadline",
+    });
+  });
+
+  it("an early notice keeps move-out + 21, now exact", () => {
+    expect(tenantDeadlineDisplay(row, { answer: "date", notice_date: "2026-06-02" })).toEqual({
+      date: "2026-06-22",
+      exact: true,
+      label: "Statutory deadline",
+    });
+  });
+
+  it("matches the date the letters use", () => {
+    const notice = { answer: "date" as const, notice_date: "2026-06-15" };
+    expect(tenantDeadlineDisplay(row, notice).date).toBe(caseLetterDeadline(row, notice).deadline);
+  });
+
+  it("the rule summary restates both (d) branches and 'whichever is later'", () => {
+    expect(DEADLINE_RULE_SUMMARY).toMatch(/21 days after the tenancy ends/);
+    expect(DEADLINE_RULE_SUMMARY).toMatch(/15 days after the landlord receives .* forwarding address in writing/);
+    expect(DEADLINE_RULE_SUMMARY).toMatch(/whichever is later/);
+  });
+});
+
+describe("letterSentDeadlineTitle (Now #1d)", () => {
+  const exact = { date: "2026-06-30", exact: true, label: "Statutory deadline" };
+  const earliest = { date: "2026-06-22", exact: false, label: "Earliest possible deadline" };
+
+  it("counts days past a known deadline", () => {
+    expect(letterSentDeadlineTitle(exact, "2026-07-03")).toBe(
+      "Tribune sent your letter. The deadline passed 3 days ago"
+    );
+    expect(letterSentDeadlineTitle(exact, "2026-07-01")).toBe(
+      "Tribune sent your letter. The deadline passed 1 day ago"
+    );
+  });
+
+  it("the deadline day itself has not passed", () => {
+    expect(letterSentDeadlineTitle(exact, "2026-06-30")).toBe("Tribune sent your letter. Today is the deadline");
+  });
+
+  it("counts days left before a known deadline", () => {
+    expect(letterSentDeadlineTitle(exact, "2026-06-25")).toBe(
+      "Tribune sent your letter. 5 days left before the deadline"
+    );
+  });
+
+  it("states no count against an earliest-possible date", () => {
+    expect(letterSentDeadlineTitle(earliest, "2026-08-01")).toBe("Tribune sent your letter");
+    expect(letterSentDeadlineTitle(earliest, "2026-06-01")).toBe("Tribune sent your letter");
+  });
+
+  it("counts across a DST change without drifting a day", () => {
+    const nov = { date: "2026-11-10", exact: true, label: "Statutory deadline" };
+    expect(letterSentDeadlineTitle(nov, "2026-10-31")).toBe(
+      "Tribune sent your letter. 10 days left before the deadline"
+    );
   });
 });

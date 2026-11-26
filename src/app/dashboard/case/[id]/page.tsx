@@ -33,6 +33,11 @@ import {
 } from "@/lib/letters/approve-and-send";
 import { latestLandlordReply } from "@/lib/letters/follow-up";
 import { residentialAnswer } from "@/lib/triage";
+import {
+  forwardingNoticeAnswer,
+  letterSentDeadlineTitle,
+  tenantDeadlineDisplay,
+} from "@/lib/letters/deadline";
 import { INTRO_SENT_TITLE, REVIEW_SLA } from "@/lib/constants";
 import { LegalDisclaimer } from "@/components/legal-disclaimer";
 import { statusColor, parseDateOnly } from "@/lib/utils/case";
@@ -254,8 +259,13 @@ export default function CaseDetailPage() {
 
   // Derive computed state
   const hasLease = documents.some((d) => d.kind === "lease");
-  const deadline = parseDateOnly(caseData.statutory_deadline);
-  const daysOverdue = differenceInDays(new Date(), deadline);
+  // The deadline as the letters state it; only an exact deadline gets a
+  // days-overdue count (BACKLOG Now #1d).
+  const deadlineDisplay = tenantDeadlineDisplay(caseData, forwardingNoticeAnswer(messages));
+  const todayIso = format(new Date(), "yyyy-MM-dd");
+  const daysOverdue = deadlineDisplay.exact
+    ? differenceInDays(new Date(), parseDateOnly(deadlineDisplay.date))
+    : 0;
   const isTerminal = caseData.status === "resolved" || caseData.status === "closed";
   const introSent = messages.some((m) => m.title === INTRO_SENT_TITLE);
   const inSetup =
@@ -349,9 +359,7 @@ export default function CaseDetailPage() {
     ) {
       return {
         variant: "waiting" as const,
-        title: daysOverdue > 0
-          ? `Landlord is ${daysOverdue} day${daysOverdue !== 1 ? "s" : ""} overdue`
-          : `Tribune sent your letter — ${Math.abs(daysOverdue)} day${Math.abs(daysOverdue) !== 1 ? "s" : ""} left on deadline`,
+        title: letterSentDeadlineTitle(deadlineDisplay, todayIso),
         description:
           "Tribune has contacted your landlord on your behalf. If they return your deposit, report it below.",
       };
@@ -583,7 +591,7 @@ export default function CaseDetailPage() {
       {/* Claim + Readiness — hide on terminal states to reduce noise */}
       {!isTerminal && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <ClaimSummary caseData={caseData} />
+          <ClaimSummary caseData={caseData} deadline={deadlineDisplay} />
           <CaseReadiness
             caseData={caseData}
             documents={documents}

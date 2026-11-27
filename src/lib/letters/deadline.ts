@@ -254,3 +254,43 @@ export function letterSentDeadlineTitle(d: TenantDeadlineDisplay, today: string)
   if (days === 0) return "Tribune sent your letter. Today is the deadline";
   return `Tribune sent your letter. ${plural(-days)} left before the deadline`;
 }
+
+// ── Intake review step ───────────────────────────────────────────────────────
+
+export type IntakeDeadlineNotice = {
+  /** yyyy-MM-dd: move-out + 21, the earliest the deadline could be. */
+  earliest_date: string;
+  /** "MMM d, yyyy" */
+  earliest_label: string;
+  /** true when even the earliest possible date is before `today`. */
+  earliest_passed: boolean;
+  title: string;
+  body: string;
+};
+
+/**
+ * What the intake step says about the deadline once a move-out date is typed.
+ * At intake Tribune doesn't yet know when the landlord received the forwarding
+ * address in writing, so move-out + 21 is only the earliest the deadline could
+ * be ("whichever is later", § 47a-21(d)). It is never called "the deadline",
+ * never said to have passed, and no send-by date is promised. `today` is
+ * yyyy-MM-dd. Returns null for an invalid move-out date.
+ */
+export function intakeDeadlineNotice(
+  moveOutDate: string,
+  today: string
+): IntakeDeadlineNotice | null {
+  const d = letterDeadline({ move_out_date: moveOutDate }, null);
+  if (!d) return null;
+  const earliest_label = format(parseDateOnly(d.deadline), "MMM d, yyyy");
+  const earliest_passed = today > d.deadline;
+  return {
+    earliest_date: d.deadline,
+    earliest_label,
+    earliest_passed,
+    title: `Earliest possible deadline: ${earliest_label}`,
+    body: earliest_passed
+      ? `${DEADLINE_RULE_SUMMARY} The earliest possible date is before today. The actual deadline may be later. After you submit, Tribune asks when your landlord received your forwarding address in writing to work out the exact date.`
+      : `${DEADLINE_RULE_SUMMARY} After you submit, Tribune asks when your landlord received your forwarding address in writing to work out the exact date.`,
+  };
+}

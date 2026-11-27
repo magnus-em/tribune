@@ -3,6 +3,20 @@
 Newest first. One entry per tick. Counts only — no names, emails, addresses, or
 per-case amounts.
 
+## 2026-11-27 — build — Now #1e: intake deadline wording (test-ok, backend down)
+- Did: `/api/health` 503 (day 28); CI on `main` green; no open PRs. Took BACKLOG
+  Now #1e under the one-`test-ok`-PR-a-day rule. Added `intakeDeadlineNotice()`
+  to `src/lib/letters/deadline.ts` and used it in the intake review step: move-out
+  + 21 is now "Earliest possible deadline" with the (d) rule summary; no "legal
+  deadline", no "appears to have passed", no send-by promise, no damages
+  sentence. 6 new tests; lint, tsc, 595 tests, build pass. Not checked in a
+  browser: the backend is down, so intake (authenticated) can't load.
+- Learned: the old box compared against `new Date()` with `differenceInDays`, so
+  its "passed" flag also drifted by timezone; the new one compares yyyy-MM-dd
+  strings, like `letterDeadlinePassed()`.
+- Next: Now #2 (case-page letter tactics). Legal change for the digest:
+  intake-step deadline wording; no letter text or deadline math changed.
+
 ## 2026-11-26 — build — Now #1d: tenant-facing deadline relabeled (test-ok, backend down)
 - Did: `/api/health` 503 (day 27); CI on `main` green; no open PRs. Took BACKLOG
   Now #1d under the one-`test-ok`-PR-a-day rule. Added `tenantDeadlineDisplay()`

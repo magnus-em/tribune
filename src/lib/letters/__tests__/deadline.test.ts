@@ -10,6 +10,7 @@ import {
   tenantDeadlineDisplay,
   letterSentDeadlineTitle,
   DEADLINE_RULE_SUMMARY,
+  intakeDeadlineNotice,
 } from "@/lib/letters/deadline";
 import { computeDepositDeadline } from "@/lib/deadline-calculator";
 
@@ -339,5 +340,48 @@ describe("letterSentDeadlineTitle (Now #1d)", () => {
     expect(letterSentDeadlineTitle(nov, "2026-10-31")).toBe(
       "Tribune sent your letter. 10 days left before the deadline"
     );
+  });
+});
+
+describe("intakeDeadlineNotice (Now #1e)", () => {
+  it("labels move-out + 21 as the earliest possible deadline", () => {
+    const n = intakeDeadlineNotice("2026-06-01", "2026-06-10")!;
+    expect(n.earliest_date).toBe("2026-06-22");
+    expect(n.earliest_label).toBe("Jun 22, 2026");
+    expect(n.earliest_passed).toBe(false);
+    expect(n.title).toBe("Earliest possible deadline: Jun 22, 2026");
+    expect(n.body).toContain(DEADLINE_RULE_SUMMARY);
+  });
+
+  it("matches the date the letters use with no forwarding answer", () => {
+    const row = { move_out_date: "2026-06-01", statutory_deadline: "2026-06-22" };
+    expect(intakeDeadlineNotice("2026-06-01", "2026-06-10")!.earliest_date).toBe(
+      caseLetterDeadline(row, null).deadline
+    );
+  });
+
+  it("BACKLOG example: started 6/25, earliest 6/22 before today, but no claim it passed", () => {
+    const n = intakeDeadlineNotice("2026-06-01", "2026-06-25")!;
+    expect(n.earliest_passed).toBe(true);
+    expect(n.body).toMatch(/actual deadline may be later/);
+    const text = `${n.title} ${n.body}`;
+    expect(text).not.toMatch(/has passed|have passed|appears to/i);
+  });
+
+  it("the deadline day itself is not before today", () => {
+    expect(intakeDeadlineNotice("2026-06-01", "2026-06-22")!.earliest_passed).toBe(false);
+  });
+
+  it("never calls the date 'the deadline' or promises a send-by date", () => {
+    for (const today of ["2026-06-10", "2026-06-25"]) {
+      const n = intakeDeadlineNotice("2026-06-01", today)!;
+      const text = `${n.title} ${n.body}`;
+      expect(text).not.toMatch(/legal deadline|aims to send|send the first|by Jun/i);
+      expect(text).not.toMatch(/twice|double/i);
+    }
+  });
+
+  it("invalid move-out date → null", () => {
+    expect(intakeDeadlineNotice("not-a-date", "2026-06-10")).toBeNull();
   });
 });

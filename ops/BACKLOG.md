@@ -54,12 +54,9 @@ one PR a day.
    d. ~~Relabel the stored date in the timeline and the case-submitted
       email.~~ Done 2026-11-26 (see Done). Also covered the case page's
       Claim Summary and letter-sent banner.
-   e. The intake review step (`src/app/dashboard/new-case/_steps.tsx` ~line
-      550) still shows move-out + 21 as "Your landlord's legal deadline",
-      says it "appears to have passed", and promises "Tribune aims to send the
-      first demand letter by <date>". At intake the forwarding-notice answer
-      isn't known: label it as the earliest possible deadline with
-      `DEADLINE_RULE_SUMMARY`, drop the send-by promise, and test it.
+   e. ~~The intake review step showed move-out + 21 as "Your landlord's legal
+      deadline" with a send-by promise.~~ Done 2026-11-27 (see Done). Now #1
+      is complete.
 2. ⚖️ `test-ok` **The case page misdescribes the letters.** `tenantLetterTactics()`
    (`src/app/dashboard/case/[id]/_components.tsx` ~line 634) says Letter 1 sets a
    "14-day reply window" (the letter says 10 business days), "silence converts into
@@ -133,6 +130,15 @@ one PR a day.
   classification (🔴 if it needs a paid API)
 
 ## Done
+
+- 2026-11-27 — ⚖️ Now #1e (`test-ok`): the intake review step
+  (`src/app/dashboard/new-case/_steps.tsx`) no longer calls move-out + 21
+  "Your landlord's legal deadline", no longer says it "appears to have passed",
+  drops the "Tribune aims to send the first demand letter by <date>" promise and
+  the double-damages sentence. New pure `intakeDeadlineNotice()` in
+  `src/lib/letters/deadline.ts` labels it "Earliest possible deadline" with
+  `DEADLINE_RULE_SUMMARY`; when that date is before today it says the actual
+  deadline may be later. 6 new tests.
 
 - 2026-11-26 — ⚖️ Now #1d (`test-ok`): the tenant no longer sees move-out + 21
   as "the deadline" unless the forwarding-notice answer makes it so. New pure

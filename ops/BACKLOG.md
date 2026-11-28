@@ -57,16 +57,8 @@ one PR a day.
    e. ~~The intake review step showed move-out + 21 as "Your landlord's legal
       deadline" with a send-by promise.~~ Done 2026-11-27 (see Done). Now #1
       is complete.
-2. ⚖️ `test-ok` **The case page misdescribes the letters.** `tenantLetterTactics()`
-   (`src/app/dashboard/case/[id]/_components.tsx` ~line 634) says Letter 1 sets a
-   "14-day reply window" (the letter says 10 business days), "silence converts into
-   the next round automatically" (every letter needs the tenant's approval),
-   "document the deadline they already missed", Letter 2 names "fee shifting" (not
-   in the letter or the verified text), and Letter 3 promises "the court summons"
-   (Tribune doesn't file anything). Rewrite the bullets to say only what each
-   template actually says, in Tribune's voice, as information. Move them to a lib
-   module with a test that every number and claim in them appears in that letter's
-   template. This replaces the old "fee shifting" item.
+2. ~~⚖️ `test-ok` **The case page misdescribes the letters.**~~ Done 2026-11-28
+   (see Done).
 3. Guide pages (old Now #1): **done for now.** Five guides, the calculator, and the
    `/guides` index cover the verified § 47a-21(d) text. An interest guide waits on
    a verified interest rate. City pages wait on something city-specific to say.
@@ -131,6 +123,15 @@ one PR a day.
 
 ## Done
 
+- 2026-11-28 — ⚖️ Now #2 (`test-ok`): the case page's letter bullets
+  ("Tribune's play") are replaced by "What this letter says", from new
+  `src/lib/letters/tenant-summary.ts`. Each bullet carries the exact template
+  phrases it relies on; tests check every phrase appears in every variant of that
+  letter and every number in a bullet comes from those phrases. Gone: the
+  "14-day" and "7-day" windows (letters say 10 and 7 business days), "silence
+  converts into the next round automatically", "the deadline they already
+  missed", "fee shifting", "the public record", and "the court summons". Adds:
+  Tribune sends a letter only after the tenant approves it in the app.
 - 2026-11-27 — ⚖️ Now #1e (`test-ok`): the intake review step
   (`src/app/dashboard/new-case/_steps.tsx`) no longer calls move-out + 21
   "Your landlord's legal deadline", no longer says it "appears to have passed",

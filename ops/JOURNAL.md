@@ -3,6 +3,24 @@
 Newest first. One entry per tick. Counts only — no names, emails, addresses, or
 per-case amounts.
 
+## 2026-11-28 — build — Now #2: case-page letter summary (test-ok, backend down)
+- Did: `/api/health` 503 (day 29); CI on `main` green; no open PRs. Took BACKLOG
+  Now #2 under the one-`test-ok`-PR-a-day rule. Replaced `tenantLetterTactics()`
+  in the case page with `tenantLetterSummary()` (`src/lib/letters/tenant-summary.ts`):
+  plain descriptions of what Letters 1–3 say, each backed by quoted template
+  phrases, plus "Tribune sends a letter only after you approve it in the app."
+  18 new tests (quotes present in all 8 flag variants of each letter; numbers
+  backed by quotes; old claims banned). Not checked in a browser: the backend is
+  down, so the case page can't load.
+- Learned: a `tribune_letter` event can also be an admin-staged draft
+  (`postLetterWithNotification`), so the summary says nothing about a letter
+  having been sent. A staged draft's body is free text and could differ from the
+  template; the summary describes the template.
+- Next: Now has no unblocked code items left; the blockers are Magnus's (restore
+  Supabase, SETUP Part A). Next-list items need the backend or a migration except
+  doc drift and the `next lint` migration. Legal change for the digest:
+  case-page letter descriptions; no letter text or deadline math changed.
+
 ## 2026-11-27 — build — Now #1e: intake deadline wording (test-ok, backend down)
 - Did: `/api/health` 503 (day 28); CI on `main` green; no open PRs. Took BACKLOG
   Now #1e under the one-`test-ok`-PR-a-day rule. Added `intakeDeadlineNotice()`
